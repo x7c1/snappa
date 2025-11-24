@@ -5,6 +5,13 @@
 
 declare namespace Gio {
     /**
+     * Cancellable object for async operations
+     * Pass null to disable cancellation
+     */
+    interface Cancellable {
+        cancel(): void;
+    }
+    /**
      * File interface for file and directory operations
      */
     interface File {
@@ -15,43 +22,49 @@ declare namespace Gio {
 
         /**
          * Checks if the file exists
+         * @param cancellable Optional cancellable object, or null
          */
-        query_exists(cancellable: null): boolean;
+        query_exists(cancellable: Cancellable | null): boolean;
 
         /**
          * Loads the entire contents of the file
+         * @param cancellable Optional cancellable object, or null
          * @returns [success, contents] tuple
          */
-        load_contents(cancellable: null): [boolean, Uint8Array];
+        load_contents(cancellable: Cancellable | null): [boolean, Uint8Array];
 
         /**
          * Replaces the contents of the file
+         * @param cancellable Optional cancellable object, or null
          */
         replace_contents(
             contents: Uint8Array,
             etag: null,
             make_backup: boolean,
             flags: FileCreateFlags,
-            cancellable: null
+            cancellable: Cancellable | null
         ): void;
 
         /**
          * Copies a file
+         * @param cancellable Optional cancellable object, or null
+         * @param progress_callback Optional progress callback, or null
          */
         copy(
             destination: File,
             flags: FileCopyFlags,
-            cancellable: null,
+            cancellable: Cancellable | null,
             progress_callback: null
         ): void;
 
         /**
          * Enumerates children of the directory
+         * @param cancellable Optional cancellable object, or null
          */
         enumerate_children(
             attributes: string,
             flags: FileQueryInfoFlags,
-            cancellable: null
+            cancellable: Cancellable | null
         ): FileEnumerator;
     }
 
@@ -61,9 +74,10 @@ declare namespace Gio {
     interface FileEnumerator {
         /**
          * Gets the next file info
+         * @param cancellable Optional cancellable object, or null
          * @returns FileInfo or null if no more files
          */
-        next_file(cancellable: null): FileInfo | null;
+        next_file(cancellable: Cancellable | null): FileInfo | null;
     }
 
     /**
