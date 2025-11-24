@@ -1,4 +1,4 @@
-/// <reference path="./types/gnome-shell-42.d.ts" />
+/// <reference path="../types/gnome-shell-42.d.ts" />
 
 /**
  * Extension Reloader

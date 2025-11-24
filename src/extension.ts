@@ -1,7 +1,6 @@
 /// <reference path="./types/gnome-shell-42.d.ts" />
-// @ts-nocheck
 
-import { ReloadButton } from './reload-button';
+import { ReloadButton } from './reloader/reload-button';
 
 // Type definitions for GJS extension API
 interface ExtensionMetadata {
@@ -32,9 +31,9 @@ class Extension {
 
 /**
  * Initialize the extension
- * This function is called when the extension is loaded
+ * This function is called when the extension is loaded by GNOME Shell
  */
+// @ts-ignore - Called by GNOME Shell runtime
 function init(metadata: ExtensionMetadata): Extension {
     return new Extension(metadata);
 }
-
