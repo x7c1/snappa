@@ -2,16 +2,6 @@
 
 import { ReloadButton } from './reloader/reload-button';
 
-// Type definitions for GJS extension API
-interface ExtensionMetadata {
-    uuid: string;
-    name: string;
-    description: string;
-    'shell-version': string[];
-    url: string;
-    version: number;
-}
-
 // Extension class
 class Extension {
     private _reloadButton: ReloadButton;
