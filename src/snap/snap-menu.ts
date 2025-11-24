@@ -8,6 +8,7 @@
  */
 
 const St = imports.gi.St;
+const Main = imports.ui.main;
 
 declare function log(message: string): void;
 
@@ -78,6 +79,9 @@ export class SnapMenu {
             width: MENU_WIDTH,
             height: MENU_HEIGHT,
             visible: true,
+            reactive: true,
+            can_focus: true,
+            track_hover: true,
         });
 
         // Add title
@@ -107,8 +111,11 @@ export class SnapMenu {
         // Position menu at cursor
         this._container.set_position(x, y);
 
-        // Add to global stage
-        global.stage.add_child(this._container);
+        // Add to Chrome layer (for popups/menus)
+        Main.layoutManager.addChrome(this._container, {
+            affectsInputRegion: true,
+            trackFullscreen: false,
+        });
     }
 
     /**
@@ -116,10 +123,8 @@ export class SnapMenu {
      */
     hide(): void {
         if (this._container) {
-            const parent = this._container.get_parent();
-            if (parent) {
-                parent.remove_child(this._container);
-            }
+            // Remove from Chrome layer
+            Main.layoutManager.removeChrome(this._container);
             this._container.destroy();
             this._container = null;
         }
@@ -130,6 +135,15 @@ export class SnapMenu {
      */
     isVisible(): boolean {
         return this._container !== null;
+    }
+
+    /**
+     * Update menu position (for following cursor during drag)
+     */
+    updatePosition(x: number, y: number): void {
+        if (this._container) {
+            this._container.set_position(x, y);
+        }
     }
 
     /**

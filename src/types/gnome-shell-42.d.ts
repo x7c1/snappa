@@ -209,6 +209,9 @@ declare namespace St {
         width?: number;
         height?: number;
         visible?: boolean;
+        reactive?: boolean;
+        can_focus?: boolean;
+        track_hover?: boolean;
     }
 
     interface BoxLayout extends Clutter.Actor {
@@ -238,8 +241,21 @@ declare namespace UI {
         };
     }
 
+    interface LayoutManager {
+        addChrome(
+            actor: Clutter.Actor,
+            options?: {
+                affectsInputRegion?: boolean;
+                trackFullscreen?: boolean;
+            }
+        ): void;
+        removeChrome(actor: Clutter.Actor): void;
+        getWorkAreaForMonitor(monitor: number): Meta.Rectangle;
+    }
+
     interface Main {
         panel: Panel;
+        layoutManager: LayoutManager;
     }
 }
 

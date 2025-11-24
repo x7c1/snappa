@@ -9,13 +9,14 @@
 
 const Meta = imports.gi.Meta;
 const GLib = imports.gi.GLib;
+const Main = imports.ui.main;
 
 import { SnapMenu, type SnapPreset } from './snap-menu';
 
 declare function log(message: string): void;
 
 const EDGE_THRESHOLD = 10; // pixels from screen edge to trigger menu
-const EDGE_DELAY = 500; // milliseconds to wait before showing menu
+const EDGE_DELAY = 200; // milliseconds to wait before showing menu
 const MONITOR_INTERVAL = 50; // milliseconds between cursor position checks
 
 export class WindowSnapManager {
@@ -33,7 +34,7 @@ export class WindowSnapManager {
         // Initialize snap menu
         this._snapMenu = new SnapMenu();
         this._snapMenu.setOnPresetSelected((preset) => {
-            this._applyPreset(preset);
+            this._applyPresetToCurrentWindow(preset);
         });
     }
 
@@ -116,22 +117,8 @@ export class WindowSnapManager {
             // Clear edge timer
             this._clearEdgeTimer();
 
-            // If menu is visible, check if cursor is over a preset button
-            if (this._snapMenu.isVisible()) {
-                const [x, y] = this._getCursorPosition();
-                const preset = this._snapMenu.getPresetAtPosition(x, y);
-
-                if (preset) {
-                    log('[WindowSnapManager] Dropped on preset button');
-                    this._applyPreset(preset);
-                }
-
-                this._snapMenu.hide();
-                this._lastDraggedWindow = null;
-            } else {
-                // Menu not shown, clean up immediately
-                this._lastDraggedWindow = null;
-            }
+            // Keep menu visible until a button is clicked
+            // (menu will be hidden when preset is applied)
         }
     }
 
@@ -183,6 +170,11 @@ export class WindowSnapManager {
         }
         // Note: If menu is visible, keep _isAtEdge true even if cursor is not at edge
         // This prevents the menu from disappearing when user moves cursor to menu
+
+        // Update menu position if visible
+        if (this._snapMenu.isVisible()) {
+            this._snapMenu.updatePosition(x, y);
+        }
     }
 
     /**
@@ -248,12 +240,12 @@ export class WindowSnapManager {
     }
 
     /**
-     * Apply preset to current window
+     * Apply preset to currently dragged window (called when menu button is clicked)
      */
-    private _applyPreset(preset: SnapPreset): void {
+    private _applyPresetToCurrentWindow(preset: SnapPreset): void {
         log(`[WindowSnapManager] Apply preset: ${preset.label}`);
 
-        // Use lastDraggedWindow since currentWindow might be null after drag ends
+        // Use lastDraggedWindow since currentWindow might be null if drag just ended
         const targetWindow = this._currentWindow || this._lastDraggedWindow;
 
         if (!targetWindow) {
@@ -261,17 +253,17 @@ export class WindowSnapManager {
             return;
         }
 
-        // Get monitor geometry
+        // Get work area (excludes panels, top bar, etc.)
         const monitor = global.display.get_current_monitor();
-        const geometry = global.display.get_monitor_geometry(monitor);
+        const workArea = Main.layoutManager.getWorkAreaForMonitor(monitor);
 
         // Calculate window position and size based on preset
-        const x = geometry.x + Math.floor(geometry.width * preset.x);
-        const y = geometry.y + Math.floor(geometry.height * preset.y);
-        const width = Math.floor(geometry.width * preset.width);
-        const height = Math.floor(geometry.height * preset.height);
+        const x = workArea.x + Math.floor(workArea.width * preset.x);
+        const y = workArea.y + Math.floor(workArea.height * preset.y);
+        const width = Math.floor(workArea.width * preset.width);
+        const height = Math.floor(workArea.height * preset.height);
 
-        log(`[WindowSnapManager] Moving window to x=${x}, y=${y}, w=${width}, h=${height}`);
+        log(`[WindowSnapManager] Moving window to x=${x}, y=${y}, w=${width}, h=${height} (work area: ${workArea.x},${workArea.y} ${workArea.width}x${workArea.height})`);
 
         // Unmaximize window if maximized
         if (targetWindow.get_maximized()) {
@@ -283,7 +275,8 @@ export class WindowSnapManager {
         targetWindow.move_resize_frame(false, x, y, width, height);
         log('[WindowSnapManager] Window moved');
 
-        // Clear last dragged window after applying preset
+        // Hide menu and clear state after applying preset
+        this._snapMenu.hide();
         this._lastDraggedWindow = null;
     }
 }
