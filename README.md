@@ -75,6 +75,10 @@ See [TypeScript Build Guide](./docs/guides/05-typescript-build.md) for detailed 
 - `npm run format` - Run Biome formatter
 - `npm run check` - Run both linter and formatter
 
+## License
+
+This project is licensed under the GNU General Public License v3.0 or later - see the [LICENSE](LICENSE) file for details.
+
 ## Links
 
 - [GJS Guide](https://gjs.guide/)
