@@ -13,30 +13,27 @@ A GNOME Shell extension for window snapping.
 
 ### Building from Source
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+npm run dev
+```
 
-2. Build the extension:
-   ```bash
-   npm run build
-   ```
-
-3. The compiled extension is in the `dist/` directory
+Then restart GNOME Shell (first time only) and enable the extension.
 
 ## Documentation
 
-- [Debugging and Logging](./docs/guides/06-debugging-and-logging.md) - Debugging techniques and logging
-- [TypeScript Build Guide](./docs/guides/05-typescript-build.md) - How to build the extension
 - [Development Workflow](./docs/guides/03-development-workflow.md) - Development best practices
+- [TypeScript Build Guide](./docs/guides/05-typescript-build.md) - How to build the extension
+- [Debugging and Logging](./docs/guides/06-debugging-and-logging.md) - Debugging techniques and logging
 
 ## Development Scripts
 
-- `npm run build` - Compile TypeScript to JavaScript
-- `npm run watch` - Watch mode for development (auto-recompile)
+- `npm run build` - Development build
+- `npm run build:release` - Release build (for distribution)
+- `npm run dev` - Build, copy, and reload extension
+- `npm run reload` - Reload extension via D-Bus
+- `npm run watch` - Watch mode (auto-recompile)
 - `npm run clean` - Remove compiled files
-- `npm run reload` - Copy files to extension directory and reload extension
 - `npm run lint` - Run Biome linter
 - `npm run format` - Run Biome formatter
 - `npm run check` - Run both linter and formatter
