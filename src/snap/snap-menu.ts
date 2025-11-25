@@ -117,8 +117,9 @@ export class SnapMenu {
         const screenHeight = global.screen_height;
         const aspectRatio = screenHeight / screenWidth;
 
-        // Calculate group dimensions (fit within menu width minus padding)
-        const groupWidth = MENU_WIDTH - 24; // 12px padding on each side
+        // Calculate group dimensions (fit within menu width minus padding and border)
+        // Menu container: 12px padding on each side (24px) + 2px border on each side (4px)
+        const groupWidth = MENU_WIDTH - 24 - 4; // padding + menu border
         const groupHeight = groupWidth * aspectRatio;
         const groupSpacing = 10;
 
@@ -320,14 +321,13 @@ export class SnapMenu {
         // Create group container with fixed positioning
         const groupContainer = new St.Widget({
             style: `
-                background-color: rgba(60, 60, 60, 0.5);
-                border: 1px solid rgba(255, 255, 255, 0.1);
                 border-radius: 4px;
                 width: ${groupWidth}px;
                 height: ${groupHeight}px;
             `,
             layout_manager: new imports.gi.Clutter.FixedLayout(),
             reactive: true,
+            x_align: 2, // CENTER
         });
 
         // Sort layouts by zIndex to ensure proper rendering order
@@ -376,6 +376,31 @@ export class SnapMenu {
 
         // Set position using set_position method (cast to any due to type definition limitations)
         (button as any).set_position(buttonX, buttonY);
+
+        // Add hover effect
+        button.connect('enter-event', () => {
+            (button as any).set_style(`
+                background-color: rgba(120, 120, 120, 0.8);
+                border: 2px solid rgba(255, 255, 255, 0.6);
+                border-radius: 2px;
+                width: ${buttonWidth}px;
+                height: ${buttonHeight}px;
+                z-index: ${layout.zIndex};
+            `);
+            return false; // Clutter.EVENT_PROPAGATE
+        });
+
+        button.connect('leave-event', () => {
+            (button as any).set_style(`
+                background-color: rgba(80, 80, 80, 0.6);
+                border: 2px solid rgba(255, 255, 255, 0.3);
+                border-radius: 2px;
+                width: ${buttonWidth}px;
+                height: ${buttonHeight}px;
+                z-index: ${layout.zIndex};
+            `);
+            return false; // Clutter.EVENT_PROPAGATE
+        });
 
         // Connect click event
         button.connect('button-press-event', () => {
