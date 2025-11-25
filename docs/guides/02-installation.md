@@ -9,29 +9,15 @@ GNOME Shell extensions are installed in:
 
 ## Installation Steps
 
-### 1. Build the Extension
-
-First, compile TypeScript to JavaScript:
+### 1. Build and Install
 
 ```bash
-npm run build
+npm run build && npm run copy-files
 ```
 
-This creates the compiled files in the `dist/` directory.
+This builds the TypeScript code and copies files to the extension directory.
 
-### 2. Copy Files to Extension Directory
-
-```bash
-npm run copy-files
-```
-
-This script automatically:
-- Creates the extension directory (`~/.local/share/gnome-shell/extensions/snappa@x7c1.github.io/`)
-- Copies all files from `dist/` to the extension directory
-
-**Note:** The directory name must match the UUID in `metadata.json`.
-
-### 3. Restart GNOME Shell (First Time Only)
+### 2. Restart GNOME Shell (First Time Only)
 
 #### For X11 Session:
 ```bash
@@ -42,38 +28,21 @@ killall -3 gnome-shell
 - Logout and login again
 - Or reboot
 
-### 4. Enable the Extension
+### 3. Enable the Extension
 
 ```bash
 gnome-extensions enable snappa@x7c1.github.io
 ```
 
-### 5. Verify Installation
+### 4. Verify Installation
 
 ```bash
 gnome-extensions list
 gnome-extensions info snappa@x7c1.github.io
 ```
 
-You should see a "Reload" button in the GNOME Shell top panel.
+## After Installation
 
-## Quick Installation (Summary)
+Once installed, you can use `npm run dev` to reload the extension without restarting GNOME Shell.
 
-For experienced users, here's the complete installation in a few commands:
-
-```bash
-# Build and install
-npm run build && npm run copy-files
-
-# Restart GNOME Shell (X11 only, first time)
-killall -3 gnome-shell
-
-# Enable extension
-gnome-extensions enable snappa@x7c1.github.io
-```
-
-## After Installation: Self-Reload Feature
-
-Once installed, snappa includes a **self-reload feature**. You can reload the extension by clicking the "Reload" button in the panel, eliminating the need to restart GNOME Shell during development.
-
-See `03-development-workflow.md` for the updated development workflow.
+See `03-development-workflow.md` for the development workflow.
