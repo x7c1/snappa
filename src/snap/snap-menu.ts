@@ -121,74 +121,75 @@ export class SnapMenu {
         const groupHeight = groupWidth * aspectRatio;
         const groupSpacing = 15;
 
-        // Menu size = group size + padding + border
+        // Menu size = group size + padding
         const menuPadding = 12;
-        const menuBorderWidth = 2;
-        const menuWidth = groupWidth + menuPadding * 2 + menuBorderWidth * 2; // 300 + 24 + 4 = 328
+        const closeButtonHeight = 24;
+        const closeButtonSpacing = 8; // Space between close button and groups
+        const menuWidth = groupWidth + menuPadding * 2;
 
         // Calculate total menu height
-        const titleHeight = 40;
-        const cancelButtonHeight = 40;
+        const footerHeight = 30; // Footer with app name
         const totalGroupsHeight = this._layoutGroups.length * groupHeight;
         const totalSpacing = (this._layoutGroups.length - 1) * groupSpacing;
         const menuHeight =
-            titleHeight +
+            closeButtonHeight +
+            closeButtonSpacing +
             totalGroupsHeight +
             totalSpacing +
-            cancelButtonHeight +
-            menuPadding * 2 +
-            menuBorderWidth * 2;
+            footerHeight +
+            menuPadding * 2;
 
-        // Create container without box-sizing
-        this._container = new St.BoxLayout({
+        // Create main container
+        const container = new St.Widget({
             style_class: 'snap-menu',
             style: `
                 background-color: rgba(40, 40, 40, 0.95);
                 border: 2px solid rgba(255, 255, 255, 0.2);
                 border-radius: 8px;
-                padding: 12px;
             `,
-            vertical: true,
-            width: menuWidth,
-            height: menuHeight,
+            layout_manager: new imports.gi.Clutter.FixedLayout(),
             visible: true,
             reactive: true,
             can_focus: true,
             track_hover: true,
-            x_align: 2, // CENTER all children
         });
+        container.set_size(menuWidth, menuHeight);
+        this._container = container;
 
-        // Add title
-        const title = new St.Label({
-            text: 'Snap Window',
-            style: `
-                font-size: 16px;
-                font-weight: bold;
-                color: white;
-                margin-bottom: 12px;
-            `,
-            x_align: 2, // CENTER
-        });
-        this._container.add_child(title);
+        // Add close button (top right)
+        const closeButton = this._createCloseButton(groupWidth, menuPadding);
+        container.add_child(closeButton);
 
-        // Add layout groups
+        // Add layout groups directly to container with manual positioning
+        const contentContainerX = (menuWidth - groupWidth) / 2;
+        let currentY = menuPadding + closeButtonHeight + closeButtonSpacing;
+
         for (let i = 0; i < this._layoutGroups.length; i++) {
             const group = this._layoutGroups[i];
             const groupContainer = this._createGroupContainer(group, groupWidth, groupHeight);
-            this._container.add_child(groupContainer as any);
 
-            // Add spacing between groups (except after last group)
+            container.add_child(groupContainer as any);
+            (groupContainer as any).set_position(contentContainerX, currentY);
+
+            // Move Y position down for next group
+            currentY += groupHeight;
             if (i < this._layoutGroups.length - 1) {
-                const spacer = new St.Widget({
-                    height: groupSpacing,
-                });
-                this._container.add_child(spacer);
+                currentY += groupSpacing;
             }
         }
 
-        // Add cancel button
-        const cancelButton = this._createCancelButton();
-        this._container.add_child(cancelButton);
+        // Add footer with app name
+        const footer = new St.Label({
+            text: 'Snappa',
+            style: `
+                font-size: 12px;
+                color: rgba(255, 255, 255, 0.5);
+                width: ${groupWidth}px;
+            `,
+            x_align: 2, // CENTER
+        });
+        container.add_child(footer);
+        (footer as any).set_position(contentContainerX, currentY + groupSpacing);
 
         // Add invisible background to capture clicks outside menu
         const background = new St.BoxLayout({
@@ -214,16 +215,16 @@ export class SnapMenu {
         });
 
         // Position menu at cursor
-        this._container.set_position(x, y);
+        container.set_position(x, y);
 
         // Add menu container separately (on top of background)
-        Main.layoutManager.addChrome(this._container, {
+        Main.layoutManager.addChrome(container, {
             affectsInputRegion: true,
             trackFullscreen: false,
         });
 
         // Store background reference for cleanup
-        (this._container as any)._background = background;
+        (container as any)._background = background;
 
         // Setup auto-hide on mouse leave
         this._setupAutoHide();
@@ -499,39 +500,66 @@ export class SnapMenu {
     }
 
     /**
-     * Create cancel button
+     * Create close button (top right)
      */
-    private _createCancelButton(): St.Button {
-        const button = new St.Button({
-            style_class: 'snap-menu-cancel-button',
+    private _createCloseButton(groupWidth: number, menuPadding: number): St.Button {
+        const closeButton = new St.Button({
             style: `
-                background-color: rgba(80, 80, 80, 0.8);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 4px;
-                padding: 8px 16px;
-                margin-top: 12px;
+                background-color: transparent;
+                border: none;
+                border-radius: 12px;
+                width: 24px;
+                height: 24px;
             `,
             reactive: true,
             can_focus: true,
             track_hover: true,
         });
 
-        const label = new St.Label({
-            text: 'Cancel',
+        // Add X icon
+        const icon = new St.Label({
+            text: '✕',
             style: `
-                color: rgba(255, 255, 255, 0.7);
-                font-size: 12px;
+                color: rgba(255, 255, 255, 0.6);
+                font-size: 16px;
             `,
-            x_align: 2, // CENTER
         });
-        button.set_child(label);
+        closeButton.set_child(icon);
+
+        // Position at top right
+        const contentX = (menuPadding * 2 + groupWidth - groupWidth) / 2; // Should equal menuPadding
+        const closeButtonX = contentX + groupWidth - 24;
+        (closeButton as any).set_position(closeButtonX, menuPadding);
+
+        // Hover effect
+        closeButton.connect('enter-event', () => {
+            (closeButton as any).set_style(`
+                background-color: rgba(255, 255, 255, 0.1);
+                border: none;
+                border-radius: 12px;
+                width: 24px;
+                height: 24px;
+            `);
+            return false;
+        });
+
+        closeButton.connect('leave-event', () => {
+            (closeButton as any).set_style(`
+                background-color: transparent;
+                border: none;
+                border-radius: 12px;
+                width: 24px;
+                height: 24px;
+            `);
+            return false;
+        });
 
         // Connect click event
-        button.connect('button-press-event', () => {
+        closeButton.connect('button-press-event', () => {
             this.hide();
-            return true; // Clutter.EVENT_STOP
+            return true;
         });
 
-        return button;
+        return closeButton;
     }
 }
