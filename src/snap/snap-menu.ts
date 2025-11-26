@@ -12,7 +12,6 @@ const Main = imports.ui.main;
 
 declare function log(message: string): void;
 
-const MENU_WIDTH = 300;
 const AUTO_HIDE_DELAY_MS = 500; // Time to wait before hiding menu when cursor leaves
 
 export interface SnapLayout {
@@ -117,20 +116,30 @@ export class SnapMenu {
         const screenHeight = global.screen_height;
         const aspectRatio = screenHeight / screenWidth;
 
-        // Calculate group dimensions (fit within menu width minus padding and border)
-        // Menu container: 12px padding on each side (24px) + 2px border on each side (4px)
-        const groupWidth = MENU_WIDTH - 24 - 4; // padding + menu border
+        // Simple approach: start with group size, then calculate menu size
+        const groupWidth = 300; // Fixed group width
         const groupHeight = groupWidth * aspectRatio;
-        const groupSpacing = 10;
+        const groupSpacing = 15;
+
+        // Menu size = group size + padding + border
+        const menuPadding = 12;
+        const menuBorderWidth = 2;
+        const menuWidth = groupWidth + menuPadding * 2 + menuBorderWidth * 2; // 300 + 24 + 4 = 328
 
         // Calculate total menu height
-        const titleHeight = 40; // Approximate title height
-        const cancelButtonHeight = 40; // Approximate cancel button height
+        const titleHeight = 40;
+        const cancelButtonHeight = 40;
         const totalGroupsHeight = this._layoutGroups.length * groupHeight;
         const totalSpacing = (this._layoutGroups.length - 1) * groupSpacing;
-        const menuHeight = titleHeight + totalGroupsHeight + totalSpacing + cancelButtonHeight + 24; // 24 for padding
+        const menuHeight =
+            titleHeight +
+            totalGroupsHeight +
+            totalSpacing +
+            cancelButtonHeight +
+            menuPadding * 2 +
+            menuBorderWidth * 2;
 
-        // Create container
+        // Create container without box-sizing
         this._container = new St.BoxLayout({
             style_class: 'snap-menu',
             style: `
@@ -140,12 +149,13 @@ export class SnapMenu {
                 padding: 12px;
             `,
             vertical: true,
-            width: MENU_WIDTH,
+            width: menuWidth,
             height: menuHeight,
             visible: true,
             reactive: true,
             can_focus: true,
             track_hover: true,
+            x_align: 2, // CENTER all children
         });
 
         // Add title
@@ -318,24 +328,30 @@ export class SnapMenu {
         groupWidth: number,
         groupHeight: number
     ): St.Widget {
-        // Create group container with fixed positioning
+        // Create group container with fixed positioning (no border, no padding, just content)
         const groupContainer = new St.Widget({
             style: `
-                border-radius: 4px;
                 width: ${groupWidth}px;
                 height: ${groupHeight}px;
             `,
             layout_manager: new imports.gi.Clutter.FixedLayout(),
             reactive: true,
-            x_align: 2, // CENTER
         });
 
-        // Sort layouts by zIndex to ensure proper rendering order
-        const sortedLayouts = [...group.layouts].sort((a, b) => a.zIndex - b.zIndex);
+        // Sort layouts by x position for proper width calculation
+        const sortedByX = [...group.layouts].sort((a, b) => a.x - b.x);
 
         // Create layout buttons and position them
-        for (const layout of sortedLayouts) {
-            const button = this._createLayoutButtonForGroup(layout, groupWidth, groupHeight);
+        for (let i = 0; i < sortedByX.length; i++) {
+            const layout = sortedByX[i];
+            // Find the next layout to the right (if any)
+            const nextLayout = sortedByX.find((l) => l.x > layout.x && l.y === layout.y);
+            const button = this._createLayoutButtonForGroup(
+                layout,
+                groupWidth,
+                groupHeight,
+                nextLayout
+            );
             this._layoutButtons.set(button, layout);
             groupContainer.add_child(button);
         }
@@ -349,24 +365,37 @@ export class SnapMenu {
     private _createLayoutButtonForGroup(
         layout: SnapLayout,
         groupWidth: number,
-        groupHeight: number
+        groupHeight: number,
+        nextLayout: SnapLayout | undefined
     ): St.Button {
-        const margin = 3;
+        // Calculate button position
+        const buttonX = Math.floor(layout.x * groupWidth);
+        const buttonY = Math.floor(layout.y * groupHeight);
+        const borderWidth = 1;
 
-        // Calculate button position and size based on layout percentages
-        const buttonX = layout.x * groupWidth + margin;
-        const buttonY = layout.y * groupHeight + margin;
-        const buttonWidth = layout.width * groupWidth - margin * 2;
-        const buttonHeight = layout.height * groupHeight - margin * 2;
+        // Calculate width: stretch to next layout or to edge
+        let buttonWidth: number;
+        if (nextLayout) {
+            // Stretch to the start of next layout
+            const nextX = Math.floor(nextLayout.x * groupWidth);
+            buttonWidth = nextX - buttonX - borderWidth * 2;
+        } else {
+            // No next layout, stretch to the edge
+            buttonWidth = groupWidth - buttonX - borderWidth * 2;
+        }
+
+        const buttonHeight = Math.floor(layout.height * groupHeight) - borderWidth * 2;
 
         const button = new St.Button({
             style_class: 'snap-layout-button',
             style: `
                 background-color: rgba(80, 80, 80, 0.6);
-                border: 2px solid rgba(255, 255, 255, 0.3);
+                border: ${borderWidth}px solid rgba(255, 255, 255, 0.3);
                 border-radius: 2px;
                 width: ${buttonWidth}px;
                 height: ${buttonHeight}px;
+                margin: 0;
+                padding: 0;
                 z-index: ${layout.zIndex};
             `,
             reactive: true,
@@ -381,10 +410,12 @@ export class SnapMenu {
         button.connect('enter-event', () => {
             (button as any).set_style(`
                 background-color: rgba(120, 120, 120, 0.8);
-                border: 2px solid rgba(255, 255, 255, 0.6);
+                border: ${borderWidth}px solid rgba(255, 255, 255, 0.6);
                 border-radius: 2px;
                 width: ${buttonWidth}px;
                 height: ${buttonHeight}px;
+                margin: 0;
+                padding: 0;
                 z-index: ${layout.zIndex};
             `);
             return false; // Clutter.EVENT_PROPAGATE
@@ -393,10 +424,12 @@ export class SnapMenu {
         button.connect('leave-event', () => {
             (button as any).set_style(`
                 background-color: rgba(80, 80, 80, 0.6);
-                border: 2px solid rgba(255, 255, 255, 0.3);
+                border: ${borderWidth}px solid rgba(255, 255, 255, 0.3);
                 border-radius: 2px;
                 width: ${buttonWidth}px;
                 height: ${buttonHeight}px;
+                margin: 0;
+                padding: 0;
                 z-index: ${layout.zIndex};
             `);
             return false; // Clutter.EVENT_PROPAGATE
