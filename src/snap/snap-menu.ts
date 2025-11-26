@@ -129,55 +129,36 @@ export class SnapMenu {
         const screenHeight = global.screen_height;
         const aspectRatio = screenHeight / screenWidth;
 
-        // Simple approach: start with group size, then calculate menu size
-        const groupWidth = 300; // Fixed group width
-        const groupHeight = groupWidth * aspectRatio;
-        const groupSpacing = 12;
+        // Miniature display dimensions
+        const miniatureDisplayWidth = 300; // Fixed width
+        const miniatureDisplayHeight = miniatureDisplayWidth * aspectRatio;
 
-        // Menu size = group size + padding
+        // Menu padding
         const menuPadding = 12;
-        const menuWidth = groupWidth + menuPadding * 2;
 
-        // Calculate total menu height
-        const footerHeight = 30; // Footer with app name
-        const totalGroupsHeight = this._layoutGroups.length * groupHeight;
-        const totalSpacing = (this._layoutGroups.length - 1) * groupSpacing;
-        const menuHeight = totalGroupsHeight + totalSpacing + footerHeight + menuPadding * 2;
-
-        // Create main container
-        const container = new St.Widget({
+        // Create main container with vertical BoxLayout
+        const container = new St.BoxLayout({
             style_class: 'snap-menu',
             style: `
                 background-color: rgba(40, 40, 40, 0.95);
                 border: 2px solid rgba(255, 255, 255, 0.2);
                 border-radius: 8px;
+                padding: ${menuPadding}px;
             `,
-            layout_manager: new imports.gi.Clutter.FixedLayout(),
+            vertical: true, // Vertical layout: displays on top, footer on bottom
             visible: true,
             reactive: true,
             can_focus: true,
             track_hover: true,
         });
-        container.set_size(menuWidth, menuHeight);
         this._container = container;
 
-        // Add layout groups directly to container with manual positioning
-        const contentContainerX = (menuWidth - groupWidth) / 2;
-        let currentY = menuPadding;
-
-        for (let i = 0; i < this._layoutGroups.length; i++) {
-            const group = this._layoutGroups[i];
-            const groupContainer = this._createGroupContainer(group, groupWidth, groupHeight);
-
-            container.add_child(groupContainer as any);
-            (groupContainer as any).set_position(contentContainerX, currentY);
-
-            // Move Y position down for next group
-            currentY += groupHeight;
-            if (i < this._layoutGroups.length - 1) {
-                currentY += groupSpacing;
-            }
-        }
+        // Create and add displays container
+        const displaysContainer = this._createDisplaysContainer(
+            miniatureDisplayWidth,
+            miniatureDisplayHeight
+        );
+        container.add_child(displaysContainer);
 
         // Add footer with app name
         const footer = new St.Label({
@@ -185,13 +166,12 @@ export class SnapMenu {
             style: `
                 font-size: 12px;
                 color: rgba(255, 255, 255, 0.5);
-                width: ${menuWidth}px;
                 text-align: center;
+                margin-top: 12px;
             `,
             x_align: 2, // CENTER
         });
         container.add_child(footer);
-        (footer as any).set_position(0, currentY + groupSpacing);
 
         // Add invisible background to capture clicks outside menu
         const background = new St.BoxLayout({
@@ -324,18 +304,45 @@ export class SnapMenu {
     }
 
     /**
-     * Create a group container with layout buttons positioned inside
+     * Create displays container with miniature displays
      */
-    private _createGroupContainer(
+    private _createDisplaysContainer(displayWidth: number, displayHeight: number): St.BoxLayout {
+        const displaysContainer = new St.BoxLayout({
+            style_class: 'snap-displays-container',
+            vertical: true, // Vertical layout: stack miniature displays
+            x_expand: false,
+            y_expand: false,
+        });
+
+        // Create one miniature display for each layout group
+        for (const group of this._layoutGroups) {
+            const miniatureDisplay = this._createMiniatureDisplay(
+                group,
+                displayWidth,
+                displayHeight
+            );
+            displaysContainer.add_child(miniatureDisplay as any);
+        }
+
+        return displaysContainer;
+    }
+
+    /**
+     * Create a miniature display with light black background for a specific group
+     */
+    private _createMiniatureDisplay(
         group: SnapLayoutGroup,
-        groupWidth: number,
-        groupHeight: number
+        displayWidth: number,
+        displayHeight: number
     ): St.Widget {
-        // Create group container with fixed positioning (no border, no padding, just content)
-        const groupContainer = new St.Widget({
+        const miniatureDisplay = new St.Widget({
+            style_class: 'snap-miniature-display',
             style: `
-                width: ${groupWidth}px;
-                height: ${groupHeight}px;
+                background-color: rgba(20, 20, 20, 0.9);
+                width: ${displayWidth}px;
+                height: ${displayHeight}px;
+                border-radius: 4px;
+                margin-bottom: 12px;
             `,
             layout_manager: new imports.gi.Clutter.FixedLayout(),
             reactive: true,
@@ -344,57 +351,57 @@ export class SnapMenu {
         // Sort layouts by x position for proper width calculation
         const sortedByX = [...group.layouts].sort((a, b) => a.x - b.x);
 
-        // Create layout buttons and position them
+        // Add layout buttons from this group to the miniature display
         for (let i = 0; i < sortedByX.length; i++) {
             const layout = sortedByX[i];
             // Find the next layout to the right (if any)
             const nextLayout = sortedByX.find((l) => l.x > layout.x && l.y === layout.y);
-            const button = this._createLayoutButtonForGroup(
+            const button = this._createLayoutButton(
                 layout,
-                groupWidth,
-                groupHeight,
+                displayWidth,
+                displayHeight,
                 nextLayout
             );
             this._layoutButtons.set(button, layout);
-            groupContainer.add_child(button);
+            miniatureDisplay.add_child(button);
         }
 
-        return groupContainer;
+        return miniatureDisplay;
     }
 
     /**
-     * Create a layout button for a group
+     * Create a layout button
      */
-    private _createLayoutButtonForGroup(
+    private _createLayoutButton(
         layout: SnapLayout,
-        groupWidth: number,
-        groupHeight: number,
+        displayWidth: number,
+        displayHeight: number,
         nextLayout: SnapLayout | undefined
     ): St.Button {
-        // Calculate button position
-        const buttonX = Math.floor(layout.x * groupWidth);
-        const buttonY = Math.floor(layout.y * groupHeight);
+        // Calculate button position relative to miniature display
+        const buttonX = Math.floor(layout.x * displayWidth);
+        const buttonY = Math.floor(layout.y * displayHeight);
         const borderWidth = 1;
 
         // Calculate width: stretch to next layout, or use layout's own width
         let buttonWidth: number;
         if (nextLayout) {
             // Stretch to the start of next layout
-            const nextX = Math.floor(nextLayout.x * groupWidth);
+            const nextX = Math.floor(nextLayout.x * displayWidth);
             buttonWidth = nextX - buttonX - borderWidth * 2;
         } else {
             // No next layout: check if this layout extends to edge
-            const layoutEndX = Math.floor((layout.x + layout.width) * groupWidth);
-            if (layoutEndX === groupWidth) {
+            const layoutEndX = Math.floor((layout.x + layout.width) * displayWidth);
+            if (layoutEndX === displayWidth) {
                 // Layout extends to edge, stretch to edge
-                buttonWidth = groupWidth - buttonX - borderWidth * 2;
+                buttonWidth = displayWidth - buttonX - borderWidth * 2;
             } else {
                 // Layout doesn't extend to edge, use its own width
-                buttonWidth = Math.floor(layout.width * groupWidth) - borderWidth * 2;
+                buttonWidth = Math.floor(layout.width * displayWidth) - borderWidth * 2;
             }
         }
 
-        const buttonHeight = Math.floor(layout.height * groupHeight) - borderWidth * 2;
+        const buttonHeight = Math.floor(layout.height * displayHeight) - borderWidth * 2;
 
         const button = new St.Button({
             style_class: 'snap-layout-button',
