@@ -10,48 +10,65 @@
 const St = imports.gi.St;
 const Main = imports.ui.main;
 
+import { getDebugConfig, isDebugMode, loadDebugConfig } from './debug-config';
+import { DebugPanel } from './debug-panel';
+import { SnapMenuAutoHide } from './snap-menu-auto-hide';
+import {
+    AUTO_HIDE_DELAY_MS,
+    DEFAULT_LAYOUT_GROUPS,
+    MENU_BG_COLOR,
+    MENU_BORDER_COLOR,
+    MENU_PADDING,
+    MINIATURE_DISPLAY_WIDTH,
+} from './snap-menu-constants';
+import type { RendererEventIds } from './snap-menu-renderer';
+import { createBackground, createDisplaysContainer, createFooter } from './snap-menu-renderer';
+import type { SnapLayout, SnapLayoutGroup } from './snap-menu-types';
+import { getTestLayoutGroups } from './test-layouts';
+
 declare function log(message: string): void;
 
-const MENU_WIDTH = 300;
-const MENU_HEIGHT = 300;
-const AUTO_HIDE_DELAY_MS = 500; // Time to wait before hiding menu when cursor leaves
-
-export interface SnapLayout {
-    label: string;
-    x: number; // percentage of screen width (0-1)
-    y: number; // percentage of screen height (0-1)
-    width: number; // percentage of screen width (0-1)
-    height: number; // percentage of screen height (0-1)
-}
+// Re-export types for backward compatibility
+export type { SnapLayout, SnapLayoutGroup };
 
 export class SnapMenu {
     private _container: St.BoxLayout | null = null;
-    private _layouts: SnapLayout[] = [];
+    private _background: St.BoxLayout | null = null;
+    private _layoutGroups: SnapLayoutGroup[] = [];
     private _onLayoutSelected: ((layout: SnapLayout) => void) | null = null;
     private _layoutButtons: Map<St.Button, SnapLayout> = new Map();
-    private _clickOutsideId: number | null = null;
-    private _autoHideTimeoutId: number | null = null;
-    private _leaveEventId: number | null = null;
-    private _enterEventId: number | null = null;
+    private _rendererEventIds: RendererEventIds | null = null;
+    private _autoHide: SnapMenuAutoHide = new SnapMenuAutoHide();
+    private _debugPanel: DebugPanel | null = null;
+    private _menuX: number = 0;
+    private _menuY: number = 0;
 
     constructor() {
-        // Initialize with default layouts
-        this._layouts = [
-            {
-                label: 'Left Half',
-                x: 0,
-                y: 0,
-                width: 0.5,
-                height: 1,
-            },
-            {
-                label: 'Right Half',
-                x: 0.5,
-                y: 0,
-                width: 0.5,
-                height: 1,
-            },
-        ];
+        // Setup auto-hide callback
+        this._autoHide.setOnHide(() => {
+            this.hide();
+        });
+
+        // Initialize debug mode if enabled
+        if (isDebugMode()) {
+            loadDebugConfig();
+            this._debugPanel = new DebugPanel();
+            this._debugPanel.setOnConfigChanged(() => {
+                // Refresh menu when debug config changes
+                if (this._container) {
+                    this.show(this._menuX, this._menuY);
+                }
+            });
+            this._debugPanel.setOnEnter(() => {
+                this._autoHide.setDebugPanelHovered(true, AUTO_HIDE_DELAY_MS);
+            });
+            this._debugPanel.setOnLeave(() => {
+                this._autoHide.setDebugPanelHovered(false, AUTO_HIDE_DELAY_MS);
+            });
+        }
+
+        // Initialize with default layout groups
+        this._layoutGroups = DEFAULT_LAYOUT_GROUPS;
     }
 
     /**
@@ -68,88 +85,103 @@ export class SnapMenu {
         // Hide existing menu if any
         this.hide();
 
-        // Clear layout buttons map
-        this._layoutButtons.clear();
+        // Store menu position
+        this._menuX = x;
+        this._menuY = y;
 
-        // Create container
-        this._container = new St.BoxLayout({
+        // Reset auto-hide states
+        this._autoHide.resetHoverStates();
+
+        // Get debug configuration
+        const debugConfig = this._debugPanel ? getDebugConfig() : null;
+
+        // Get screen dimensions and calculate aspect ratio
+        const screenWidth = global.screen_width;
+        const screenHeight = global.screen_height;
+        const aspectRatio = screenHeight / screenWidth;
+        const miniatureDisplayHeight = MINIATURE_DISPLAY_WIDTH * aspectRatio;
+
+        // Determine which layout groups to render
+        let layoutGroups = this._layoutGroups;
+        if (this._debugPanel && debugConfig) {
+            const testGroups = getTestLayoutGroups();
+            const enabledTestGroups = testGroups.filter((g) =>
+                debugConfig.enabledTestGroups.has(g.name)
+            );
+            layoutGroups = [...layoutGroups, ...enabledTestGroups];
+        }
+
+        // Create background
+        const { background, clickOutsideId } = createBackground(() => {
+            this.hide();
+        });
+        this._background = background;
+
+        // Create displays container
+        const displayResult = createDisplaysContainer(
+            MINIATURE_DISPLAY_WIDTH,
+            miniatureDisplayHeight,
+            layoutGroups,
+            debugConfig,
+            (layout) => {
+                if (this._onLayoutSelected) {
+                    this._onLayoutSelected(layout);
+                }
+                this.hide();
+            }
+        );
+        this._layoutButtons = displayResult.layoutButtons;
+
+        // Create footer
+        const footer = createFooter();
+
+        // Create main container
+        const container = new St.BoxLayout({
             style_class: 'snap-menu',
             style: `
-                background-color: rgba(40, 40, 40, 0.95);
-                border: 2px solid rgba(255, 255, 255, 0.2);
+                background-color: ${MENU_BG_COLOR};
+                border: 2px solid ${MENU_BORDER_COLOR};
                 border-radius: 8px;
-                padding: 12px;
+                padding: ${MENU_PADDING}px;
             `,
             vertical: true,
-            width: MENU_WIDTH,
-            height: MENU_HEIGHT,
             visible: true,
             reactive: true,
             can_focus: true,
             track_hover: true,
         });
+        this._container = container;
 
-        // Add title
-        const title = new St.Label({
-            text: 'Snap Window',
-            style: `
-                font-size: 16px;
-                font-weight: bold;
-                color: white;
-                margin-bottom: 12px;
-            `,
-            x_align: 2, // CENTER
-        });
-        this._container.add_child(title);
-
-        // Add layout buttons
-        for (const layout of this._layouts) {
-            const button = this._createLayoutButton(layout);
-            this._layoutButtons.set(button, layout);
-            this._container.add_child(button);
+        // Add children to container
+        container.add_child(displayResult.displaysContainer);
+        if (!debugConfig || debugConfig.showFooter) {
+            container.add_child(footer);
         }
 
-        // Add cancel button
-        const cancelButton = this._createCancelButton();
-        this._container.add_child(cancelButton);
-
-        // Add invisible background to capture clicks outside menu
-        const background = new St.BoxLayout({
-            style: 'background-color: rgba(0, 0, 0, 0);',
-            reactive: true,
-            x: 0,
-            y: 0,
-            width: global.screen_width,
-            height: global.screen_height,
-        });
-
-        // Add background first (behind menu)
-        Main.layoutManager.addChrome(background, {
-            affectsInputRegion: true,
-            trackFullscreen: false,
-        });
-
-        // Connect click on background to close menu
-        this._clickOutsideId = background.connect('button-press-event', () => {
-            log('[SnapMenu] Click on background, hiding menu');
-            this.hide();
-            return true; // Stop event propagation
-        });
-
         // Position menu at cursor
-        this._container.set_position(x, y);
+        container.set_position(x, y);
 
-        // Add menu container separately (on top of background)
-        Main.layoutManager.addChrome(this._container, {
+        // Add menu container to chrome
+        Main.layoutManager.addChrome(container, {
             affectsInputRegion: true,
             trackFullscreen: false,
         });
 
-        // Store background reference for cleanup
-        (this._container as any)._background = background;
+        // Setup auto-hide
+        this._autoHide.setupAutoHide(container, AUTO_HIDE_DELAY_MS);
 
-        // Setup auto-hide on mouse leave
-        this._setupAutoHide();
+        // Store event IDs for cleanup
+        this._rendererEventIds = {
+            clickOutsideId,
+            buttonEvents: displayResult.buttonEvents,
+        };
+
+        // Show debug panel if enabled
+        if (this._debugPanel) {
+            const menuWidth = MINIATURE_DISPLAY_WIDTH + MENU_PADDING * 2;
+            const menuHeight = 500;
+            this._debugPanel.show(x + menuWidth + 20, y, menuHeight);
+        }
     }
 
     /**
@@ -157,23 +189,25 @@ export class SnapMenu {
      */
     hide(): void {
         if (this._container) {
-            const background = (this._container as any)._background;
-
-            // Clear auto-hide timeout
-            this._clearAutoHideTimeout();
+            // Cleanup auto-hide
+            this._autoHide.cleanup();
 
             // Disconnect event handlers
-            if (this._clickOutsideId !== null && background) {
-                background.disconnect(this._clickOutsideId);
-                this._clickOutsideId = null;
-            }
-            if (this._leaveEventId !== null && this._container) {
-                this._container.disconnect(this._leaveEventId);
-                this._leaveEventId = null;
-            }
-            if (this._enterEventId !== null && this._container) {
-                this._container.disconnect(this._enterEventId);
-                this._enterEventId = null;
+            if (this._rendererEventIds) {
+                // Disconnect background click event
+                if (this._background) {
+                    this._background.disconnect(this._rendererEventIds.clickOutsideId);
+                }
+
+                // Disconnect button events
+                for (const { button, enterEventId, leaveEventId, clickEventId } of this
+                    ._rendererEventIds.buttonEvents) {
+                    button.disconnect(enterEventId);
+                    button.disconnect(leaveEventId);
+                    button.disconnect(clickEventId);
+                }
+
+                this._rendererEventIds = null;
             }
 
             // Remove menu container
@@ -181,12 +215,19 @@ export class SnapMenu {
             this._container.destroy();
 
             // Remove background
-            if (background) {
-                Main.layoutManager.removeChrome(background);
-                background.destroy();
+            if (this._background) {
+                Main.layoutManager.removeChrome(this._background);
+                this._background.destroy();
+            }
+
+            // Hide debug panel
+            if (this._debugPanel) {
+                this._debugPanel.hide();
             }
 
             this._container = null;
+            this._background = null;
+            this._layoutButtons.clear();
         }
     }
 
@@ -208,11 +249,15 @@ export class SnapMenu {
 
     /**
      * Get layout at the given position, or null if position is not over a layout button
+     * If multiple layouts overlap at this position, returns the one with highest zIndex
      */
     getLayoutAtPosition(x: number, y: number): SnapLayout | null {
         if (!this._container) {
             return null;
         }
+
+        let topLayout: SnapLayout | null = null;
+        let topZIndex = -Infinity;
 
         // Check each layout button to see if position is within its bounds
         for (const [button, layout] of this._layoutButtons.entries()) {
@@ -220,140 +265,22 @@ export class SnapMenu {
             const [width, height] = button.get_transformed_size();
 
             if (x >= actorX && x <= actorX + width && y >= actorY && y <= actorY + height) {
-                log(`[SnapMenu] Position (${x}, ${y}) is over layout: ${layout.label}`);
-                return layout;
+                // If this layout has a higher zIndex than current top, use it
+                if (layout.zIndex > topZIndex) {
+                    topLayout = layout;
+                    topZIndex = layout.zIndex;
+                }
             }
         }
 
-        log(`[SnapMenu] Position (${x}, ${y}) is not over any layout`);
-        return null;
-    }
-
-    /**
-     * Create a layout button
-     */
-    private _createLayoutButton(layout: SnapLayout): St.Button {
-        const button = new St.Button({
-            style_class: 'snap-menu-button',
-            style: `
-                background-color: rgba(60, 60, 60, 0.8);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 4px;
-                padding: 12px 20px;
-                margin: 4px 0;
-            `,
-            reactive: true,
-            can_focus: true,
-            track_hover: true,
-        });
-
-        const label = new St.Label({
-            text: layout.label,
-            style: `
-                color: white;
-                font-size: 14px;
-            `,
-            x_align: 2, // CENTER
-        });
-        button.set_child(label);
-
-        // Connect click event
-        button.connect('button-press-event', () => {
-            log(`[SnapMenu] Button clicked: ${layout.label}`);
-            if (this._onLayoutSelected) {
-                this._onLayoutSelected(layout);
-            }
-            this.hide();
-            return true; // Clutter.EVENT_STOP
-        });
-
-        return button;
-    }
-
-    /**
-     * Setup auto-hide behavior when cursor leaves menu
-     */
-    private _setupAutoHide(): void {
-        if (!this._container) {
-            return;
+        if (topLayout) {
+            log(
+                `[SnapMenu] Position (${x}, ${y}) is over layout: ${topLayout.label} (zIndex: ${topZIndex})`
+            );
+        } else {
+            log(`[SnapMenu] Position (${x}, ${y}) is not over any layout`);
         }
 
-        // Connect leave-event to start auto-hide timer
-        this._leaveEventId = this._container.connect('leave-event', () => {
-            log('[SnapMenu] Cursor left menu, starting auto-hide timer');
-            this._startAutoHideTimeout();
-            return false; // Clutter.EVENT_PROPAGATE
-        });
-
-        // Connect enter-event to cancel auto-hide timer
-        this._enterEventId = this._container.connect('enter-event', () => {
-            log('[SnapMenu] Cursor entered menu, canceling auto-hide timer');
-            this._clearAutoHideTimeout();
-            return false; // Clutter.EVENT_PROPAGATE
-        });
-    }
-
-    /**
-     * Start auto-hide timeout
-     */
-    private _startAutoHideTimeout(): void {
-        // Clear existing timeout if any
-        this._clearAutoHideTimeout();
-
-        // Start new timeout
-        this._autoHideTimeoutId = imports.mainloop.timeout_add(AUTO_HIDE_DELAY_MS, () => {
-            log('[SnapMenu] Auto-hide timeout expired, hiding menu');
-            this.hide();
-            this._autoHideTimeoutId = null;
-            return false; // Don't repeat
-        });
-    }
-
-    /**
-     * Clear auto-hide timeout
-     */
-    private _clearAutoHideTimeout(): void {
-        if (this._autoHideTimeoutId !== null) {
-            log('[SnapMenu] Clearing auto-hide timeout');
-            imports.mainloop.source_remove(this._autoHideTimeoutId);
-            this._autoHideTimeoutId = null;
-        }
-    }
-
-    /**
-     * Create cancel button
-     */
-    private _createCancelButton(): St.Button {
-        const button = new St.Button({
-            style_class: 'snap-menu-cancel-button',
-            style: `
-                background-color: rgba(80, 80, 80, 0.8);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 4px;
-                padding: 8px 16px;
-                margin-top: 12px;
-            `,
-            reactive: true,
-            can_focus: true,
-            track_hover: true,
-        });
-
-        const label = new St.Label({
-            text: 'Cancel',
-            style: `
-                color: rgba(255, 255, 255, 0.7);
-                font-size: 12px;
-            `,
-            x_align: 2, // CENTER
-        });
-        button.set_child(label);
-
-        // Connect click event
-        button.connect('button-press-event', () => {
-            this.hide();
-            return true; // Clutter.EVENT_STOP
-        });
-
-        return button;
+        return topLayout;
     }
 }
