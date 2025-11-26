@@ -103,7 +103,6 @@ export class DebugPanel {
         this._addSection('Debug Visualizations', [
             { key: 'showSpacingGuides', label: 'Spacing Guides' },
             { key: 'showSizeLabels', label: 'Size Labels' },
-            { key: 'showLayoutGroupSeparators', label: 'Layout Group Separators' },
         ]);
 
         this._addTestGroupsSection();

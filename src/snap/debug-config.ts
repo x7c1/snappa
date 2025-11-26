@@ -15,7 +15,6 @@ export interface DebugConfig {
     // Debug visualization toggles
     showSpacingGuides: boolean;
     showSizeLabels: boolean;
-    showLayoutGroupSeparators: boolean;
 
     // Test group toggles
     enabledTestGroups: Set<string>; // Set of enabled test group names
@@ -32,7 +31,6 @@ const DEFAULT_DEBUG_CONFIG: DebugConfig = {
     showButtonBorders: true,
     showSpacingGuides: false,
     showSizeLabels: true,
-    showLayoutGroupSeparators: false,
     enabledTestGroups: new Set([
         'Test A - Bottom Left Fixed',
         'Test B - Bottom Third Split',

@@ -485,6 +485,37 @@ export class SnapMenu {
             miniatureDisplay.add_child(button);
         }
 
+        // Add spacing guide labels if enabled
+        if (debugConfig && debugConfig.showSpacingGuides) {
+            // Add group name label at the top
+            const groupLabel = new St.Label({
+                text: group.name,
+                style: `
+                    color: rgba(0, 200, 255, 0.9);
+                    font-size: 9px;
+                    background-color: rgba(0, 0, 0, 0.8);
+                    padding: 2px 4px;
+                    border-radius: 2px;
+                `,
+            });
+            groupLabel.set_position(4, 4);
+            miniatureDisplay.add_child(groupLabel);
+
+            // Add spacing info label at the bottom
+            const spacingLabel = new St.Label({
+                text: `Spacing: ${DISPLAY_SPACING}px`,
+                style: `
+                    color: rgba(255, 255, 0, 0.9);
+                    font-size: 8px;
+                    background-color: rgba(0, 0, 0, 0.7);
+                    padding: 2px 4px;
+                    border-radius: 2px;
+                `,
+            });
+            spacingLabel.set_position(4, displayHeight - 20);
+            miniatureDisplay.add_child(spacingLabel);
+        }
+
         return miniatureDisplay;
     }
 
@@ -543,6 +574,21 @@ export class SnapMenu {
 
         // Set position
         button.set_position(buttonX, buttonY);
+
+        // Add size label if debug mode is enabled
+        if (debugConfig && debugConfig.showSizeLabels) {
+            const sizeLabel = new St.Label({
+                text: `${buttonWidth}×${buttonHeight}`,
+                style: `
+                    color: rgba(255, 255, 255, 0.9);
+                    font-size: 10px;
+                    background-color: rgba(0, 0, 0, 0.7);
+                    padding: 2px 4px;
+                    border-radius: 2px;
+                `,
+            });
+            button.set_child(sizeLabel);
+        }
 
         // Add hover effect
         button.connect('enter-event', () => {
