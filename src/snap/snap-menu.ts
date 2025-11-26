@@ -123,21 +123,13 @@ export class SnapMenu {
 
         // Menu size = group size + padding
         const menuPadding = 12;
-        const closeButtonHeight = 24;
-        const closeButtonSpacing = 8; // Space between close button and groups
         const menuWidth = groupWidth + menuPadding * 2;
 
         // Calculate total menu height
         const footerHeight = 30; // Footer with app name
         const totalGroupsHeight = this._layoutGroups.length * groupHeight;
         const totalSpacing = (this._layoutGroups.length - 1) * groupSpacing;
-        const menuHeight =
-            closeButtonHeight +
-            closeButtonSpacing +
-            totalGroupsHeight +
-            totalSpacing +
-            footerHeight +
-            menuPadding * 2;
+        const menuHeight = totalGroupsHeight + totalSpacing + footerHeight + menuPadding * 2;
 
         // Create main container
         const container = new St.Widget({
@@ -156,13 +148,9 @@ export class SnapMenu {
         container.set_size(menuWidth, menuHeight);
         this._container = container;
 
-        // Add close button (top right)
-        const closeButton = this._createCloseButton(groupWidth, menuPadding);
-        container.add_child(closeButton);
-
         // Add layout groups directly to container with manual positioning
         const contentContainerX = (menuWidth - groupWidth) / 2;
-        let currentY = menuPadding + closeButtonHeight + closeButtonSpacing;
+        let currentY = menuPadding;
 
         for (let i = 0; i < this._layoutGroups.length; i++) {
             const group = this._layoutGroups[i];
@@ -180,16 +168,17 @@ export class SnapMenu {
 
         // Add footer with app name
         const footer = new St.Label({
-            text: 'Snappa',
+            text: 'Powered by Snappa',
             style: `
                 font-size: 12px;
                 color: rgba(255, 255, 255, 0.5);
-                width: ${groupWidth}px;
+                width: ${menuWidth}px;
+                text-align: center;
             `,
             x_align: 2, // CENTER
         });
         container.add_child(footer);
-        (footer as any).set_position(contentContainerX, currentY + groupSpacing);
+        (footer as any).set_position(0, currentY + groupSpacing);
 
         // Add invisible background to capture clicks outside menu
         const background = new St.BoxLayout({
@@ -497,69 +486,5 @@ export class SnapMenu {
             imports.mainloop.source_remove(this._autoHideTimeoutId);
             this._autoHideTimeoutId = null;
         }
-    }
-
-    /**
-     * Create close button (top right)
-     */
-    private _createCloseButton(groupWidth: number, menuPadding: number): St.Button {
-        const closeButton = new St.Button({
-            style: `
-                background-color: transparent;
-                border: none;
-                border-radius: 12px;
-                width: 24px;
-                height: 24px;
-            `,
-            reactive: true,
-            can_focus: true,
-            track_hover: true,
-        });
-
-        // Add X icon
-        const icon = new St.Label({
-            text: '✕',
-            style: `
-                color: rgba(255, 255, 255, 0.6);
-                font-size: 16px;
-            `,
-        });
-        closeButton.set_child(icon);
-
-        // Position at top right
-        const contentX = (menuPadding * 2 + groupWidth - groupWidth) / 2; // Should equal menuPadding
-        const closeButtonX = contentX + groupWidth - 24;
-        (closeButton as any).set_position(closeButtonX, menuPadding);
-
-        // Hover effect
-        closeButton.connect('enter-event', () => {
-            (closeButton as any).set_style(`
-                background-color: rgba(255, 255, 255, 0.1);
-                border: none;
-                border-radius: 12px;
-                width: 24px;
-                height: 24px;
-            `);
-            return false;
-        });
-
-        closeButton.connect('leave-event', () => {
-            (closeButton as any).set_style(`
-                background-color: transparent;
-                border: none;
-                border-radius: 12px;
-                width: 24px;
-                height: 24px;
-            `);
-            return false;
-        });
-
-        // Connect click event
-        closeButton.connect('button-press-event', () => {
-            this.hide();
-            return true;
-        });
-
-        return closeButton;
     }
 }
