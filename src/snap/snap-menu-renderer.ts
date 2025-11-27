@@ -4,6 +4,7 @@ const St = imports.gi.St;
 const Main = imports.ui.main;
 
 import type { DebugConfig } from './debug-config';
+import { evaluate, parse } from './layout-expression';
 import {
     BUTTON_BG_COLOR,
     BUTTON_BG_COLOR_HOVER,
@@ -175,10 +176,14 @@ function createMiniatureDisplay(
     });
 
     // Sort layouts by x position for proper width calculation
-    const sortedByX = [...group.layouts].sort((a, b) => a.x - b.x);
+    const sortedByX = [...group.layouts].sort((a, b) => {
+        const aX = resolveLayoutValue(a.x, displayWidth);
+        const bX = resolveLayoutValue(b.x, displayWidth);
+        return aX - bX;
+    });
 
     // Build a map of next layouts for efficient lookup
-    const nextLayoutMap = buildNextLayoutMap(sortedByX);
+    const nextLayoutMap = buildNextLayoutMap(sortedByX, displayWidth, displayHeight);
 
     const layoutButtons = new Map<St.Button, SnapLayout>();
     const buttonEvents: RendererEventIds['buttonEvents'] = [];
@@ -241,19 +246,44 @@ function createMiniatureDisplay(
 /**
  * Build a map of each layout to its next layout on the same row
  */
-function buildNextLayoutMap(sortedLayouts: SnapLayout[]): Map<SnapLayout, SnapLayout | undefined> {
+function buildNextLayoutMap(
+    sortedLayouts: SnapLayout[],
+    displayWidth: number,
+    displayHeight: number
+): Map<SnapLayout, SnapLayout | undefined> {
     const nextLayoutMap = new Map<SnapLayout, SnapLayout | undefined>();
 
     for (let i = 0; i < sortedLayouts.length; i++) {
         const layout = sortedLayouts[i];
+        const layoutY = resolveLayoutValue(layout.y, displayHeight);
+        const layoutX = resolveLayoutValue(layout.x, displayWidth);
+
         // Find the next layout to the right on the same row (same y coordinate)
-        const nextLayout = sortedLayouts
-            .slice(i + 1)
-            .find((l) => l.y === layout.y && l.x > layout.x);
+        const nextLayout = sortedLayouts.slice(i + 1).find((l) => {
+            const lY = resolveLayoutValue(l.y, displayHeight);
+            const lX = resolveLayoutValue(l.x, displayWidth);
+            return lY === layoutY && lX > layoutX;
+        });
         nextLayoutMap.set(layout, nextLayout);
     }
 
     return nextLayoutMap;
+}
+
+/**
+ * Resolve layout value (number or string expression) to pixels
+ * @param value - Layout value (number in 0-1 range or string expression)
+ * @param containerSize - Container size in pixels (miniature display width or height)
+ * @returns Resolved pixel value
+ */
+function resolveLayoutValue(value: number | string, containerSize: number): number {
+    if (typeof value === 'number') {
+        // Backward compatibility: treat as percentage (0-1 range)
+        return Math.floor(value * containerSize);
+    }
+    // Parse and evaluate expression
+    const expr = parse(value);
+    return evaluate(expr, containerSize);
 }
 
 /**
@@ -273,12 +303,12 @@ function createLayoutButton(
     clickEventId: number;
 } {
     // Calculate button position relative to miniature display
-    const buttonX = Math.floor(layout.x * displayWidth);
-    const buttonY = Math.floor(layout.y * displayHeight);
+    const buttonX = resolveLayoutValue(layout.x, displayWidth);
+    const buttonY = resolveLayoutValue(layout.y, displayHeight);
 
     // Calculate button dimensions
     const buttonWidth = calculateButtonWidth(layout, displayWidth, nextLayout, buttonX);
-    const buttonHeight = Math.floor(layout.height * displayHeight) - BUTTON_BORDER_WIDTH * 2;
+    const buttonHeight = resolveLayoutValue(layout.height, displayHeight) - BUTTON_BORDER_WIDTH * 2;
 
     // Create button with initial style
     const button = new St.Button({
@@ -343,19 +373,20 @@ function calculateButtonWidth(
 ): number {
     if (nextLayout) {
         // Stretch to the start of next layout
-        const nextX = Math.floor(nextLayout.x * displayWidth);
+        const nextX = resolveLayoutValue(nextLayout.x, displayWidth);
         return nextX - buttonX - BUTTON_BORDER_WIDTH * 2;
     }
 
     // No next layout: check if this layout extends to edge
-    const layoutEndX = Math.floor((layout.x + layout.width) * displayWidth);
+    const layoutWidth = resolveLayoutValue(layout.width, displayWidth);
+    const layoutEndX = buttonX + layoutWidth;
     if (layoutEndX === displayWidth) {
         // Layout extends to edge, stretch to edge
         return displayWidth - buttonX - BUTTON_BORDER_WIDTH * 2;
     }
 
     // Layout doesn't extend to edge, use its own width
-    return Math.floor(layout.width * displayWidth) - BUTTON_BORDER_WIDTH * 2;
+    return layoutWidth - BUTTON_BORDER_WIDTH * 2;
 }
 
 /**
