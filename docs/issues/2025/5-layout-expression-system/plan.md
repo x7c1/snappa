@@ -236,49 +236,40 @@ export type LayoutExpression =
 ```typescript
 import type { LayoutExpression, LayoutUnit } from './types';
 
-export class LayoutExpressionParser {
-    /**
-     * Parse expression string to AST
-     * @throws Error if expression is invalid
-     */
-    static parse(expr: string): LayoutExpression;
-
-    private static tokenize(expr: string): string[];
-    private static parseTerm(token: string): LayoutUnit;
-}
+/**
+ * Parse expression string to AST
+ * @throws Error if expression is invalid
+ */
+export function parse(expr: string): LayoutExpression;
 ```
 
 **File: `src/snap/layout-expression/evaluator.ts`**
 ```typescript
 import type { LayoutExpression, LayoutUnit } from './types';
 
-export class LayoutExpressionEvaluator {
-    /**
-     * Evaluate expression to pixel value
-     * @param expr - Parsed expression AST
-     * @param containerSize - Miniature display size in pixels (width or height)
-     * @returns Resolved pixel value (rounded to nearest integer)
-     */
-    static evaluate(expr: LayoutExpression, containerSize: number): number;
-
-    private static resolveUnit(unit: LayoutUnit, containerSize: number): number;
-}
+/**
+ * Evaluate expression to pixel value
+ * @param expr - Parsed expression AST
+ * @param containerSize - Miniature display size in pixels (width or height)
+ * @returns Resolved pixel value (rounded to nearest integer)
+ */
+export function evaluate(expr: LayoutExpression, containerSize: number): number;
 ```
 
 **File: `src/snap/layout-expression/index.ts`**
 ```typescript
 // Re-export all public APIs for convenient imports
-export { LayoutExpressionParser } from './parser';
-export { LayoutExpressionEvaluator } from './evaluator';
+export { parse } from './parser';
+export { evaluate } from './evaluator';
 export type { LayoutExpression, LayoutUnit } from './types';
 ```
 
 **Usage example**:
 ```typescript
-import { LayoutExpressionParser, LayoutExpressionEvaluator } from '../layout-expression';
+import { parse, evaluate } from '../layout-expression';
 
-const expr = LayoutExpressionParser.parse('1/3 + 10px');
-const pixels = LayoutExpressionEvaluator.evaluate(expr, 300); // → 110
+const expr = parse('1/3 + 10px');
+const pixels = evaluate(expr, 300); // → 110
 ```
 
 ### Integration with Current Renderer
@@ -899,3 +890,45 @@ This is **exactly** how the current percentage-based system works. Expression sy
 5. ✅ **Evaluation context**: Always relative to miniature display dimensions (not screen dimensions)
 6. ✅ **Stretch logic**: Preserve existing `calculateButtonWidth()` logic (expression system provides flexibility, not replacement)
 7. ✅ **Test framework**: Vitest for pure TypeScript logic, manual testing for GJS/UI code (no GJS-specific test framework due to maintenance concerns)
+
+## Implementation Status
+
+**Status**: ✅ **COMPLETED**
+
+**Implementation Date**: 2025-11-27
+
+### Phase 1: Test Framework & Core Logic ✅
+- Vitest installed and configured (v4.0.14)
+- Parser implementation complete with 28 unit tests
+- Evaluator implementation complete with 34 unit tests
+- All 62 tests passing
+- Function-based API (not class-based, per Biome rules)
+
+### Phase 2: Renderer Integration ✅
+- `SnapLayout` interface updated to support `number | string`
+- `resolveLayoutValue()` helper function added to `snap-menu-renderer.ts`
+- All rendering functions updated to handle both formats
+- `window-snap-manager.ts` updated for window positioning
+- Full backward compatibility maintained
+
+### Phase 3: Layout Migration ✅
+- `DEFAULT_LAYOUT_GROUPS` converted to expression syntax:
+  - Three-Way Split: `0.333/0.334/0.333` → `'1/3'`
+  - Center Half: `0.25`, `0.5` → `'25%'`, `'50%'`
+  - Two-Way Split: `0`, `0.5` → `'0'`, `'50%'`
+- Test layouts converted where beneficial:
+  - Test A: Approximations → `'20px'`, `'300px'`, `'70%'`
+  - Test B: `0.333/0.334` → `'1/3'`
+  - Test G: Complex calculations → `'10px'`, `'1/3 - 20px'`, `'1/3 + 10px'`
+- Visual testing completed in nested GNOME Shell
+
+### Phase 4: Documentation ⚪
+- Not required (both formats supported indefinitely)
+
+### Final Verification
+- ✅ Build successful (`npm run build`)
+- ✅ Code quality checks passed (`npm run check`)
+- ✅ All unit tests passing (62/62)
+- ✅ Visual regression testing completed
+- ✅ Zero TypeScript errors
+- ✅ Zero Biome warnings
