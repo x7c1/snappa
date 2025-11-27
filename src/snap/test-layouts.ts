@@ -14,10 +14,10 @@ export function getTestLayoutGroups(): SnapLayoutGroup[] {
             layouts: [
                 {
                     label: 'Bottom Left',
-                    x: 0.02, // 20px from left (approximation)
-                    y: 0.7, // ~70% down from top
-                    width: 0.2, // ~300px width
-                    height: 0.28, // ~300px height
+                    x: '20px',
+                    y: '70%',
+                    width: '300px',
+                    height: '300px',
                     zIndex: 0,
                 },
             ],
@@ -29,26 +29,26 @@ export function getTestLayoutGroups(): SnapLayoutGroup[] {
             layouts: [
                 {
                     label: 'Bottom Left',
-                    x: 0,
-                    y: 0.5,
-                    width: 0.333,
-                    height: 0.5,
+                    x: '0',
+                    y: '50%',
+                    width: '1/3',
+                    height: '50%',
                     zIndex: 0,
                 },
                 {
                     label: 'Bottom Center',
-                    x: 0.333,
-                    y: 0.5,
-                    width: 0.334,
-                    height: 0.5,
+                    x: '1/3',
+                    y: '50%',
+                    width: '1/3',
+                    height: '50%',
                     zIndex: 0,
                 },
                 {
                     label: 'Bottom Right',
-                    x: 0.667,
-                    y: 0.5,
-                    width: 0.333,
-                    height: 0.5,
+                    x: '2/3',
+                    y: '50%',
+                    width: '1/3',
+                    height: '50%',
                     zIndex: 0,
                 },
             ],
@@ -160,26 +160,26 @@ export function getTestLayoutGroups(): SnapLayoutGroup[] {
             layouts: [
                 {
                     label: 'Left Padded',
-                    x: 0.01, // ~10px padding
-                    y: 0.01,
-                    width: 0.323, // 1/3 minus padding
-                    height: 0.98,
+                    x: '10px',
+                    y: '10px',
+                    width: '1/3 - 20px',
+                    height: '100% - 20px',
                     zIndex: 0,
                 },
                 {
                     label: 'Center Padded',
-                    x: 0.343,
-                    y: 0.01,
-                    width: 0.324,
-                    height: 0.98,
+                    x: '1/3 + 10px',
+                    y: '10px',
+                    width: '1/3 - 20px',
+                    height: '100% - 20px',
                     zIndex: 0,
                 },
                 {
                     label: 'Right Padded',
-                    x: 0.677,
-                    y: 0.01,
-                    width: 0.323,
-                    height: 0.98,
+                    x: '2/3 + 10px',
+                    y: '10px',
+                    width: '1/3 - 20px',
+                    height: '100% - 20px',
                     zIndex: 0,
                 },
             ],
