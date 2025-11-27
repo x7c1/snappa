@@ -11,33 +11,42 @@ import type { LayoutExpression, LayoutUnit } from './types';
  * Evaluate expression to pixel value
  * @param expr - Parsed expression AST
  * @param containerSize - Container size in pixels (miniature display width or height)
+ * @param screenSize - Optional screen size for scaling fixed pixel values (miniature display only)
  * @returns Resolved pixel value (rounded to nearest integer)
  */
-export function evaluate(expr: LayoutExpression, containerSize: number): number {
-    const result = evaluateRecursive(expr, containerSize);
+export function evaluate(
+    expr: LayoutExpression,
+    containerSize: number,
+    screenSize?: number
+): number {
+    const result = evaluateRecursive(expr, containerSize, screenSize);
     return Math.round(result);
 }
 
 /**
  * Recursive evaluation helper
  */
-function evaluateRecursive(expr: LayoutExpression, containerSize: number): number {
+function evaluateRecursive(
+    expr: LayoutExpression,
+    containerSize: number,
+    screenSize?: number
+): number {
     switch (expr.type) {
         case 'zero':
         case 'fraction':
         case 'percentage':
         case 'pixel':
-            return resolveUnit(expr, containerSize);
+            return resolveUnit(expr, containerSize, screenSize);
 
         case 'add': {
-            const left = evaluateRecursive(expr.left, containerSize);
-            const right = evaluateRecursive(expr.right, containerSize);
+            const left = evaluateRecursive(expr.left, containerSize, screenSize);
+            const right = evaluateRecursive(expr.right, containerSize, screenSize);
             return left + right;
         }
 
         case 'subtract': {
-            const left = evaluateRecursive(expr.left, containerSize);
-            const right = evaluateRecursive(expr.right, containerSize);
+            const left = evaluateRecursive(expr.left, containerSize, screenSize);
+            const right = evaluateRecursive(expr.right, containerSize, screenSize);
             return left - right;
         }
 
@@ -52,7 +61,7 @@ function evaluateRecursive(expr: LayoutExpression, containerSize: number): numbe
 /**
  * Resolve single unit to pixels
  */
-function resolveUnit(unit: LayoutUnit, containerSize: number): number {
+function resolveUnit(unit: LayoutUnit, containerSize: number, _screenSize?: number): number {
     switch (unit.type) {
         case 'zero':
             return 0;
@@ -64,6 +73,8 @@ function resolveUnit(unit: LayoutUnit, containerSize: number): number {
             return containerSize * unit.value;
 
         case 'pixel':
+            // Pixel values are always used as-is (no scaling)
+            // TODO: Consider implementing scaling in the future
             return unit.value;
 
         default: {

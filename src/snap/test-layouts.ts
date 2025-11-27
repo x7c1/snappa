@@ -154,38 +154,38 @@ export function getTestLayoutGroups(): SnapLayoutGroup[] {
             ],
         },
 
-        // Group G: Padded Layouts
+        // Group G: Padded Layouts (percentage-based padding)
         {
             name: 'Test G - Padded Thirds',
             layouts: [
                 {
                     label: 'Left Padded',
-                    x: '10px',
-                    y: '10px',
-                    width: '1/3 - 20px',
-                    height: '100% - 20px',
+                    x: '1%',
+                    y: '1%',
+                    width: '1/3 - 2%',
+                    height: '100% - 2%',
                     zIndex: 0,
                 },
                 {
                     label: 'Center Padded',
-                    x: '1/3 + 10px',
-                    y: '10px',
-                    width: '1/3 - 20px',
-                    height: '100% - 20px',
+                    x: '1/3 + 1%',
+                    y: '1%',
+                    width: '1/3 - 2%',
+                    height: '100% - 2%',
                     zIndex: 0,
                 },
                 {
                     label: 'Right Padded',
-                    x: '2/3 + 10px',
-                    y: '10px',
-                    width: '1/3 - 20px',
-                    height: '100% - 20px',
+                    x: '2/3 + 1%',
+                    y: '1%',
+                    width: '1/3 - 2%',
+                    height: '100% - 2%',
                     zIndex: 0,
                 },
             ],
         },
 
-        // Group H: Edge Cases
+        // Group H: Edge Cases (tiny windows with fixed pixel sizes)
         {
             name: 'Test H - Edge Cases',
             layouts: [
