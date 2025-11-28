@@ -9,12 +9,18 @@
 
 Never duplicate content across files.
 
+### Markdown Files (100+ lines)
+- Always include an Overview section at the beginning
+- The Overview should summarize the document's purpose and key points
+- This is critical because automated tools may read only the beginning of .md files
+- Without an Overview at the top, tools cannot understand the document's content
+
 ## Code Quality
 
 After making code changes, always run:
 
 ```bash
-npm run build && npm run check
+npm run build && npm run check && npm run test:run
 ```
 
 Fix any issues before considering the task complete.

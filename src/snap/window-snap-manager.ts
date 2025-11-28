@@ -11,6 +11,7 @@ const Meta = imports.gi.Meta;
 const GLib = imports.gi.GLib;
 const Main = imports.ui.main;
 
+import { evaluate, parse } from './layout-expression';
 import { type SnapLayout, SnapMenu } from './snap-menu';
 
 declare function log(message: string): void;
@@ -257,11 +258,17 @@ export class WindowSnapManager {
         const monitor = global.display.get_current_monitor();
         const workArea = Main.layoutManager.getWorkAreaForMonitor(monitor);
 
+        // Helper to resolve layout values
+        const resolve = (value: string, containerSize: number): number => {
+            const expr = parse(value);
+            return evaluate(expr, containerSize);
+        };
+
         // Calculate window position and size based on layout
-        const x = workArea.x + Math.floor(workArea.width * layout.x);
-        const y = workArea.y + Math.floor(workArea.height * layout.y);
-        const width = Math.floor(workArea.width * layout.width);
-        const height = Math.floor(workArea.height * layout.height);
+        const x = workArea.x + resolve(layout.x, workArea.width);
+        const y = workArea.y + resolve(layout.y, workArea.height);
+        const width = resolve(layout.width, workArea.width);
+        const height = resolve(layout.height, workArea.height);
 
         log(
             `[WindowSnapManager] Moving window to x=${x}, y=${y}, w=${width}, h=${height} (work area: ${workArea.x},${workArea.y} ${workArea.width}x${workArea.height})`
@@ -276,9 +283,5 @@ export class WindowSnapManager {
         // Move and resize window
         targetWindow.move_resize_frame(false, x, y, width, height);
         log('[WindowSnapManager] Window moved');
-
-        // Hide menu and clear state after applying layout
-        this._snapMenu.hide();
-        this._lastDraggedWindow = null;
     }
 }
