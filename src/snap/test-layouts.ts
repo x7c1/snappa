@@ -1,4 +1,4 @@
-import type { SnapLayoutGroup } from './snap-menu-types';
+import type { LayoutGroup } from './types';
 
 /**
  * Test layout groups for debugging purposes
@@ -6,7 +6,7 @@ import type { SnapLayoutGroup } from './snap-menu-types';
  * These layouts are only used when BUILD_MODE=debug and provide
  * comprehensive test cases for UI development and validation.
  */
-export function getTestLayoutGroups(): SnapLayoutGroup[] {
+export function getTestLayoutGroups(): LayoutGroup[] {
     return [
         // Group A: Fixed Position Layouts
         {

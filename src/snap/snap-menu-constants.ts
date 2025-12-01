@@ -1,4 +1,4 @@
-import type { MiniatureDisplayCategory, SnapLayoutGroup } from './snap-menu-types';
+import type { LayoutGroup, LayoutGroupCategory } from './types';
 
 // Timing
 export const AUTO_HIDE_DELAY_MS = 500; // Time to wait before hiding menu when cursor leaves
@@ -24,7 +24,7 @@ export const BUTTON_BORDER_COLOR_HOVER = 'rgba(255, 255, 255, 0.6)';
 export const FOOTER_TEXT_COLOR = 'rgba(255, 255, 255, 0.5)';
 
 // Default layout groups (legacy - used for backward compatibility)
-export const DEFAULT_LAYOUT_GROUPS: SnapLayoutGroup[] = [
+export const DEFAULT_LAYOUT_GROUPS: LayoutGroup[] = [
     {
         name: 'Three-Way Split',
         layouts: [
@@ -91,7 +91,7 @@ export const DEFAULT_LAYOUT_GROUPS: SnapLayoutGroup[] = [
 ];
 
 // Default categories (category-based structure)
-export const DEFAULT_CATEGORIES: MiniatureDisplayCategory[] = [
+export const DEFAULT_CATEGORIES: LayoutGroupCategory[] = [
     // Category 1: Vertical Division Patterns
     {
         name: 'Vertical Division Patterns',

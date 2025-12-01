@@ -1,18 +1,7 @@
-export interface SnapLayout {
-    label: string;
-    x: string; // expression: '1/3', '50%', '100px', '50% - 10px', etc.
-    y: string; // expression: '0', '50%', '10px', etc.
-    width: string; // expression: '1/3', '300px', '100% - 20px', etc.
-    height: string; // expression: '100%', '1/2', '500px', etc.
-    zIndex: number; // stacking order for overlapping layouts
-}
+// Deprecated: This file is kept for backward compatibility during migration.
+// Use imports from './types' instead.
 
-export interface SnapLayoutGroup {
-    name: string;
-    layouts: SnapLayout[];
-}
-
-export interface MiniatureDisplayCategory {
-    name: string; // Category name (e.g., "Vertical Divisions")
-    layoutGroups: SnapLayoutGroup[]; // Array of layout groups (displays) in this category
-}
+// Re-export with old names for backward compatibility
+export type { Layout as SnapLayout } from './types/layout';
+export type { LayoutGroup as SnapLayoutGroup } from './types/layout-group';
+export type { LayoutGroupCategory as MiniatureDisplayCategory } from './types/layout-group-category';

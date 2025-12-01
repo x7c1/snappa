@@ -25,21 +25,21 @@ import {
 } from './snap-menu-constants';
 import type { RendererEventIds } from './snap-menu-renderer';
 import { createBackground, createCategoriesContainer, createFooter } from './snap-menu-renderer';
-import type { MiniatureDisplayCategory, SnapLayout, SnapLayoutGroup } from './snap-menu-types';
 import { getTestLayoutGroups } from './test-layouts';
+import type { Layout, LayoutGroup, LayoutGroupCategory } from './types';
 
 declare function log(message: string): void;
 
 // Re-export types for backward compatibility
-export type { SnapLayout, SnapLayoutGroup };
+export type { Layout as SnapLayout, LayoutGroup as SnapLayoutGroup };
 
 export class SnapMenu {
     private _container: St.BoxLayout | null = null;
     private _background: St.BoxLayout | null = null;
-    private _categories: MiniatureDisplayCategory[] = [];
-    private _renderedCategories: MiniatureDisplayCategory[] = []; // Categories actually rendered (including test layouts)
-    private _onLayoutSelected: ((layout: SnapLayout) => void) | null = null;
-    private _layoutButtons: Map<St.Button, SnapLayout> = new Map();
+    private _categories: LayoutGroupCategory[] = [];
+    private _renderedCategories: LayoutGroupCategory[] = []; // Categories actually rendered (including test layouts)
+    private _onLayoutSelected: ((layout: Layout) => void) | null = null;
+    private _layoutButtons: Map<St.Button, Layout> = new Map();
     private _rendererEventIds: RendererEventIds | null = null;
     private _autoHide: SnapMenuAutoHide = new SnapMenuAutoHide();
     private _debugPanel: DebugPanel | null = null;
@@ -80,7 +80,7 @@ export class SnapMenu {
     /**
      * Set callback for when a layout is selected
      */
-    setOnLayoutSelected(callback: (layout: SnapLayout) => void): void {
+    setOnLayoutSelected(callback: (layout: Layout) => void): void {
         this._onLayoutSelected = callback;
     }
 
@@ -116,7 +116,7 @@ export class SnapMenu {
             );
             // Add test groups as an additional category if any are enabled
             if (enabledTestGroups.length > 0) {
-                const testCategory: MiniatureDisplayCategory = {
+                const testCategory: LayoutGroupCategory = {
                     name: 'Test Layouts',
                     layoutGroups: enabledTestGroups,
                 };
@@ -274,7 +274,7 @@ export class SnapMenu {
      */
     private _calculateDebugPanelX(
         menuX: number,
-        categoriesToRender: MiniatureDisplayCategory[]
+        categoriesToRender: LayoutGroupCategory[]
     ): number {
         const debugPanelGap = 20;
         const debugPanelWidth = 300;
@@ -321,12 +321,12 @@ export class SnapMenu {
      * Get layout at the given position, or null if position is not over a layout button
      * If multiple layouts overlap at this position, returns the one with highest zIndex
      */
-    getLayoutAtPosition(x: number, y: number): SnapLayout | null {
+    getLayoutAtPosition(x: number, y: number): Layout | null {
         if (!this._container) {
             return null;
         }
 
-        let topLayout: SnapLayout | null = null;
+        let topLayout: Layout | null = null;
         let topZIndex = -Infinity;
 
         // Check each layout button to see if position is within its bounds
