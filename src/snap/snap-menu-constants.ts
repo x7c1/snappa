@@ -4,7 +4,7 @@ import type { MiniatureDisplayCategory, SnapLayoutGroup } from './snap-menu-type
 export const AUTO_HIDE_DELAY_MS = 500; // Time to wait before hiding menu when cursor leaves
 
 // Dimensions
-export const MINIATURE_DISPLAY_WIDTH = 300; // Fixed width for miniature displays
+export const MINIATURE_DISPLAY_WIDTH = 210; // Fixed width for miniature displays
 export const MENU_PADDING = 12; // Padding around menu content
 export const DISPLAY_SPACING = 12; // Spacing between miniature displays (vertical within categories, or old vertical spacing)
 export const CATEGORY_SPACING = 16; // Vertical spacing between categories
@@ -174,6 +174,83 @@ export const DEFAULT_CATEGORIES: MiniatureDisplayCategory[] = [
                         y: '50%',
                         width: '1/3',
                         height: '50%',
+                        zIndex: 0,
+                    },
+                ],
+            },
+            {
+                name: 'Grid 3×3',
+                layouts: [
+                    {
+                        label: 'Top-left',
+                        x: '0',
+                        y: '0',
+                        width: '1/3',
+                        height: '1/3',
+                        zIndex: 0,
+                    },
+                    {
+                        label: 'Top-center',
+                        x: '1/3',
+                        y: '0',
+                        width: '1/3',
+                        height: '1/3',
+                        zIndex: 0,
+                    },
+                    {
+                        label: 'Top-right',
+                        x: '2/3',
+                        y: '0',
+                        width: '1/3',
+                        height: '1/3',
+                        zIndex: 0,
+                    },
+                    {
+                        label: 'Middle-left',
+                        x: '0',
+                        y: '1/3',
+                        width: '1/3',
+                        height: '1/3',
+                        zIndex: 0,
+                    },
+                    {
+                        label: 'Middle-center',
+                        x: '1/3',
+                        y: '1/3',
+                        width: '1/3',
+                        height: '1/3',
+                        zIndex: 0,
+                    },
+                    {
+                        label: 'Middle-right',
+                        x: '2/3',
+                        y: '1/3',
+                        width: '1/3',
+                        height: '1/3',
+                        zIndex: 0,
+                    },
+                    {
+                        label: 'Bottom-left',
+                        x: '0',
+                        y: '2/3',
+                        width: '1/3',
+                        height: '1/3',
+                        zIndex: 0,
+                    },
+                    {
+                        label: 'Bottom-center',
+                        x: '1/3',
+                        y: '2/3',
+                        width: '1/3',
+                        height: '1/3',
+                        zIndex: 0,
+                    },
+                    {
+                        label: 'Bottom-right',
+                        x: '2/3',
+                        y: '2/3',
+                        width: '1/3',
+                        height: '1/3',
                         zIndex: 0,
                     },
                 ],
@@ -358,6 +435,32 @@ export const DEFAULT_CATEGORIES: MiniatureDisplayCategory[] = [
                         y: '50%',
                         width: '25%',
                         height: '50%',
+                        zIndex: 0,
+                    },
+                ],
+            },
+            {
+                name: 'Left 70%',
+                layouts: [
+                    {
+                        label: 'Left 70%',
+                        x: '0',
+                        y: '0',
+                        width: '70%',
+                        height: '100%',
+                        zIndex: 0,
+                    },
+                ],
+            },
+            {
+                name: 'Right 70%',
+                layouts: [
+                    {
+                        label: 'Right 70%',
+                        x: '30%',
+                        y: '0',
+                        width: '70%',
+                        height: '100%',
                         zIndex: 0,
                     },
                 ],
