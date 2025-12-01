@@ -20,13 +20,21 @@ export interface MenuEventIds {
     }>;
 }
 
+export interface BackgroundView {
+    background: St.BoxLayout;
+    clickOutsideId: number;
+}
+
+export interface CategoriesView {
+    categoriesContainer: St.BoxLayout;
+    layoutButtons: Map<St.Button, Layout>;
+    buttonEvents: MenuEventIds['buttonEvents'];
+}
+
 /**
  * Create background overlay to capture clicks outside menu
  */
-export function createBackground(onClickOutside: () => void): {
-    background: St.BoxLayout;
-    clickOutsideId: number;
-} {
+export function createBackground(onClickOutside: () => void): BackgroundView {
     const background = new St.BoxLayout({
         style: 'background-color: rgba(0, 0, 0, 0);',
         reactive: true,
@@ -77,11 +85,7 @@ export function createCategoriesView(
     categories: LayoutGroupCategory[],
     debugConfig: DebugConfig | null,
     onLayoutSelected: (layout: Layout) => void
-): {
-    categoriesContainer: St.BoxLayout;
-    layoutButtons: Map<St.Button, Layout>;
-    buttonEvents: MenuEventIds['buttonEvents'];
-} {
+): CategoriesView {
     const categoriesContainer = new St.BoxLayout({
         style_class: 'snap-categories-container',
         vertical: true, // Vertical layout: stack categories

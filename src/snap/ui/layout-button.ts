@@ -16,6 +16,13 @@ import type { Layout } from '../types';
 
 declare function log(message: string): void;
 
+export interface LayoutButtonView {
+    button: St.Button;
+    enterEventId: number;
+    leaveEventId: number;
+    clickEventId: number;
+}
+
 /**
  * Resolve layout value (string expression) to pixels
  * @param value - Layout expression ('1/3', '50%', '100px', '50% - 10px', etc.)
@@ -76,12 +83,7 @@ export function createLayoutButton(
     displayHeight: number,
     debugConfig: DebugConfig | null,
     onLayoutSelected: (layout: Layout) => void
-): {
-    button: St.Button;
-    enterEventId: number;
-    leaveEventId: number;
-    clickEventId: number;
-} {
+): LayoutButtonView {
     // Get screen work area for scaling fixed pixel values
     const monitor = global.display.get_current_monitor();
     const workArea = Main.layoutManager.getWorkAreaForMonitor(monitor);
