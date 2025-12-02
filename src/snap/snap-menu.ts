@@ -15,11 +15,15 @@ import { DebugPanel } from './debug-panel';
 import { SnapMenuAutoHide } from './snap-menu-auto-hide';
 import {
   AUTO_HIDE_DELAY_MS,
+  CATEGORY_SPACING,
   DEFAULT_CATEGORIES,
+  DISPLAY_SPACING,
   DISPLAY_SPACING_HORIZONTAL,
+  FOOTER_MARGIN_TOP,
   MAX_DISPLAYS_PER_ROW,
   MENU_BG_COLOR,
   MENU_BORDER_COLOR,
+  MENU_EDGE_PADDING,
   MENU_PADDING,
   MINIATURE_DISPLAY_WIDTH,
 } from './snap-menu-constants';
@@ -37,7 +41,6 @@ export class SnapMenu {
   private container: St.BoxLayout | null = null;
   private background: St.BoxLayout | null = null;
   private categories: LayoutGroupCategory[] = [];
-  private renderedCategories: LayoutGroupCategory[] = []; // Categories actually rendered (including test layouts)
   private onLayoutSelected: ((layout: Layout) => void) | null = null;
   private layoutButtons: Map<St.Button, Layout> = new Map();
   private rendererEventIds: MenuEventIds | null = null;
@@ -45,6 +48,7 @@ export class SnapMenu {
   private debugPanel: DebugPanel | null = null;
   private menuX: number = 0;
   private menuY: number = 0;
+  private menuDimensions: { width: number; height: number } | null = null;
 
   constructor() {
     // Setup auto-hide callback
@@ -91,10 +95,6 @@ export class SnapMenu {
     // Hide existing menu if any
     this.hide();
 
-    // Store menu position
-    this.menuX = x;
-    this.menuY = y;
-
     // Reset auto-hide states
     this.autoHide.resetHoverStates();
 
@@ -122,8 +122,22 @@ export class SnapMenu {
       }
     }
 
-    // Store rendered categories for debug panel positioning
-    this.renderedCategories = categories;
+    // Calculate menu dimensions
+    const showFooter = !debugConfig || debugConfig.showFooter;
+    this.menuDimensions = this.calculateMenuDimensions(categories, aspectRatio, showFooter);
+
+    // Adjust position for boundaries with center alignment
+    const adjusted = this.adjustPositionForBoundaries(
+      x,
+      y,
+      this.menuDimensions.width,
+      this.menuDimensions.height,
+      !!this.debugPanel
+    );
+
+    // Store adjusted menu position
+    this.menuX = adjusted.x;
+    this.menuY = adjusted.y;
 
     // Create background
     const { background, clickOutsideId } = createBackground(() => {
@@ -131,19 +145,39 @@ export class SnapMenu {
     });
     this.background = background;
 
-    // Create categories view
-    const categoriesView = createCategoriesView(
-      MINIATURE_DISPLAY_WIDTH,
-      miniatureDisplayHeight,
-      categories,
-      debugConfig,
-      (layout) => {
-        if (this.onLayoutSelected) {
-          this.onLayoutSelected(layout);
+    // Create categories view or empty message
+    let categoriesElement: St.BoxLayout | St.Label;
+    let buttonEvents: MenuEventIds['buttonEvents'] = [];
+
+    if (categories.length === 0) {
+      // Show "No categories" message
+      categoriesElement = new St.Label({
+        text: 'No categories available',
+        style: `
+          font-size: 14px;
+          color: rgba(255, 255, 255, 0.7);
+          text-align: center;
+          padding: 40px 60px;
+        `,
+        x_align: 2, // CENTER
+      });
+      this.layoutButtons.clear();
+    } else {
+      const categoriesView = createCategoriesView(
+        MINIATURE_DISPLAY_WIDTH,
+        miniatureDisplayHeight,
+        categories,
+        debugConfig,
+        (layout) => {
+          if (this.onLayoutSelected) {
+            this.onLayoutSelected(layout);
+          }
         }
-      }
-    );
-    this.layoutButtons = categoriesView.layoutButtons;
+      );
+      categoriesElement = categoriesView.categoriesContainer;
+      buttonEvents = categoriesView.buttonEvents;
+      this.layoutButtons = categoriesView.layoutButtons;
+    }
 
     // Create footer
     const footer = createFooter();
@@ -166,13 +200,13 @@ export class SnapMenu {
     this.container = container;
 
     // Add children to container
-    container.add_child(categoriesView.categoriesContainer);
+    container.add_child(categoriesElement);
     if (!debugConfig || debugConfig.showFooter) {
       container.add_child(footer);
     }
 
-    // Position menu at cursor
-    container.set_position(x, y);
+    // Position menu at adjusted coordinates
+    container.set_position(this.menuX, this.menuY);
 
     // Add menu container to chrome
     Main.layoutManager.addChrome(container, {
@@ -186,15 +220,17 @@ export class SnapMenu {
     // Store event IDs for cleanup
     this.rendererEventIds = {
       clickOutsideId,
-      buttonEvents: categoriesView.buttonEvents,
+      buttonEvents: buttonEvents,
     };
 
-    // Show debug panel if enabled
+    // Show debug panel if enabled (always on the right side of menu)
     if (this.debugPanel) {
-      const menuHeight = 500;
-      const debugPanelX = this.calculateDebugPanelX(x, this.renderedCategories);
-      log(`[SnapMenu] Showing debug panel at: x=${debugPanelX}, y=${y}`);
-      this.debugPanel.show(debugPanelX, y, menuHeight);
+      const debugPanelGap = 20;
+      const debugPanelX = this.menuX + this.menuDimensions.width + debugPanelGap;
+      log(
+        `[SnapMenu] Showing debug panel at: x=${debugPanelX}, y=${this.menuY}, menuHeight=${this.menuDimensions.height}`
+      );
+      this.debugPanel.show(debugPanelX, this.menuY, this.menuDimensions.height);
     }
   }
 
@@ -256,60 +292,141 @@ export class SnapMenu {
    * Update menu position (for following cursor during drag)
    */
   updatePosition(x: number, y: number): void {
-    if (this.container) {
-      this.container.set_position(x, y);
+    if (this.container && this.menuDimensions) {
+      // Adjust position for boundaries with center alignment
+      const adjusted = this.adjustPositionForBoundaries(
+        x,
+        y,
+        this.menuDimensions.width,
+        this.menuDimensions.height,
+        !!this.debugPanel
+      );
 
-      // Update debug panel position if enabled
-      if (this.debugPanel && this.renderedCategories.length > 0) {
-        const debugPanelX = this.calculateDebugPanelX(x, this.renderedCategories);
-        this.debugPanel.updatePosition(debugPanelX, y);
+      // Update stored menu position
+      this.menuX = adjusted.x;
+      this.menuY = adjusted.y;
+
+      // Update container position
+      this.container.set_position(adjusted.x, adjusted.y);
+
+      // Update debug panel position if enabled (always on the right side)
+      if (this.debugPanel) {
+        const debugPanelGap = 20;
+        const debugPanelX = adjusted.x + this.menuDimensions.width + debugPanelGap;
+        this.debugPanel.updatePosition(debugPanelX, adjusted.y);
       }
     }
   }
 
   /**
-   * Calculate debug panel X position based on menu position and actual rendered categories
+   * Adjust menu position to keep it within screen boundaries
+   * Positions menu centered horizontally on cursor and ensures it stays within screen bounds
    */
-  private calculateDebugPanelX(menuX: number, categoriesToRender: LayoutGroupCategory[]): number {
+  private adjustPositionForBoundaries(
+    x: number,
+    y: number,
+    menuWidth: number,
+    menuHeight: number,
+    debugPanelEnabled: boolean
+  ): { x: number; y: number } {
+    const screenWidth = global.screen_width;
+    const screenHeight = global.screen_height;
     const debugPanelGap = 20;
     const debugPanelWidth = 300;
-    const screenWidth = global.screen_width;
 
-    // Calculate menu width from ALL categories (including test layouts if enabled)
-    // Categories are stacked vertically with rows, each row has max MAX_DISPLAYS_PER_ROW displays
+    // First: Center alignment - adjust X to center menu on cursor
+    let adjustedX = x - menuWidth / 2;
+
+    // Calculate maximum X position
+    let maxX: number;
+    if (debugPanelEnabled) {
+      // Reserve space for debug panel on the right
+      maxX = screenWidth - menuWidth - debugPanelGap - debugPanelWidth - MENU_EDGE_PADDING;
+    } else {
+      maxX = screenWidth - menuWidth - MENU_EDGE_PADDING;
+    }
+
+    // Check right edge: clamp to maxX
+    if (adjustedX > maxX) {
+      adjustedX = maxX;
+    }
+
+    // Check left edge: clamp to padding
+    if (adjustedX < MENU_EDGE_PADDING) {
+      adjustedX = MENU_EDGE_PADDING;
+    }
+
+    // Check bottom edge: shift up if needed
+    let adjustedY = y;
+    if (adjustedY + menuHeight > screenHeight - MENU_EDGE_PADDING) {
+      adjustedY = screenHeight - menuHeight - MENU_EDGE_PADDING;
+    }
+
+    // Check top edge: clamp to padding
+    if (adjustedY < MENU_EDGE_PADDING) {
+      adjustedY = MENU_EDGE_PADDING;
+    }
+
+    return { x: adjustedX, y: adjustedY };
+  }
+
+  /**
+   * Calculate menu dimensions based on categories to render
+   */
+  private calculateMenuDimensions(
+    categoriesToRender: LayoutGroupCategory[],
+    aspectRatio: number,
+    showFooter: boolean
+  ): { width: number; height: number } {
+    // Handle empty categories case
+    if (categoriesToRender.length === 0) {
+      const minWidth = 200; // Minimum width for "No categories" message
+      const minHeight = 120 + (showFooter ? FOOTER_MARGIN_TOP + 20 : 0);
+      return { width: minWidth, height: minHeight };
+    }
+
+    const miniatureDisplayHeight = MINIATURE_DISPLAY_WIDTH * aspectRatio;
+
+    // Calculate width: maximum category width
     let maxCategoryWidth = 0;
     for (const category of categoriesToRender) {
       const numDisplays = category.layoutGroups.length;
       if (numDisplays > 0) {
-        // Calculate width based on max displays per row
         const displaysInWidestRow = Math.min(numDisplays, MAX_DISPLAYS_PER_ROW);
-        // Each display: width + right margin, except the last one has no right margin
         const categoryWidth =
           displaysInWidestRow * MINIATURE_DISPLAY_WIDTH +
           (displaysInWidestRow - 1) * DISPLAY_SPACING_HORIZONTAL;
         maxCategoryWidth = Math.max(maxCategoryWidth, categoryWidth);
-        log(
-          `[SnapMenu] Category "${category.name}": ${numDisplays} displays (max ${displaysInWidestRow} per row), width=${categoryWidth}px`
-        );
       }
     }
     const menuWidth = maxCategoryWidth + MENU_PADDING * 2;
-    log(
-      `[SnapMenu] Calculated menu width: ${menuWidth}px (maxCategoryWidth: ${maxCategoryWidth}px)`
-    );
 
-    // Try to place on the right side first
-    let debugPanelX = menuX + menuWidth + debugPanelGap;
-    if (debugPanelX + debugPanelWidth > screenWidth) {
-      // If not, place on the left side
-      debugPanelX = menuX - debugPanelWidth - debugPanelGap;
-      // If still off screen, clamp to left edge
-      if (debugPanelX < 0) {
-        debugPanelX = debugPanelGap;
+    // Calculate height: sum of all category heights with spacing
+    let totalHeight = MENU_PADDING; // Top padding
+    for (let i = 0; i < categoriesToRender.length; i++) {
+      const category = categoriesToRender[i];
+      const numDisplays = category.layoutGroups.length;
+      if (numDisplays > 0) {
+        const numRows = Math.ceil(numDisplays / MAX_DISPLAYS_PER_ROW);
+        // Each row has display height + bottom margin (DISPLAY_SPACING)
+        const categoryHeight = numRows * (miniatureDisplayHeight + DISPLAY_SPACING);
+        totalHeight += categoryHeight;
+
+        // Add category spacing except for last category
+        if (i < categoriesToRender.length - 1) {
+          totalHeight += CATEGORY_SPACING;
+        }
       }
     }
 
-    return debugPanelX;
+    // Add footer height if showing footer
+    if (showFooter) {
+      totalHeight += FOOTER_MARGIN_TOP + 20; // 20px approximate footer text height
+    }
+
+    totalHeight += MENU_PADDING; // Bottom padding
+
+    return { width: menuWidth, height: totalHeight };
   }
 
   /**

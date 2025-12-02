@@ -6,6 +6,7 @@ export const AUTO_HIDE_DELAY_MS = 500; // Time to wait before hiding menu when c
 // Dimensions
 export const MINIATURE_DISPLAY_WIDTH = 210; // Fixed width for miniature displays
 export const MENU_PADDING = 12; // Padding around menu content
+export const MENU_EDGE_PADDING = 10; // Minimum distance from screen edges
 export const DISPLAY_SPACING = 12; // Spacing between miniature displays (vertical within categories, or old vertical spacing)
 export const CATEGORY_SPACING = 16; // Vertical spacing between categories
 export const DISPLAY_SPACING_HORIZONTAL = 12; // Horizontal spacing between displays within a category
