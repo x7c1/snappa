@@ -21,21 +21,21 @@ const EDGE_DELAY = 200; // milliseconds to wait before showing menu
 const MONITOR_INTERVAL = 50; // milliseconds between cursor position checks
 
 export class WindowSnapManager {
-  private _grabOpBeginId: number | null = null;
-  private _grabOpEndId: number | null = null;
-  private _motionId: number | null = null;
-  private _currentWindow: Meta.Window | null = null;
-  private _lastDraggedWindow: Meta.Window | null = null;
-  private _isDragging: boolean = false;
-  private _edgeTimer: number | null = null;
-  private _isAtEdge: boolean = false;
-  private _snapMenu: SnapMenu;
+  private grabOpBeginId: number | null = null;
+  private grabOpEndId: number | null = null;
+  private motionId: number | null = null;
+  private currentWindow: Meta.Window | null = null;
+  private lastDraggedWindow: Meta.Window | null = null;
+  private isDragging: boolean = false;
+  private edgeTimer: number | null = null;
+  private isAtEdge: boolean = false;
+  private snapMenu: SnapMenu;
 
   constructor() {
     // Initialize snap menu
-    this._snapMenu = new SnapMenu();
-    this._snapMenu.setOnLayoutSelected((layout) => {
-      this._applyLayoutToCurrentWindow(layout);
+    this.snapMenu = new SnapMenu();
+    this.snapMenu.setOnLayoutSelected((layout) => {
+      this.applyLayoutToCurrentWindow(layout);
     });
   }
 
@@ -44,18 +44,18 @@ export class WindowSnapManager {
    */
   enable(): void {
     // Connect to grab-op-begin signal to detect window dragging
-    this._grabOpBeginId = global.display.connect(
+    this.grabOpBeginId = global.display.connect(
       'grab-op-begin',
       (_display: Meta.Display, window: Meta.Window, op: Meta.GrabOp) => {
-        this._onGrabOpBegin(window, op);
+        this.onGrabOpBegin(window, op);
       }
     );
 
     // Connect to grab-op-end signal to detect when dragging stops
-    this._grabOpEndId = global.display.connect(
+    this.grabOpEndId = global.display.connect(
       'grab-op-end',
       (_display: Meta.Display, window: Meta.Window, op: Meta.GrabOp) => {
-        this._onGrabOpEnd(window, op);
+        this.onGrabOpEnd(window, op);
       }
     );
   }
@@ -65,58 +65,58 @@ export class WindowSnapManager {
    */
   disable(): void {
     // Stop motion monitoring
-    this._stopMotionMonitoring();
+    this.stopMotionMonitoring();
 
     // Disconnect signals
-    if (this._grabOpBeginId !== null) {
-      global.display.disconnect(this._grabOpBeginId);
-      this._grabOpBeginId = null;
+    if (this.grabOpBeginId !== null) {
+      global.display.disconnect(this.grabOpBeginId);
+      this.grabOpBeginId = null;
     }
 
-    if (this._grabOpEndId !== null) {
-      global.display.disconnect(this._grabOpEndId);
-      this._grabOpEndId = null;
+    if (this.grabOpEndId !== null) {
+      global.display.disconnect(this.grabOpEndId);
+      this.grabOpEndId = null;
     }
 
     // Clean up edge timer
-    this._clearEdgeTimer();
+    this.clearEdgeTimer();
 
     // Reset state
-    this._currentWindow = null;
-    this._isDragging = false;
-    this._isAtEdge = false;
+    this.currentWindow = null;
+    this.isDragging = false;
+    this.isAtEdge = false;
   }
 
   /**
    * Handle grab operation begin
    */
-  private _onGrabOpBegin(window: Meta.Window, op: Meta.GrabOp): void {
+  private onGrabOpBegin(window: Meta.Window, op: Meta.GrabOp): void {
     // Check if this is a window move operation
     if (op === Meta.GrabOp.MOVING) {
-      this._currentWindow = window;
-      this._lastDraggedWindow = window;
-      this._isDragging = true;
+      this.currentWindow = window;
+      this.lastDraggedWindow = window;
+      this.isDragging = true;
 
       // Start monitoring cursor position
-      this._startMotionMonitoring();
+      this.startMotionMonitoring();
     }
   }
 
   /**
    * Handle grab operation end
    */
-  private _onGrabOpEnd(window: Meta.Window, op: Meta.GrabOp): void {
+  private onGrabOpEnd(window: Meta.Window, op: Meta.GrabOp): void {
     // Check if this is the end of a window move operation
-    if (op === Meta.GrabOp.MOVING && window === this._currentWindow) {
-      this._isDragging = false;
-      this._currentWindow = null;
-      this._isAtEdge = false;
+    if (op === Meta.GrabOp.MOVING && window === this.currentWindow) {
+      this.isDragging = false;
+      this.currentWindow = null;
+      this.isAtEdge = false;
 
       // Stop monitoring cursor position
-      this._stopMotionMonitoring();
+      this.stopMotionMonitoring();
 
       // Clear edge timer
-      this._clearEdgeTimer();
+      this.clearEdgeTimer();
 
       // Keep menu visible until a button is clicked
       // (menu will be hidden when layout is applied)
@@ -126,19 +126,19 @@ export class WindowSnapManager {
   /**
    * Start monitoring cursor motion
    */
-  private _startMotionMonitoring(): void {
-    if (this._motionId !== null) {
+  private startMotionMonitoring(): void {
+    if (this.motionId !== null) {
       return; // Already monitoring
     }
 
     // Use GLib.timeout_add to periodically check cursor position
-    this._motionId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, MONITOR_INTERVAL, () => {
-      if (!this._isDragging) {
-        this._motionId = null;
+    this.motionId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, MONITOR_INTERVAL, () => {
+      if (!this.isDragging) {
+        this.motionId = null;
         return false; // Stop monitoring
       }
 
-      this._onMotion();
+      this.onMotion();
       return true; // Continue monitoring
     });
   }
@@ -146,49 +146,49 @@ export class WindowSnapManager {
   /**
    * Stop monitoring cursor motion
    */
-  private _stopMotionMonitoring(): void {
-    if (this._motionId !== null) {
-      GLib.Source.remove(this._motionId);
-      this._motionId = null;
+  private stopMotionMonitoring(): void {
+    if (this.motionId !== null) {
+      GLib.Source.remove(this.motionId);
+      this.motionId = null;
     }
   }
 
   /**
    * Handle cursor motion during drag
    */
-  private _onMotion(): void {
-    const [x, y] = this._getCursorPosition();
-    const atEdge = this._isAtScreenEdge(x, y);
+  private onMotion(): void {
+    const [x, y] = this.getCursorPosition();
+    const atEdge = this.isAtScreenEdge(x, y);
 
-    if (atEdge && !this._isAtEdge) {
+    if (atEdge && !this.isAtEdge) {
       // Just reached edge - start timer
-      this._isAtEdge = true;
-      this._startEdgeTimer();
-    } else if (!atEdge && this._isAtEdge && !this._snapMenu.isVisible()) {
+      this.isAtEdge = true;
+      this.startEdgeTimer();
+    } else if (!atEdge && this.isAtEdge && !this.snapMenu.isVisible()) {
       // Left edge and menu is not visible - cancel timer
-      this._isAtEdge = false;
-      this._clearEdgeTimer();
+      this.isAtEdge = false;
+      this.clearEdgeTimer();
     }
-    // Note: If menu is visible, keep _isAtEdge true even if cursor is not at edge
+    // Note: If menu is visible, keep isAtEdge true even if cursor is not at edge
     // This prevents the menu from disappearing when user moves cursor to menu
 
     // Update menu position if visible
-    if (this._snapMenu.isVisible()) {
-      this._snapMenu.updatePosition(x, y);
+    if (this.snapMenu.isVisible()) {
+      this.snapMenu.updatePosition(x, y);
     }
   }
 
   /**
    * Start edge delay timer
    */
-  private _startEdgeTimer(): void {
-    this._clearEdgeTimer();
+  private startEdgeTimer(): void {
+    this.clearEdgeTimer();
 
-    this._edgeTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, EDGE_DELAY, () => {
-      if (this._isAtEdge && this._isDragging) {
-        this._showSnapMenu();
+    this.edgeTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, EDGE_DELAY, () => {
+      if (this.isAtEdge && this.isDragging) {
+        this.showSnapMenu();
       }
-      this._edgeTimer = null;
+      this.edgeTimer = null;
       return false; // Don't repeat
     });
   }
@@ -196,17 +196,17 @@ export class WindowSnapManager {
   /**
    * Clear edge delay timer
    */
-  private _clearEdgeTimer(): void {
-    if (this._edgeTimer !== null) {
-      GLib.Source.remove(this._edgeTimer);
-      this._edgeTimer = null;
+  private clearEdgeTimer(): void {
+    if (this.edgeTimer !== null) {
+      GLib.Source.remove(this.edgeTimer);
+      this.edgeTimer = null;
     }
   }
 
   /**
    * Get current cursor position
    */
-  private _getCursorPosition(): [number, number] {
+  private getCursorPosition(): [number, number] {
     const [x, y] = global.get_pointer();
     return [x, y];
   }
@@ -214,7 +214,7 @@ export class WindowSnapManager {
   /**
    * Check if cursor is at screen edge
    */
-  private _isAtScreenEdge(x: number, y: number): boolean {
+  private isAtScreenEdge(x: number, y: number): boolean {
     // Get primary monitor geometry
     const monitor = global.display.get_current_monitor();
     const geometry = global.display.get_monitor_geometry(monitor);
@@ -231,23 +231,23 @@ export class WindowSnapManager {
   /**
    * Show snap menu at cursor position
    */
-  private _showSnapMenu(): void {
-    if (this._snapMenu.isVisible()) {
+  private showSnapMenu(): void {
+    if (this.snapMenu.isVisible()) {
       return; // Already visible
     }
 
-    const [x, y] = this._getCursorPosition();
-    this._snapMenu.show(x, y);
+    const [x, y] = this.getCursorPosition();
+    this.snapMenu.show(x, y);
   }
 
   /**
    * Apply layout to currently dragged window (called when menu button is clicked)
    */
-  private _applyLayoutToCurrentWindow(layout: SnapLayout): void {
+  private applyLayoutToCurrentWindow(layout: SnapLayout): void {
     log(`[WindowSnapManager] Apply layout: ${layout.label}`);
 
     // Use lastDraggedWindow since currentWindow might be null if drag just ended
-    const targetWindow = this._currentWindow || this._lastDraggedWindow;
+    const targetWindow = this.currentWindow || this.lastDraggedWindow;
 
     if (!targetWindow) {
       log('[WindowSnapManager] No window to apply layout to');

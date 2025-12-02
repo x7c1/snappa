@@ -30,33 +30,33 @@ const TEXT_COLOR = 'rgba(255, 255, 255, 0.9)';
 const SECTION_HEADER_COLOR = 'rgba(255, 255, 255, 0.7)';
 
 export class DebugPanel {
-  private _container: St.BoxLayout | null = null;
-  private _checkboxes: Map<string, St.Button> = new Map();
-  private _onConfigChanged: (() => void) | null = null;
-  private _onEnter: (() => void) | null = null;
-  private _onLeave: (() => void) | null = null;
-  private _enterEventId: number | null = null;
-  private _leaveEventId: number | null = null;
+  private container: St.BoxLayout | null = null;
+  private checkboxes: Map<string, St.Button> = new Map();
+  private onConfigChanged: (() => void) | null = null;
+  private onEnter: (() => void) | null = null;
+  private onLeave: (() => void) | null = null;
+  private enterEventId: number | null = null;
+  private leaveEventId: number | null = null;
 
   /**
    * Set callback for when debug configuration changes
    */
   setOnConfigChanged(callback: () => void): void {
-    this._onConfigChanged = callback;
+    this.onConfigChanged = callback;
   }
 
   /**
    * Set callback for when cursor enters debug panel
    */
   setOnEnter(callback: () => void): void {
-    this._onEnter = callback;
+    this.onEnter = callback;
   }
 
   /**
    * Set callback for when cursor leaves debug panel
    */
   setOnLeave(callback: () => void): void {
-    this._onLeave = callback;
+    this.onLeave = callback;
   }
 
   /**
@@ -67,7 +67,7 @@ export class DebugPanel {
     this.hide();
 
     // Create panel container
-    this._container = new St.BoxLayout({
+    this.container = new St.BoxLayout({
       vertical: true,
       reactive: true,
       track_hover: true,
@@ -91,46 +91,46 @@ export class DebugPanel {
                 margin-bottom: ${SECTION_SPACING}px;
             `,
     });
-    this._container.add_child(title);
+    this.container.add_child(title);
 
     // Add category structure section
-    this._addCategoryStructureSection();
+    this.addCategoryStructureSection();
 
     // Add sections
-    this._addSection('Display Elements', [
+    this.addSection('Display Elements', [
       { key: 'showFooter', label: 'Footer' },
       { key: 'showMiniatureDisplayBackground', label: 'Miniature Display Background' },
       { key: 'showMiniatureDisplayBorder', label: 'Miniature Display Border' },
       { key: 'showButtonBorders', label: 'Button Borders' },
     ]);
 
-    this._addSection('Debug Visualizations', [
+    this.addSection('Debug Visualizations', [
       { key: 'showSpacingGuides', label: 'Spacing Guides' },
       { key: 'showSizeLabels', label: 'Size Labels' },
     ]);
 
-    this._addTestGroupsSection();
+    this.addTestGroupsSection();
 
     // Add panel to chrome (similar to SnapMenu)
-    Main.layoutManager.addChrome(this._container, {
+    Main.layoutManager.addChrome(this.container, {
       affectsInputRegion: true,
       trackFullscreen: false,
     });
 
     // Position panel
-    this._container.set_position(x, y);
+    this.container.set_position(x, y);
 
     // Setup hover events to notify parent menu
-    this._enterEventId = this._container.connect('enter-event', () => {
-      if (this._onEnter) {
-        this._onEnter();
+    this.enterEventId = this.container.connect('enter-event', () => {
+      if (this.onEnter) {
+        this.onEnter();
       }
       return false;
     });
 
-    this._leaveEventId = this._container.connect('leave-event', () => {
-      if (this._onLeave) {
-        this._onLeave();
+    this.leaveEventId = this.container.connect('leave-event', () => {
+      if (this.onLeave) {
+        this.onLeave();
       }
       return false;
     });
@@ -140,38 +140,38 @@ export class DebugPanel {
    * Hide the debug panel
    */
   hide(): void {
-    if (this._container) {
+    if (this.container) {
       // Disconnect event handlers
-      if (this._enterEventId !== null) {
-        this._container.disconnect(this._enterEventId);
-        this._enterEventId = null;
+      if (this.enterEventId !== null) {
+        this.container.disconnect(this.enterEventId);
+        this.enterEventId = null;
       }
-      if (this._leaveEventId !== null) {
-        this._container.disconnect(this._leaveEventId);
-        this._leaveEventId = null;
+      if (this.leaveEventId !== null) {
+        this.container.disconnect(this.leaveEventId);
+        this.leaveEventId = null;
       }
 
-      Main.layoutManager.removeChrome(this._container);
-      this._container.destroy();
-      this._container = null;
+      Main.layoutManager.removeChrome(this.container);
+      this.container.destroy();
+      this.container = null;
     }
-    this._checkboxes.clear();
+    this.checkboxes.clear();
   }
 
   /**
    * Update panel position
    */
   updatePosition(x: number, y: number): void {
-    if (this._container) {
-      this._container.set_position(x, y);
+    if (this.container) {
+      this.container.set_position(x, y);
     }
   }
 
-  private _addSection(
+  private addSection(
     sectionTitle: string,
     options: Array<{ key: keyof Omit<DebugConfig, 'enabledTestGroups'>; label: string }>
   ): void {
-    if (!this._container) return;
+    if (!this.container) return;
 
     // Section header
     const header = new St.Label({
@@ -184,7 +184,7 @@ export class DebugPanel {
                 margin-bottom: ${SECTION_SPACING / 2}px;
             `,
     });
-    this._container.add_child(header);
+    this.container.add_child(header);
 
     // Add separator
     const separator = new St.Widget({
@@ -194,26 +194,26 @@ export class DebugPanel {
                 margin-bottom: ${SECTION_SPACING / 2}px;
             `,
     });
-    this._container.add_child(separator);
+    this.container.add_child(separator);
 
     // Add options
     const config = getDebugConfig();
     for (const option of options) {
       const checked = config[option.key] as boolean;
-      const checkbox = this._createCheckbox(option.label, checked, (newChecked) => {
+      const checkbox = this.createCheckbox(option.label, checked, (newChecked) => {
         toggleDebugOption(option.key);
-        this._updateCheckboxState(option.key, newChecked);
-        if (this._onConfigChanged) {
-          this._onConfigChanged();
+        this.updateCheckboxState(option.key, newChecked);
+        if (this.onConfigChanged) {
+          this.onConfigChanged();
         }
       });
-      this._checkboxes.set(option.key, checkbox);
-      this._container.add_child(checkbox);
+      this.checkboxes.set(option.key, checkbox);
+      this.container.add_child(checkbox);
     }
   }
 
-  private _addCategoryStructureSection(): void {
-    if (!this._container) return;
+  private addCategoryStructureSection(): void {
+    if (!this.container) return;
 
     // Section header
     const header = new St.Label({
@@ -226,7 +226,7 @@ export class DebugPanel {
                 margin-bottom: ${SECTION_SPACING / 2}px;
             `,
     });
-    this._container.add_child(header);
+    this.container.add_child(header);
 
     // Add separator
     const separator = new St.Widget({
@@ -236,7 +236,7 @@ export class DebugPanel {
                 margin-bottom: ${SECTION_SPACING / 2}px;
             `,
     });
-    this._container.add_child(separator);
+    this.container.add_child(separator);
 
     // Display total number of categories
     const totalCategories = DEFAULT_CATEGORIES.length;
@@ -248,7 +248,7 @@ export class DebugPanel {
                 margin-bottom: ${SECTION_SPACING / 2}px;
             `,
     });
-    this._container.add_child(summaryLabel);
+    this.container.add_child(summaryLabel);
 
     // Display each category with hierarchy
     for (const category of DEFAULT_CATEGORIES) {
@@ -268,7 +268,7 @@ export class DebugPanel {
                     margin-top: ${SECTION_SPACING / 4}px;
                 `,
       });
-      this._container.add_child(categoryLabel);
+      this.container.add_child(categoryLabel);
 
       // Display each layout group (display)
       for (let i = 0; i < category.layoutGroups.length; i++) {
@@ -284,13 +284,13 @@ export class DebugPanel {
                         margin-left: ${SECTION_SPACING * 2}px;
                     `,
         });
-        this._container.add_child(displayLabel);
+        this.container.add_child(displayLabel);
       }
     }
   }
 
-  private _addTestGroupsSection(): void {
-    if (!this._container) return;
+  private addTestGroupsSection(): void {
+    if (!this.container) return;
 
     // Section header
     const header = new St.Label({
@@ -303,7 +303,7 @@ export class DebugPanel {
                 margin-bottom: ${SECTION_SPACING / 2}px;
             `,
     });
-    this._container.add_child(header);
+    this.container.add_child(header);
 
     // Add separator
     const separator = new St.Widget({
@@ -313,26 +313,26 @@ export class DebugPanel {
                 margin-bottom: ${SECTION_SPACING / 2}px;
             `,
     });
-    this._container.add_child(separator);
+    this.container.add_child(separator);
 
     // Add test groups
     const config = getDebugConfig();
     const testGroups = getTestLayoutGroups();
     for (const group of testGroups) {
       const checked = config.enabledTestGroups.has(group.name);
-      const checkbox = this._createCheckbox(group.name, checked, (newChecked) => {
+      const checkbox = this.createCheckbox(group.name, checked, (newChecked) => {
         toggleTestGroup(group.name);
-        this._updateCheckboxState(group.name, newChecked);
-        if (this._onConfigChanged) {
-          this._onConfigChanged();
+        this.updateCheckboxState(group.name, newChecked);
+        if (this.onConfigChanged) {
+          this.onConfigChanged();
         }
       });
-      this._checkboxes.set(group.name, checkbox);
-      this._container.add_child(checkbox);
+      this.checkboxes.set(group.name, checkbox);
+      this.container.add_child(checkbox);
     }
   }
 
-  private _createCheckbox(
+  private createCheckbox(
     label: string,
     checked: boolean,
     onToggle: (checked: boolean) => void
@@ -425,8 +425,8 @@ export class DebugPanel {
     return button;
   }
 
-  private _updateCheckboxState(key: string, checked: boolean): void {
-    const button = this._checkboxes.get(key);
+  private updateCheckboxState(key: string, checked: boolean): void {
+    const button = this.checkboxes.get(key);
     if (!button) return;
 
     (button as any)._checked = checked;

@@ -34,21 +34,21 @@ declare function log(message: string): void;
 export type { Layout as SnapLayout, LayoutGroup as SnapLayoutGroup };
 
 export class SnapMenu {
-  private _container: St.BoxLayout | null = null;
-  private _background: St.BoxLayout | null = null;
-  private _categories: LayoutGroupCategory[] = [];
-  private _renderedCategories: LayoutGroupCategory[] = []; // Categories actually rendered (including test layouts)
-  private _onLayoutSelected: ((layout: Layout) => void) | null = null;
-  private _layoutButtons: Map<St.Button, Layout> = new Map();
-  private _rendererEventIds: MenuEventIds | null = null;
-  private _autoHide: SnapMenuAutoHide = new SnapMenuAutoHide();
-  private _debugPanel: DebugPanel | null = null;
-  private _menuX: number = 0;
-  private _menuY: number = 0;
+  private container: St.BoxLayout | null = null;
+  private background: St.BoxLayout | null = null;
+  private categories: LayoutGroupCategory[] = [];
+  private renderedCategories: LayoutGroupCategory[] = []; // Categories actually rendered (including test layouts)
+  private onLayoutSelected: ((layout: Layout) => void) | null = null;
+  private layoutButtons: Map<St.Button, Layout> = new Map();
+  private rendererEventIds: MenuEventIds | null = null;
+  private autoHide: SnapMenuAutoHide = new SnapMenuAutoHide();
+  private debugPanel: DebugPanel | null = null;
+  private menuX: number = 0;
+  private menuY: number = 0;
 
   constructor() {
     // Setup auto-hide callback
-    this._autoHide.setOnHide(() => {
+    this.autoHide.setOnHide(() => {
       this.hide();
     });
 
@@ -56,32 +56,32 @@ export class SnapMenu {
     if (isDebugMode()) {
       log('[SnapMenu] Debug mode is enabled, initializing debug panel');
       loadDebugConfig();
-      this._debugPanel = new DebugPanel();
-      this._debugPanel.setOnConfigChanged(() => {
+      this.debugPanel = new DebugPanel();
+      this.debugPanel.setOnConfigChanged(() => {
         // Refresh menu when debug config changes
-        if (this._container) {
-          this.show(this._menuX, this._menuY);
+        if (this.container) {
+          this.show(this.menuX, this.menuY);
         }
       });
-      this._debugPanel.setOnEnter(() => {
-        this._autoHide.setDebugPanelHovered(true, AUTO_HIDE_DELAY_MS);
+      this.debugPanel.setOnEnter(() => {
+        this.autoHide.setDebugPanelHovered(true, AUTO_HIDE_DELAY_MS);
       });
-      this._debugPanel.setOnLeave(() => {
-        this._autoHide.setDebugPanelHovered(false, AUTO_HIDE_DELAY_MS);
+      this.debugPanel.setOnLeave(() => {
+        this.autoHide.setDebugPanelHovered(false, AUTO_HIDE_DELAY_MS);
       });
     } else {
       log('[SnapMenu] Debug mode is disabled');
     }
 
     // Initialize with default categories
-    this._categories = DEFAULT_CATEGORIES;
+    this.categories = DEFAULT_CATEGORIES;
   }
 
   /**
    * Set callback for when a layout is selected
    */
   setOnLayoutSelected(callback: (layout: Layout) => void): void {
-    this._onLayoutSelected = callback;
+    this.onLayoutSelected = callback;
   }
 
   /**
@@ -92,14 +92,14 @@ export class SnapMenu {
     this.hide();
 
     // Store menu position
-    this._menuX = x;
-    this._menuY = y;
+    this.menuX = x;
+    this.menuY = y;
 
     // Reset auto-hide states
-    this._autoHide.resetHoverStates();
+    this.autoHide.resetHoverStates();
 
     // Get debug configuration
-    const debugConfig = this._debugPanel ? getDebugConfig() : null;
+    const debugConfig = this.debugPanel ? getDebugConfig() : null;
 
     // Get screen dimensions and calculate aspect ratio
     const screenWidth = global.screen_width;
@@ -108,8 +108,8 @@ export class SnapMenu {
     const miniatureDisplayHeight = MINIATURE_DISPLAY_WIDTH * aspectRatio;
 
     // Determine which categories to render
-    let categories = this._categories;
-    if (this._debugPanel && debugConfig) {
+    let categories = this.categories;
+    if (this.debugPanel && debugConfig) {
       const testGroups = getTestLayoutGroups();
       const enabledTestGroups = testGroups.filter((g) => debugConfig.enabledTestGroups.has(g.name));
       // Add test groups as an additional category if any are enabled
@@ -123,13 +123,13 @@ export class SnapMenu {
     }
 
     // Store rendered categories for debug panel positioning
-    this._renderedCategories = categories;
+    this.renderedCategories = categories;
 
     // Create background
     const { background, clickOutsideId } = createBackground(() => {
       this.hide();
     });
-    this._background = background;
+    this.background = background;
 
     // Create categories view
     const categoriesView = createCategoriesView(
@@ -138,12 +138,12 @@ export class SnapMenu {
       categories,
       debugConfig,
       (layout) => {
-        if (this._onLayoutSelected) {
-          this._onLayoutSelected(layout);
+        if (this.onLayoutSelected) {
+          this.onLayoutSelected(layout);
         }
       }
     );
-    this._layoutButtons = categoriesView.layoutButtons;
+    this.layoutButtons = categoriesView.layoutButtons;
 
     // Create footer
     const footer = createFooter();
@@ -163,7 +163,7 @@ export class SnapMenu {
       can_focus: true,
       track_hover: true,
     });
-    this._container = container;
+    this.container = container;
 
     // Add children to container
     container.add_child(categoriesView.categoriesContainer);
@@ -181,20 +181,20 @@ export class SnapMenu {
     });
 
     // Setup auto-hide
-    this._autoHide.setupAutoHide(container, AUTO_HIDE_DELAY_MS);
+    this.autoHide.setupAutoHide(container, AUTO_HIDE_DELAY_MS);
 
     // Store event IDs for cleanup
-    this._rendererEventIds = {
+    this.rendererEventIds = {
       clickOutsideId,
       buttonEvents: categoriesView.buttonEvents,
     };
 
     // Show debug panel if enabled
-    if (this._debugPanel) {
+    if (this.debugPanel) {
       const menuHeight = 500;
-      const debugPanelX = this._calculateDebugPanelX(x, this._renderedCategories);
+      const debugPanelX = this.calculateDebugPanelX(x, this.renderedCategories);
       log(`[SnapMenu] Showing debug panel at: x=${debugPanelX}, y=${y}`);
-      this._debugPanel.show(debugPanelX, y, menuHeight);
+      this.debugPanel.show(debugPanelX, y, menuHeight);
     }
   }
 
@@ -202,46 +202,46 @@ export class SnapMenu {
    * Hide the snap menu
    */
   hide(): void {
-    if (this._container) {
+    if (this.container) {
       // Cleanup auto-hide
-      this._autoHide.cleanup();
+      this.autoHide.cleanup();
 
       // Disconnect event handlers
-      if (this._rendererEventIds) {
+      if (this.rendererEventIds) {
         // Disconnect background click event
-        if (this._background) {
-          this._background.disconnect(this._rendererEventIds.clickOutsideId);
+        if (this.background) {
+          this.background.disconnect(this.rendererEventIds.clickOutsideId);
         }
 
         // Disconnect button events
-        for (const { button, enterEventId, leaveEventId, clickEventId } of this._rendererEventIds
+        for (const { button, enterEventId, leaveEventId, clickEventId } of this.rendererEventIds
           .buttonEvents) {
           button.disconnect(enterEventId);
           button.disconnect(leaveEventId);
           button.disconnect(clickEventId);
         }
 
-        this._rendererEventIds = null;
+        this.rendererEventIds = null;
       }
 
       // Remove menu container
-      Main.layoutManager.removeChrome(this._container);
-      this._container.destroy();
+      Main.layoutManager.removeChrome(this.container);
+      this.container.destroy();
 
       // Remove background
-      if (this._background) {
-        Main.layoutManager.removeChrome(this._background);
-        this._background.destroy();
+      if (this.background) {
+        Main.layoutManager.removeChrome(this.background);
+        this.background.destroy();
       }
 
       // Hide debug panel
-      if (this._debugPanel) {
-        this._debugPanel.hide();
+      if (this.debugPanel) {
+        this.debugPanel.hide();
       }
 
-      this._container = null;
-      this._background = null;
-      this._layoutButtons.clear();
+      this.container = null;
+      this.background = null;
+      this.layoutButtons.clear();
     }
   }
 
@@ -249,20 +249,20 @@ export class SnapMenu {
    * Check if menu is currently shown
    */
   isVisible(): boolean {
-    return this._container !== null;
+    return this.container !== null;
   }
 
   /**
    * Update menu position (for following cursor during drag)
    */
   updatePosition(x: number, y: number): void {
-    if (this._container) {
-      this._container.set_position(x, y);
+    if (this.container) {
+      this.container.set_position(x, y);
 
       // Update debug panel position if enabled
-      if (this._debugPanel && this._renderedCategories.length > 0) {
-        const debugPanelX = this._calculateDebugPanelX(x, this._renderedCategories);
-        this._debugPanel.updatePosition(debugPanelX, y);
+      if (this.debugPanel && this.renderedCategories.length > 0) {
+        const debugPanelX = this.calculateDebugPanelX(x, this.renderedCategories);
+        this.debugPanel.updatePosition(debugPanelX, y);
       }
     }
   }
@@ -270,7 +270,7 @@ export class SnapMenu {
   /**
    * Calculate debug panel X position based on menu position and actual rendered categories
    */
-  private _calculateDebugPanelX(menuX: number, categoriesToRender: LayoutGroupCategory[]): number {
+  private calculateDebugPanelX(menuX: number, categoriesToRender: LayoutGroupCategory[]): number {
     const debugPanelGap = 20;
     const debugPanelWidth = 300;
     const screenWidth = global.screen_width;
@@ -317,12 +317,12 @@ export class SnapMenu {
    * If multiple layouts overlap at this position, returns the first one found
    */
   getLayoutAtPosition(x: number, y: number): Layout | null {
-    if (!this._container) {
+    if (!this.container) {
       return null;
     }
 
     // Check each layout button to see if position is within its bounds
-    for (const [button, layout] of this._layoutButtons.entries()) {
+    for (const [button, layout] of this.layoutButtons.entries()) {
       const [actorX, actorY] = button.get_transformed_position();
       const [width, height] = button.get_transformed_size();
 

@@ -37,9 +37,9 @@ function getErrorMessage(e: unknown): string {
 }
 
 export class Reloader {
-  private _originalUuid: string;
-  private _currentUuid: string;
-  private _extensionDir: string;
+  private originalUuid: string;
+  private currentUuid: string;
+  private extensionDir: string;
 
   /**
    * Create a new Reloader instance
@@ -47,9 +47,9 @@ export class Reloader {
    * @param currentUuid Optional current UUID (used internally for reloaded instances)
    */
   constructor(uuid: string, currentUuid?: string) {
-    this._originalUuid = uuid;
-    this._currentUuid = currentUuid || uuid;
-    this._extensionDir = `${GLib.get_home_dir()}/.local/share/gnome-shell/extensions/${this._originalUuid}`;
+    this.originalUuid = uuid;
+    this.currentUuid = currentUuid || uuid;
+    this.extensionDir = `${GLib.get_home_dir()}/.local/share/gnome-shell/extensions/${this.originalUuid}`;
   }
 
   /**
@@ -62,16 +62,16 @@ export class Reloader {
       const extensionManager = Main.extensionManager;
 
       // Clean up old instances
-      this._cleanupOldInstances(extensionManager);
+      this.cleanupOldInstances(extensionManager);
 
       // Prepare new UUID and directory
       const timestamp = GLib.get_real_time();
-      const newUuid = `${this._originalUuid}-reload-${timestamp}`;
+      const newUuid = `${this.originalUuid}-reload-${timestamp}`;
       const tmpDir = `/tmp/${newUuid}`;
 
       // Copy files and update metadata
-      const tmpDirFile = this._copyFilesToTemp(tmpDir);
-      this._updateMetadata(tmpDirFile, newUuid);
+      const tmpDirFile = this.copyFilesToTemp(tmpDir);
+      this.updateMetadata(tmpDirFile, newUuid);
 
       // Load new extension
       GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
@@ -86,8 +86,8 @@ export class Reloader {
           extensionManager.enableExtension(newUuid);
 
           // Clean up old files and extension
-          this._cleanupTempDirs(tmpDir);
-          this._unloadOldExtension(extensionManager, this._currentUuid);
+          this.cleanupTempDirs(tmpDir);
+          this.unloadOldExtension(extensionManager, this.currentUuid);
 
           log('[Reloader] Reload complete!');
         } catch (e: unknown) {
@@ -104,10 +104,10 @@ export class Reloader {
   /**
    * Clean up old reload instances
    */
-  private _cleanupOldInstances(extensionManager: ExtensionManager): void {
+  private cleanupOldInstances(extensionManager: ExtensionManager): void {
     const allExtensions = extensionManager._extensions;
     for (const [uuid, extension] of Object.entries(allExtensions)) {
-      if ((uuid as string).includes('-reload-') && uuid !== this._currentUuid) {
+      if ((uuid as string).includes('-reload-') && uuid !== this.currentUuid) {
         try {
           extensionManager.disableExtension(uuid);
           extensionManager.unloadExtension(extension);
@@ -121,10 +121,10 @@ export class Reloader {
   /**
    * Copy extension files to temporary directory
    */
-  private _copyFilesToTemp(tmpDir: string): Gio.File {
+  private copyFilesToTemp(tmpDir: string): Gio.File {
     GLib.mkdir_with_parents(tmpDir, 0o755);
 
-    const sourceDir = Gio.File.new_for_path(this._extensionDir);
+    const sourceDir = Gio.File.new_for_path(this.extensionDir);
     const tmpDirFile = Gio.File.new_for_path(tmpDir);
 
     const enumerator = sourceDir.enumerate_children(
@@ -155,7 +155,7 @@ export class Reloader {
   /**
    * Update metadata.json with new UUID
    */
-  private _updateMetadata(tmpDirFile: Gio.File, newUuid: string): void {
+  private updateMetadata(tmpDirFile: Gio.File, newUuid: string): void {
     const metadataFile = tmpDirFile.get_child('metadata.json');
 
     if (!metadataFile.query_exists(null)) {
@@ -184,7 +184,7 @@ export class Reloader {
   /**
    * Disable and unload old extension instance
    */
-  private _unloadOldExtension(extensionManager: ExtensionManager, uuid: string): void {
+  private unloadOldExtension(extensionManager: ExtensionManager, uuid: string): void {
     GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
       const oldExtension = extensionManager.lookup(uuid);
       if (!oldExtension) {
@@ -210,9 +210,9 @@ export class Reloader {
   /**
    * Clean up old temporary directories
    */
-  private _cleanupTempDirs(currentTmpDir: string): void {
+  private cleanupTempDirs(currentTmpDir: string): void {
     const currentTmpName = currentTmpDir.split('/').pop();
-    const cleanupCommand = `sh -c "cd /tmp && ls -d ${this._originalUuid}-reload-* 2>/dev/null | grep -v '${currentTmpName}' | xargs rm -rf"`;
+    const cleanupCommand = `sh -c "cd /tmp && ls -d ${this.originalUuid}-reload-* 2>/dev/null | grep -v '${currentTmpName}' | xargs rm -rf"`;
     GLib.spawn_command_line_async(cleanupCommand);
   }
 }

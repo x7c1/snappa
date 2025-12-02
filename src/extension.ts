@@ -6,23 +6,23 @@ import { WindowSnapManager } from './snap/window-snap-manager';
 
 // Extension class
 class Extension {
-  private _dbusReloader: DBusReloader | null;
-  private _windowSnapManager: WindowSnapManager;
+  private dbusReloader: DBusReloader | null;
+  private windowSnapManager: WindowSnapManager;
 
   constructor(metadata: ExtensionMetadata) {
     // Initialize DBusReloader only in development mode
-    this._dbusReloader = __DEV__ ? new DBusReloader('snappa@x7c1.github.io', metadata.uuid) : null;
-    this._windowSnapManager = new WindowSnapManager();
+    this.dbusReloader = __DEV__ ? new DBusReloader('snappa@x7c1.github.io', metadata.uuid) : null;
+    this.windowSnapManager = new WindowSnapManager();
   }
 
   enable(): void {
-    this._dbusReloader?.enable();
-    this._windowSnapManager.enable();
+    this.dbusReloader?.enable();
+    this.windowSnapManager.enable();
   }
 
   disable(): void {
-    this._dbusReloader?.disable();
-    this._windowSnapManager.disable();
+    this.dbusReloader?.disable();
+    this.windowSnapManager.disable();
   }
 }
 
