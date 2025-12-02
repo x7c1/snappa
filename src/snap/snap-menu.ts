@@ -46,8 +46,10 @@ export class SnapMenu {
   private rendererEventIds: MenuEventIds | null = null;
   private autoHide: SnapMenuAutoHide = new SnapMenuAutoHide();
   private debugPanel: DebugPanel | null = null;
-  private menuX: number = 0;
-  private menuY: number = 0;
+  private menuX: number = 0; // Adjusted menu position
+  private menuY: number = 0; // Adjusted menu position
+  private originalCursorX: number = 0; // Original cursor X position (before adjustment)
+  private originalCursorY: number = 0; // Original cursor Y position (before adjustment)
   private menuDimensions: { width: number; height: number } | null = null;
 
   constructor() {
@@ -63,8 +65,9 @@ export class SnapMenu {
       this.debugPanel = new DebugPanel();
       this.debugPanel.setOnConfigChanged(() => {
         // Refresh menu when debug config changes
+        // Use original cursor position (not adjusted position) to avoid shifting
         if (this.container) {
-          this.show(this.menuX, this.menuY);
+          this.show(this.originalCursorX, this.originalCursorY);
         }
       });
       this.debugPanel.setOnEnter(() => {
@@ -94,6 +97,10 @@ export class SnapMenu {
   show(x: number, y: number): void {
     // Hide existing menu if any
     this.hide();
+
+    // Store original cursor position (before any adjustments)
+    this.originalCursorX = x;
+    this.originalCursorY = y;
 
     // Reset auto-hide states
     this.autoHide.resetHoverStates();
@@ -293,6 +300,10 @@ export class SnapMenu {
    */
   updatePosition(x: number, y: number): void {
     if (this.container && this.menuDimensions) {
+      // Store original cursor position
+      this.originalCursorX = x;
+      this.originalCursorY = y;
+
       // Adjust position for boundaries with center alignment
       const adjusted = this.adjustPositionForBoundaries(
         x,
