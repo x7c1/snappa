@@ -6,6 +6,7 @@ export const AUTO_HIDE_DELAY_MS = 500; // Time to wait before hiding menu when c
 // Dimensions
 export const MINIATURE_DISPLAY_WIDTH = 210; // Fixed width for miniature displays
 export const MENU_PADDING = 12; // Padding around menu content
+export const MENU_EDGE_PADDING = 10; // Minimum distance from screen edges
 export const DISPLAY_SPACING = 12; // Spacing between miniature displays (vertical within categories, or old vertical spacing)
 export const CATEGORY_SPACING = 16; // Vertical spacing between categories
 export const DISPLAY_SPACING_HORIZONTAL = 12; // Horizontal spacing between displays within a category
@@ -296,8 +297,34 @@ export const DEFAULT_CATEGORIES: LayoutGroupCategory[] = [
     name: 'Center-Focused Patterns',
     layoutGroups: [
       {
+        name: 'Left 2/3',
+        layouts: [
+          {
+            label: 'Left 2/3',
+            x: '0',
+            y: '0',
+            width: '2/3',
+            height: '100%',
+          },
+          {
+            label: 'Right 1/3',
+            x: '2/3',
+            y: '0',
+            width: '1/3',
+            height: '100%',
+          },
+        ],
+      },
+      {
         name: 'Center 50%',
         layouts: [
+          {
+            label: 'Left 25%',
+            x: '0',
+            y: '0',
+            width: '25%',
+            height: '100%',
+          },
           {
             label: 'Center 50%',
             x: '25%',
@@ -305,28 +332,30 @@ export const DEFAULT_CATEGORIES: LayoutGroupCategory[] = [
             width: '50%',
             height: '100%',
           },
-        ],
-      },
-      {
-        name: 'Left 70%',
-        layouts: [
           {
-            label: 'Left 70%',
-            x: '0',
+            label: 'Right 25%',
+            x: '75%',
             y: '0',
-            width: '70%',
+            width: '25%',
             height: '100%',
           },
         ],
       },
       {
-        name: 'Right 70%',
+        name: 'Right 2/3',
         layouts: [
           {
-            label: 'Right 70%',
-            x: '30%',
+            label: 'Left 1/3',
+            x: '0',
             y: '0',
-            width: '70%',
+            width: '1/3',
+            height: '100%',
+          },
+          {
+            label: 'Right 2/3',
+            x: '1/3',
+            y: '0',
+            width: '2/3',
             height: '100%',
           },
         ],

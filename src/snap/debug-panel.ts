@@ -10,8 +10,11 @@ import {
   toggleDebugOption,
   toggleTestGroup,
 } from './debug-config';
-import { DEFAULT_CATEGORIES } from './snap-menu-constants';
+import { adjustPanelPosition } from './positioning';
+import { DEFAULT_CATEGORIES, MENU_EDGE_PADDING } from './snap-menu-constants';
 import { getTestLayoutGroups } from './test-layouts';
+
+declare function log(message: string): void;
 
 // Constants
 const PANEL_WIDTH = 300;
@@ -37,6 +40,7 @@ export class DebugPanel {
   private onLeave: (() => void) | null = null;
   private enterEventId: number | null = null;
   private leaveEventId: number | null = null;
+  private panelHeight: number = 0; // Store panel height for boundary checking
 
   /**
    * Set callback for when debug configuration changes
@@ -117,8 +121,34 @@ export class DebugPanel {
       trackFullscreen: false,
     });
 
-    // Position panel
+    // Position panel temporarily at requested Y to allow size calculation
     this.container.set_position(x, y);
+
+    // Get preferred height to calculate actual panel size
+    // Use PANEL_WIDTH as the for_width parameter since panel has fixed width
+    const [, naturalHeight] = (this.container as any).get_preferred_height(PANEL_WIDTH);
+    this.panelHeight = naturalHeight > 0 ? naturalHeight : height;
+    log(
+      `[DebugPanel] Requested Y: ${y}, Natural height: ${naturalHeight}, Using height: ${this.panelHeight}, Min height: ${height}`
+    );
+
+    // Adjust Y position based on actual panel height
+    const screenWidth = global.screen_width;
+    const screenHeight = global.screen_height;
+    const adjusted = adjustPanelPosition(
+      { x, y },
+      { width: PANEL_WIDTH, height: this.panelHeight },
+      {
+        screenWidth,
+        screenHeight,
+        edgePadding: MENU_EDGE_PADDING,
+      },
+      { adjustYOnly: true }
+    );
+    log(`[DebugPanel] Adjusted Y: ${adjusted.y} (original: ${y})`);
+
+    // Reposition panel at adjusted coordinates
+    this.container.set_position(x, adjusted.y);
 
     // Setup hover events to notify parent menu
     this.enterEventId = this.container.connect('enter-event', () => {
@@ -156,14 +186,29 @@ export class DebugPanel {
       this.container = null;
     }
     this.checkboxes.clear();
+    this.panelHeight = 0; // Reset panel height
   }
 
   /**
    * Update panel position
    */
   updatePosition(x: number, y: number): void {
-    if (this.container) {
-      this.container.set_position(x, y);
+    if (this.container && this.panelHeight > 0) {
+      // Adjust Y position to keep panel within screen boundaries
+      const screenWidth = global.screen_width;
+      const screenHeight = global.screen_height;
+      const adjusted = adjustPanelPosition(
+        { x, y },
+        { width: PANEL_WIDTH, height: this.panelHeight },
+        {
+          screenWidth,
+          screenHeight,
+          edgePadding: MENU_EDGE_PADDING,
+        },
+        { adjustYOnly: true }
+      );
+      log(`[DebugPanel] Update position: Y ${y} -> ${adjusted.y} (height: ${this.panelHeight})`);
+      this.container.set_position(x, adjusted.y);
     }
   }
 
