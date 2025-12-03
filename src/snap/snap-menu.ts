@@ -12,7 +12,7 @@ const Main = imports.ui.main;
 
 import { getDebugConfig, isDebugMode, loadDebugConfig } from './debug-config';
 import { DebugPanel } from './debug-panel';
-import { convertLayoutGroupSettings, importSettings, loadLayouts } from './layouts-repository';
+import { ensureTestLayoutsImported, importSettings, loadLayouts } from './layouts-repository';
 import { adjustMenuPosition } from './positioning';
 import { SnapMenuAutoHide } from './snap-menu-auto-hide';
 import {
@@ -54,6 +54,7 @@ export class SnapMenu {
   private menuY: number = 0; // Adjusted menu position
   private originalCursorX: number = 0; // Original cursor X position (before adjustment)
   private originalCursorY: number = 0; // Original cursor Y position (before adjustment)
+  private currentWmClass: string | null = null; // Current window WM_CLASS
   private menuDimensions: { width: number; height: number } | null = null;
 
   constructor() {
@@ -70,8 +71,9 @@ export class SnapMenu {
       this.debugPanel.setOnConfigChanged(() => {
         // Refresh menu when debug config changes
         // Use original cursor position (not adjusted position) to avoid shifting
+        // Pass current wmClass to preserve selection state
         if (this.container) {
-          this.show(this.originalCursorX, this.originalCursorY);
+          this.show(this.originalCursorX, this.originalCursorY, this.currentWmClass);
         }
       });
       this.debugPanel.setOnEnter(() => {
@@ -112,6 +114,7 @@ export class SnapMenu {
     // Store original cursor position (before any adjustments)
     this.originalCursorX = x;
     this.originalCursorY = y;
+    this.currentWmClass = wmClass;
 
     // Reset auto-hide states
     this.autoHide.resetHoverStates();
@@ -132,15 +135,18 @@ export class SnapMenu {
       const enabledTestGroupSettings = testGroupSettings.filter((g) =>
         debugConfig.enabledTestGroups.has(g.name)
       );
-      // Add test groups as an additional category if any are enabled
+      // Import test layouts to repository and get the category with stable IDs
       if (enabledTestGroupSettings.length > 0) {
-        // Convert test layout settings to layout groups (with IDs)
-        const enabledTestGroups = convertLayoutGroupSettings(enabledTestGroupSettings);
-        const testCategory: LayoutGroupCategory = {
-          name: 'Test Layouts',
-          layoutGroups: enabledTestGroups,
-        };
-        categories = [...categories, testCategory];
+        const testCategory = ensureTestLayoutsImported(enabledTestGroupSettings);
+        if (testCategory) {
+          // Filter to only enabled groups
+          const enabledGroupNames = new Set(enabledTestGroupSettings.map((g) => g.name));
+          const filteredTestCategory: LayoutGroupCategory = {
+            name: testCategory.name,
+            layoutGroups: testCategory.layoutGroups.filter((g) => enabledGroupNames.has(g.name)),
+          };
+          categories = [...categories, filteredTestCategory];
+        }
       }
     }
 
@@ -309,6 +315,7 @@ export class SnapMenu {
       this.container = null;
       this.background = null;
       this.layoutButtons.clear();
+      // Note: Keep currentWmClass to preserve it across menu reopens
     }
   }
 

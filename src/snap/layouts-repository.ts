@@ -78,6 +78,70 @@ export function convertLayoutGroupSettings(groupSettings: LayoutGroupSetting[]):
 }
 
 /**
+ * Ensure test layouts are imported to the repository.
+ * If test layouts category doesn't exist, import it.
+ * If it exists but has different layouts, update it.
+ */
+export function ensureTestLayoutsImported(
+  testGroupSettings: LayoutGroupSetting[]
+): LayoutGroupCategory | null {
+  if (testGroupSettings.length === 0) {
+    return null;
+  }
+
+  try {
+    const categories = loadLayouts();
+    const testCategoryName = 'Test Layouts';
+    let testCategory = categories.find((c) => c.name === testCategoryName);
+
+    if (!testCategory) {
+      // Test category doesn't exist, create it
+      log('[LayoutsRepository] Creating Test Layouts category');
+      testCategory = {
+        name: testCategoryName,
+        layoutGroups: testGroupSettings.map(settingToLayoutGroup),
+      };
+      categories.push(testCategory);
+      saveLayouts(categories);
+      return testCategory;
+    }
+
+    // Test category exists, check if we need to update layouts
+    // For simplicity, we'll recreate all test layouts if settings change
+    const existingGroupNames = testCategory.layoutGroups.map((g) => g.name).sort();
+    const newGroupNames = testGroupSettings.map((g) => g.name).sort();
+
+    const groupsChanged =
+      existingGroupNames.length !== newGroupNames.length ||
+      existingGroupNames.some((name, i) => name !== newGroupNames[i]);
+
+    if (groupsChanged) {
+      log('[LayoutsRepository] Updating Test Layouts category');
+      // Find groups that should be removed (disabled in debug config)
+      const newGroupNamesSet = new Set(newGroupNames);
+      testCategory.layoutGroups = testCategory.layoutGroups.filter((g) =>
+        newGroupNamesSet.has(g.name)
+      );
+
+      // Add new groups that don't exist yet
+      const existingGroupNamesSet = new Set(testCategory.layoutGroups.map((g) => g.name));
+      for (const groupSetting of testGroupSettings) {
+        if (!existingGroupNamesSet.has(groupSetting.name)) {
+          testCategory.layoutGroups.push(settingToLayoutGroup(groupSetting));
+        }
+      }
+
+      saveLayouts(categories);
+    }
+
+    return testCategory;
+  } catch (e) {
+    log(`[LayoutsRepository] Error ensuring test layouts: ${e}`);
+    return null;
+  }
+}
+
+/**
  * Converts LayoutCategorySetting to LayoutGroupCategory
  */
 function settingToCategory(categorySetting: LayoutCategorySetting): LayoutGroupCategory {
