@@ -11,7 +11,7 @@ import {
   toggleTestGroup,
 } from './debug-config';
 import { adjustPanelPosition } from './positioning';
-import { DEFAULT_CATEGORIES, MENU_EDGE_PADDING } from './snap-menu-constants';
+import { DEFAULT_LAYOUT_SETTINGS, MENU_EDGE_PADDING } from './snap-menu-constants';
 import { getTestLayoutGroups } from './test-layouts';
 
 declare function log(message: string): void;
@@ -284,7 +284,7 @@ export class DebugPanel {
     this.container.add_child(separator);
 
     // Display total number of categories
-    const totalCategories = DEFAULT_CATEGORIES.length;
+    const totalCategories = DEFAULT_LAYOUT_SETTINGS.length;
     const summaryLabel = new St.Label({
       text: `Total Categories: ${totalCategories}`,
       style: `
@@ -296,10 +296,10 @@ export class DebugPanel {
     this.container.add_child(summaryLabel);
 
     // Display each category with hierarchy
-    for (const category of DEFAULT_CATEGORIES) {
+    for (const category of DEFAULT_LAYOUT_SETTINGS) {
       const displayCount = category.layoutGroups.length;
       const totalButtons = category.layoutGroups.reduce(
-        (sum, group) => sum + group.layouts.length,
+        (sum: number, group) => sum + group.layouts.length,
         0
       );
 

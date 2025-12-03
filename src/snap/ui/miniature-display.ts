@@ -3,6 +3,7 @@
 const St = imports.gi.St;
 
 import type { DebugConfig } from '../debug-config';
+import { getSelectedLayoutId } from '../layout-history';
 import {
   DISPLAY_BG_COLOR,
   DISPLAY_SPACING,
@@ -30,6 +31,7 @@ export function createMiniatureDisplayView(
   displayWidth: number,
   displayHeight: number,
   debugConfig: DebugConfig | null,
+  wmClass: string | null,
   onLayoutSelected: (layout: Layout) => void,
   isLastInRow: boolean = false
 ): MiniatureDisplayView {
@@ -63,13 +65,20 @@ export function createMiniatureDisplayView(
   const layoutButtons = new Map<St.Button, Layout>();
   const buttonEvents: MiniatureDisplayView['buttonEvents'] = [];
 
+  // Get selected layout ID for this application
+  const selectedLayoutId = wmClass ? getSelectedLayoutId(wmClass) : null;
+
   // Add layout buttons from this group to the miniature display
   for (const layout of group.layouts) {
+    // Determine if this layout is selected
+    const isSelected = selectedLayoutId !== null && layout.id === selectedLayoutId;
+
     const result = createLayoutButton(
       layout,
       displayWidth,
       displayHeight,
       debugConfig,
+      isSelected,
       onLayoutSelected
     );
     layoutButtons.set(result.button, layout);

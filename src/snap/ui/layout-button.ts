@@ -8,6 +8,7 @@ import { evaluate, parse } from '../layout-expression';
 import {
   BUTTON_BG_COLOR,
   BUTTON_BG_COLOR_HOVER,
+  BUTTON_BG_COLOR_SELECTED,
   BUTTON_BORDER_COLOR,
   BUTTON_BORDER_COLOR_HOVER,
   BUTTON_BORDER_WIDTH,
@@ -44,15 +45,26 @@ function calculateButtonWidth(layout: Layout, displayWidth: number, screenWidth?
 }
 
 /**
- * Get button style based on hover state
+ * Get button style based on hover state and selection state
+ * Color priority: Hover > Selected > Normal
  */
 function getButtonStyle(
   isHovered: boolean,
+  isSelected: boolean,
   buttonWidth: number,
   buttonHeight: number,
   debugConfig: DebugConfig | null
 ): string {
-  const bgColor = isHovered ? BUTTON_BG_COLOR_HOVER : BUTTON_BG_COLOR;
+  // Color priority: Hover > Selected > Normal
+  let bgColor: string;
+  if (isHovered) {
+    bgColor = BUTTON_BG_COLOR_HOVER;
+  } else if (isSelected) {
+    bgColor = BUTTON_BG_COLOR_SELECTED;
+  } else {
+    bgColor = BUTTON_BG_COLOR;
+  }
+
   const borderColor = isHovered ? BUTTON_BORDER_COLOR_HOVER : BUTTON_BORDER_COLOR;
 
   // Apply debug configuration for button borders
@@ -80,6 +92,7 @@ export function createLayoutButton(
   displayWidth: number,
   displayHeight: number,
   debugConfig: DebugConfig | null,
+  isSelected: boolean,
   onLayoutSelected: (layout: Layout) => void
 ): LayoutButtonView {
   // Get screen work area for scaling fixed pixel values
@@ -95,10 +108,10 @@ export function createLayoutButton(
   const buttonHeight =
     resolveLayoutValue(layout.height, displayHeight, workArea.height) - BUTTON_BORDER_WIDTH * 2;
 
-  // Create button with initial style
+  // Create button with initial style (not hovered, but might be selected)
   const button = new St.Button({
     style_class: 'snap-layout-button',
-    style: getButtonStyle(false, buttonWidth, buttonHeight, debugConfig),
+    style: getButtonStyle(false, isSelected, buttonWidth, buttonHeight, debugConfig),
     reactive: true,
     can_focus: true,
     track_hover: true,
@@ -124,12 +137,12 @@ export function createLayoutButton(
 
   // Add hover effect
   const enterEventId = button.connect('enter-event', () => {
-    button.set_style(getButtonStyle(true, buttonWidth, buttonHeight, debugConfig));
+    button.set_style(getButtonStyle(true, isSelected, buttonWidth, buttonHeight, debugConfig));
     return false; // Clutter.EVENT_PROPAGATE
   });
 
   const leaveEventId = button.connect('leave-event', () => {
-    button.set_style(getButtonStyle(false, buttonWidth, buttonHeight, debugConfig));
+    button.set_style(getButtonStyle(false, isSelected, buttonWidth, buttonHeight, debugConfig));
     return false; // Clutter.EVENT_PROPAGATE
   });
 

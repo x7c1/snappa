@@ -27,6 +27,7 @@ export function createCategoryView(
   displayWidth: number,
   displayHeight: number,
   debugConfig: DebugConfig | null,
+  wmClass: string | null,
   onLayoutSelected: (layout: Layout) => void,
   isLastCategory: boolean = false
 ): CategoryView {
@@ -67,6 +68,7 @@ export function createCategoryView(
         displayWidth,
         displayHeight,
         debugConfig,
+        wmClass,
         onLayoutSelected,
         isLastInRow
       );

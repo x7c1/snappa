@@ -1,4 +1,4 @@
-import type { LayoutGroupCategory } from './types';
+import type { LayoutCategorySetting } from './types/layout-setting';
 
 // Timing
 export const AUTO_HIDE_DELAY_MS = 500; // Time to wait before hiding menu when cursor leaves
@@ -20,12 +20,14 @@ export const MENU_BORDER_COLOR = 'rgba(255, 255, 255, 0.2)';
 export const DISPLAY_BG_COLOR = 'rgba(20, 20, 20, 0.9)';
 export const BUTTON_BG_COLOR = 'rgba(80, 80, 80, 0.6)';
 export const BUTTON_BG_COLOR_HOVER = 'rgba(120, 120, 120, 0.8)';
+export const BUTTON_BG_COLOR_SELECTED = 'rgba(100, 150, 250, 0.7)'; // Blue highlight for previously selected layouts
 export const BUTTON_BORDER_COLOR = 'rgba(255, 255, 255, 0.3)';
 export const BUTTON_BORDER_COLOR_HOVER = 'rgba(255, 255, 255, 0.6)';
 export const FOOTER_TEXT_COLOR = 'rgba(255, 255, 255, 0.5)';
 
-// Default categories (category-based structure)
-export const DEFAULT_CATEGORIES: LayoutGroupCategory[] = [
+// Default layout settings (category-based structure)
+// Note: These are settings without IDs - IDs are added when imported to repository
+export const DEFAULT_LAYOUT_SETTINGS: LayoutCategorySetting[] = [
   // Category 1: Vertical Division Patterns
   {
     name: 'Vertical Division Patterns',
@@ -297,20 +299,20 @@ export const DEFAULT_CATEGORIES: LayoutGroupCategory[] = [
     name: 'Center-Focused Patterns',
     layoutGroups: [
       {
-        name: 'Left 2/3',
+        name: 'Left 60%',
         layouts: [
           {
-            label: 'Left 2/3',
+            label: 'Left 60%',
             x: '0',
             y: '0',
-            width: '2/3',
+            width: '60%',
             height: '100%',
           },
           {
-            label: 'Right 1/3',
-            x: '2/3',
+            label: 'Right 40%',
+            x: '60%',
             y: '0',
-            width: '1/3',
+            width: '40%',
             height: '100%',
           },
         ],
@@ -342,20 +344,20 @@ export const DEFAULT_CATEGORIES: LayoutGroupCategory[] = [
         ],
       },
       {
-        name: 'Right 2/3',
+        name: 'Right 60%',
         layouts: [
           {
-            label: 'Left 1/3',
+            label: 'Left 40%',
             x: '0',
             y: '0',
-            width: '1/3',
+            width: '40%',
             height: '100%',
           },
           {
-            label: 'Right 2/3',
-            x: '1/3',
+            label: 'Right 60%',
+            x: '40%',
             y: '0',
-            width: '2/3',
+            width: '60%',
             height: '100%',
           },
         ],

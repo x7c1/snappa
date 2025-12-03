@@ -12,6 +12,7 @@ const GLib = imports.gi.GLib;
 const Main = imports.ui.main;
 
 import { evaluate, parse } from './layout-expression';
+import { loadLayoutHistory, setSelectedLayout } from './layout-history';
 import { type SnapLayout, SnapMenu } from './snap-menu';
 
 declare function log(message: string): void;
@@ -32,6 +33,9 @@ export class WindowSnapManager {
   private snapMenu: SnapMenu;
 
   constructor() {
+    // Load layout history
+    loadLayoutHistory();
+
     // Initialize snap menu
     this.snapMenu = new SnapMenu();
     this.snapMenu.setOnLayoutSelected((layout) => {
@@ -229,6 +233,17 @@ export class WindowSnapManager {
   }
 
   /**
+   * Get WM_CLASS of current window
+   */
+  private getCurrentWindowWmClass(): string | null {
+    const targetWindow = this.currentWindow || this.lastDraggedWindow;
+    if (!targetWindow) {
+      return null;
+    }
+    return targetWindow.get_wm_class();
+  }
+
+  /**
    * Show snap menu at cursor position
    */
   private showSnapMenu(): void {
@@ -237,14 +252,15 @@ export class WindowSnapManager {
     }
 
     const [x, y] = this.getCursorPosition();
-    this.snapMenu.show(x, y);
+    const wmClass = this.getCurrentWindowWmClass();
+    this.snapMenu.show(x, y, wmClass);
   }
 
   /**
    * Apply layout to currently dragged window (called when menu button is clicked)
    */
   private applyLayoutToCurrentWindow(layout: SnapLayout): void {
-    log(`[WindowSnapManager] Apply layout: ${layout.label}`);
+    log(`[WindowSnapManager] Apply layout: ${layout.label} (ID: ${layout.id})`);
 
     // Use lastDraggedWindow since currentWindow might be null if drag just ended
     const targetWindow = this.currentWindow || this.lastDraggedWindow;
@@ -252,6 +268,14 @@ export class WindowSnapManager {
     if (!targetWindow) {
       log('[WindowSnapManager] No window to apply layout to');
       return;
+    }
+
+    // Record layout selection in history
+    const wmClass = targetWindow.get_wm_class();
+    if (wmClass) {
+      setSelectedLayout(wmClass, layout.id);
+    } else {
+      log('[WindowSnapManager] Window has no WM_CLASS, skipping history update');
     }
 
     // Get work area (excludes panels, top bar, etc.)

@@ -12,12 +12,13 @@ const Main = imports.ui.main;
 
 import { getDebugConfig, isDebugMode, loadDebugConfig } from './debug-config';
 import { DebugPanel } from './debug-panel';
+import { convertLayoutGroupSettings, importSettings, loadLayouts } from './layouts-repository';
 import { adjustMenuPosition } from './positioning';
 import { SnapMenuAutoHide } from './snap-menu-auto-hide';
 import {
   AUTO_HIDE_DELAY_MS,
   CATEGORY_SPACING,
-  DEFAULT_CATEGORIES,
+  DEFAULT_LAYOUT_SETTINGS,
   DISPLAY_SPACING,
   DISPLAY_SPACING_HORIZONTAL,
   FOOTER_MARGIN_TOP,
@@ -81,8 +82,15 @@ export class SnapMenu {
       log('[SnapMenu] Debug mode is disabled');
     }
 
-    // Initialize with default categories
-    this.categories = DEFAULT_CATEGORIES;
+    // Initialize layouts repository
+    // First launch: import default settings if repository is empty
+    let layouts = loadLayouts();
+    if (layouts.length === 0) {
+      log('[SnapMenu] Layouts repository is empty, importing default settings');
+      importSettings(DEFAULT_LAYOUT_SETTINGS);
+      layouts = loadLayouts();
+    }
+    this.categories = layouts;
   }
 
   /**
@@ -95,7 +103,7 @@ export class SnapMenu {
   /**
    * Show the snap menu at the specified position
    */
-  show(x: number, y: number): void {
+  show(x: number, y: number, wmClass: string | null = null): void {
     // Hide existing menu if any
     this.hide();
 
@@ -118,10 +126,14 @@ export class SnapMenu {
     // Determine which categories to render
     let categories = this.categories;
     if (this.debugPanel && debugConfig) {
-      const testGroups = getTestLayoutGroups();
-      const enabledTestGroups = testGroups.filter((g) => debugConfig.enabledTestGroups.has(g.name));
+      const testGroupSettings = getTestLayoutGroups();
+      const enabledTestGroupSettings = testGroupSettings.filter((g) =>
+        debugConfig.enabledTestGroups.has(g.name)
+      );
       // Add test groups as an additional category if any are enabled
-      if (enabledTestGroups.length > 0) {
+      if (enabledTestGroupSettings.length > 0) {
+        // Convert test layout settings to layout groups (with IDs)
+        const enabledTestGroups = convertLayoutGroupSettings(enabledTestGroupSettings);
         const testCategory: LayoutGroupCategory = {
           name: 'Test Layouts',
           layoutGroups: enabledTestGroups,
@@ -184,6 +196,7 @@ export class SnapMenu {
         miniatureDisplayHeight,
         categories,
         debugConfig,
+        wmClass,
         (layout) => {
           if (this.onLayoutSelected) {
             this.onLayoutSelected(layout);
