@@ -1,8 +1,8 @@
-/// <reference path="../types/build-mode.d.ts" />
+/// <reference path="../../types/build-mode.d.ts" />
 
 const Gio = imports.gi.Gio;
 
-import { getExtensionDataPath } from './extension-path';
+import { getExtensionDataPath } from '../repository/extension-path';
 
 declare function log(message: string): void;
 

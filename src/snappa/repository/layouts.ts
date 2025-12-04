@@ -1,13 +1,13 @@
 const Gio = imports.gi.Gio;
 
-import { getExtensionDataPath } from './extension-path';
-import { generateLayoutHash } from './layout-hash-generator';
-import type { Layout, LayoutGroup, LayoutGroupCategory } from './types';
+import type { Layout, LayoutGroup, LayoutGroupCategory } from '../types';
 import type {
   LayoutCategorySetting,
   LayoutGroupSetting,
   LayoutSetting,
-} from './types/layout-setting';
+} from '../types/layout-setting';
+import { getExtensionDataPath } from './extension-path';
+import { generateLayoutHash } from './layout-hash-generator';
 
 declare function log(message: string): void;
 

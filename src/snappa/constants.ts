@@ -59,7 +59,7 @@ export const DEFAULT_LAYOUT_SETTINGS: LayoutCategorySetting[] = [
         ],
       },
       {
-        name: 'Vertical 3-split × Horizontal 2-split',
+        name: 'Vertical 3-split x Horizontal 2-split',
         layouts: [
           {
             label: 'Top-left',
@@ -106,7 +106,7 @@ export const DEFAULT_LAYOUT_SETTINGS: LayoutCategorySetting[] = [
         ],
       },
       {
-        name: 'Grid 3×3',
+        name: 'Grid 3x3',
         layouts: [
           {
             label: 'Top-left',
@@ -199,7 +199,7 @@ export const DEFAULT_LAYOUT_SETTINGS: LayoutCategorySetting[] = [
         ],
       },
       {
-        name: 'Grid 2×2',
+        name: 'Grid 2x2',
         layouts: [
           {
             label: 'Top-left',
@@ -232,7 +232,7 @@ export const DEFAULT_LAYOUT_SETTINGS: LayoutCategorySetting[] = [
         ],
       },
       {
-        name: 'Grid 4×2',
+        name: 'Grid 4x2',
         layouts: [
           {
             label: 'Top-left',

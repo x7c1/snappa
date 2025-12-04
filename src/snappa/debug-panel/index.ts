@@ -1,17 +1,12 @@
-/// <reference path="../types/gnome-shell-42.d.ts" />
+/// <reference path="../../types/gnome-shell-42.d.ts" />
 
 const St = imports.gi.St;
 const Clutter = imports.gi.Clutter;
 const Main = imports.ui.main;
 
-import {
-  type DebugConfig,
-  getDebugConfig,
-  toggleDebugOption,
-  toggleTestGroup,
-} from './debug-config';
-import { adjustPanelPosition } from './positioning';
-import { DEFAULT_LAYOUT_SETTINGS, MENU_EDGE_PADDING } from './snap-menu-constants';
+import { DEFAULT_LAYOUT_SETTINGS, MENU_EDGE_PADDING } from '../constants';
+import { adjustPanelPosition } from '../positioning';
+import { type DebugConfig, getDebugConfig, toggleDebugOption, toggleTestGroup } from './config';
 import { getTestLayoutGroups } from './test-layouts';
 
 declare function log(message: string): void;

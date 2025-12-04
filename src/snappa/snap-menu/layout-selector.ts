@@ -1,4 +1,4 @@
-/// <reference path="../types/gnome-shell-42.d.ts" />
+/// <reference path="../../types/gnome-shell-42.d.ts" />
 
 /**
  * SnapMenuLayoutSelector
@@ -7,8 +7,8 @@
  * Handles layout-at-position detection and visual feedback.
  */
 
-import { BUTTON_BG_COLOR, BUTTON_BG_COLOR_SELECTED } from './snap-menu-constants';
-import type { Layout } from './types';
+import { BUTTON_BG_COLOR, BUTTON_BG_COLOR_SELECTED } from '../constants';
+import type { Layout } from '../types';
 
 // @ts-expect-error - St is used for type annotations
 const St = imports.gi.St;

@@ -3,8 +3,6 @@
 const St = imports.gi.St;
 const Main = imports.ui.main;
 
-import type { DebugConfig } from '../debug-config';
-import { evaluate, parse } from '../layout-expression';
 import {
   BUTTON_BG_COLOR,
   BUTTON_BG_COLOR_HOVER,
@@ -12,7 +10,9 @@ import {
   BUTTON_BORDER_COLOR,
   BUTTON_BORDER_COLOR_HOVER,
   BUTTON_BORDER_WIDTH,
-} from '../snap-menu-constants';
+} from '../constants';
+import type { DebugConfig } from '../debug-panel/config';
+import { evaluate, parse } from '../layout-expression';
 import type { Layout } from '../types';
 
 declare function log(message: string): void;
@@ -123,10 +123,10 @@ export function createLayoutButton(
   // Add size label if debug mode is enabled
   if (debugConfig?.showSizeLabels) {
     const sizeLabel = new St.Label({
-      text: `${buttonWidth}×${buttonHeight}`,
+      text: `${buttonWidth}x${buttonHeight}`,
       style: `
                 color: rgba(255, 255, 255, 0.9);
-                font-size: 10px;
+                font-size: 7pt;
                 background-color: rgba(0, 0, 0, 0.7);
                 padding: 2px 4px;
                 border-radius: 2px;

@@ -5,7 +5,7 @@
  * menu position, dimensions, and current window information.
  */
 
-import type { LayoutGroupCategory } from './types';
+import type { LayoutGroupCategory } from '../types';
 
 export class SnapMenuState {
   private categories: LayoutGroupCategory[] = [];

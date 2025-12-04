@@ -1,18 +1,18 @@
-/// <reference path="../types/gnome-shell-42.d.ts" />
+/// <reference path="../../types/gnome-shell-42.d.ts" />
 
 const St = imports.gi.St;
 const Main = imports.ui.main;
 
-import type { DebugConfig } from './debug-config';
 import {
   FOOTER_MARGIN_TOP,
   FOOTER_TEXT_COLOR,
   MENU_BG_COLOR,
   MENU_BORDER_COLOR,
   MENU_PADDING,
-} from './snap-menu-constants';
-import type { Layout, LayoutGroupCategory } from './types';
-import { createCategoryView } from './ui';
+} from '../constants';
+import type { DebugConfig } from '../debug-panel/config';
+import type { Layout, LayoutGroupCategory } from '../types';
+import { createCategoryView } from '../ui';
 
 declare function log(message: string): void;
 

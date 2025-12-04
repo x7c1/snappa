@@ -2,13 +2,9 @@
 
 const St = imports.gi.St;
 
-import type { DebugConfig } from '../debug-config';
-import { getSelectedLayoutId } from '../layout-history';
-import {
-  DISPLAY_BG_COLOR,
-  DISPLAY_SPACING,
-  DISPLAY_SPACING_HORIZONTAL,
-} from '../snap-menu-constants';
+import { DISPLAY_BG_COLOR, DISPLAY_SPACING, DISPLAY_SPACING_HORIZONTAL } from '../constants';
+import type { DebugConfig } from '../debug-panel/config';
+import { getSelectedLayoutId } from '../repository/layout-history';
 import type { Layout, LayoutGroup } from '../types';
 import { createLayoutButton } from './layout-button';
 
@@ -98,7 +94,7 @@ export function createMiniatureDisplayView(
       text: group.name,
       style: `
                 color: rgba(0, 200, 255, 0.9);
-                font-size: 9px;
+                font-size: 7pt;
                 background-color: rgba(0, 0, 0, 0.8);
                 padding: 2px 4px;
                 border-radius: 2px;
@@ -112,7 +108,7 @@ export function createMiniatureDisplayView(
       text: `Spacing: ${DISPLAY_SPACING}px`,
       style: `
                 color: rgba(255, 255, 0, 0.9);
-                font-size: 8px;
+                font-size: 7pt;
                 background-color: rgba(0, 0, 0, 0.7);
                 padding: 2px 4px;
                 border-radius: 2px;

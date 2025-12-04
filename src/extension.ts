@@ -2,27 +2,27 @@
 /// <reference path="./types/build-mode.d.ts" />
 
 import { DBusReloader } from './reloader/dbus-reloader';
-import { WindowSnapManager } from './snap/window-snap-manager';
+import { Controller } from './snappa/controller';
 
 // Extension class
 class Extension {
   private dbusReloader: DBusReloader | null;
-  private windowSnapManager: WindowSnapManager;
+  private controller: Controller;
 
   constructor(metadata: ExtensionMetadata) {
     // Initialize DBusReloader only in development mode
     this.dbusReloader = __DEV__ ? new DBusReloader('snappa@x7c1.github.io', metadata.uuid) : null;
-    this.windowSnapManager = new WindowSnapManager();
+    this.controller = new Controller();
   }
 
   enable(): void {
     this.dbusReloader?.enable();
-    this.windowSnapManager.enable();
+    this.controller.enable();
   }
 
   disable(): void {
     this.dbusReloader?.disable();
-    this.windowSnapManager.disable();
+    this.controller.disable();
   }
 }
 

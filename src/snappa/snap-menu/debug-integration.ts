@@ -1,4 +1,4 @@
-/// <reference path="../types/gnome-shell-42.d.ts" />
+/// <reference path="../../types/gnome-shell-42.d.ts" />
 
 /**
  * SnapMenuDebugIntegration
@@ -7,13 +7,13 @@
  * Handles debug configuration changes and panel lifecycle.
  */
 
-import { getDebugConfig, isDebugMode, loadDebugConfig } from './debug-config';
-import { DebugPanel } from './debug-panel';
-import { ensureTestLayoutsImported } from './layouts-repository';
-import type { SnapMenuAutoHide } from './snap-menu-auto-hide';
-import { AUTO_HIDE_DELAY_MS } from './snap-menu-constants';
-import { getTestLayoutGroups } from './test-layouts';
-import type { LayoutGroupCategory } from './types';
+import { AUTO_HIDE_DELAY_MS } from '../constants';
+import { getDebugConfig, isDebugMode, loadDebugConfig } from '../debug-panel/config';
+import { DebugPanel } from '../debug-panel/index';
+import { getTestLayoutGroups } from '../debug-panel/test-layouts';
+import { ensureTestLayoutsImported } from '../repository/layouts';
+import type { LayoutGroupCategory } from '../types';
+import type { SnapMenuAutoHide } from './auto-hide';
 
 declare function log(message: string): void;
 

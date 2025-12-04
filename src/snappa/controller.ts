@@ -1,8 +1,9 @@
 /// <reference path="../types/gnome-shell-42.d.ts" />
 
 /**
- * Window Snap Manager
+ * Controller
  *
+ * Main controller for Snappa extension.
  * Monitors window dragging and displays a snap menu when the cursor reaches screen edges.
  * Allows users to quickly snap windows to predefined positions by dropping them on menu buttons.
  */
@@ -12,8 +13,9 @@ const GLib = imports.gi.GLib;
 const Main = imports.ui.main;
 
 import { evaluate, parse } from './layout-expression';
-import { loadLayoutHistory, setSelectedLayout } from './layout-history';
-import { type SnapLayout, SnapMenu } from './snap-menu';
+import { loadLayoutHistory, setSelectedLayout } from './repository/layout-history';
+import { SnapMenu } from './snap-menu/index';
+import type { Layout } from './types';
 
 declare function log(message: string): void;
 
@@ -21,7 +23,7 @@ const EDGE_THRESHOLD = 10; // pixels from screen edge to trigger menu
 const EDGE_DELAY = 200; // milliseconds to wait before showing menu
 const MONITOR_INTERVAL = 50; // milliseconds between cursor position checks
 
-export class WindowSnapManager {
+export class Controller {
   private grabOpBeginId: number | null = null;
   private grabOpEndId: number | null = null;
   private motionId: number | null = null;
@@ -44,7 +46,7 @@ export class WindowSnapManager {
   }
 
   /**
-   * Enable the window snap manager
+   * Enable the controller
    */
   enable(): void {
     // Connect to grab-op-begin signal to detect window dragging
@@ -65,7 +67,7 @@ export class WindowSnapManager {
   }
 
   /**
-   * Disable the window snap manager
+   * Disable the controller
    */
   disable(): void {
     // Stop motion monitoring
@@ -259,14 +261,14 @@ export class WindowSnapManager {
   /**
    * Apply layout to currently dragged window (called when menu button is clicked)
    */
-  private applyLayoutToCurrentWindow(layout: SnapLayout): void {
-    log(`[WindowSnapManager] Apply layout: ${layout.label} (ID: ${layout.id})`);
+  private applyLayoutToCurrentWindow(layout: Layout): void {
+    log(`[Controller] Apply layout: ${layout.label} (ID: ${layout.id})`);
 
     // Use lastDraggedWindow since currentWindow might be null if drag just ended
     const targetWindow = this.currentWindow || this.lastDraggedWindow;
 
     if (!targetWindow) {
-      log('[WindowSnapManager] No window to apply layout to');
+      log('[Controller] No window to apply layout to');
       return;
     }
 
@@ -277,7 +279,7 @@ export class WindowSnapManager {
       // Update menu button styles immediately
       this.snapMenu.updateSelectedLayoutHighlight(layout.id);
     } else {
-      log('[WindowSnapManager] Window has no WM_CLASS, skipping history update');
+      log('[Controller] Window has no WM_CLASS, skipping history update');
     }
 
     // Get work area (excludes panels, top bar, etc.)
@@ -297,17 +299,17 @@ export class WindowSnapManager {
     const height = resolve(layout.height, workArea.height);
 
     log(
-      `[WindowSnapManager] Moving window to x=${x}, y=${y}, w=${width}, h=${height} (work area: ${workArea.x},${workArea.y} ${workArea.width}x${workArea.height})`
+      `[Controller] Moving window to x=${x}, y=${y}, w=${width}, h=${height} (work area: ${workArea.x},${workArea.y} ${workArea.width}x${workArea.height})`
     );
 
     // Unmaximize window if maximized
     if (targetWindow.get_maximized()) {
-      log('[WindowSnapManager] Unmaximizing window');
+      log('[Controller] Unmaximizing window');
       targetWindow.unmaximize(3); // Both horizontally and vertically
     }
 
     // Move and resize window
     targetWindow.move_resize_frame(false, x, y, width, height);
-    log('[WindowSnapManager] Window moved');
+    log('[Controller] Window moved');
   }
 }

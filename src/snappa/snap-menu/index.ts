@@ -1,4 +1,4 @@
-/// <reference path="../types/gnome-shell-42.d.ts" />
+/// <reference path="../../types/gnome-shell-42.d.ts" />
 
 /**
  * Snap Menu
@@ -10,31 +10,24 @@
 const St = imports.gi.St;
 const Main = imports.ui.main;
 
-import { getDebugConfig } from './debug-config';
-import { importSettings, loadLayouts } from './layouts-repository';
-import { SnapMenuAutoHide } from './snap-menu-auto-hide';
-import {
-  AUTO_HIDE_DELAY_MS,
-  DEFAULT_LAYOUT_SETTINGS,
-  MINIATURE_DISPLAY_WIDTH,
-} from './snap-menu-constants';
-import { SnapMenuDebugIntegration } from './snap-menu-debug-integration';
-import { SnapMenuLayoutSelector } from './snap-menu-layout-selector';
-import { SnapMenuPositionManager } from './snap-menu-position-manager';
-import type { MenuEventIds } from './snap-menu-renderer';
+import { AUTO_HIDE_DELAY_MS, DEFAULT_LAYOUT_SETTINGS, MINIATURE_DISPLAY_WIDTH } from '../constants';
+import { getDebugConfig } from '../debug-panel/config';
+import { importSettings, loadLayouts } from '../repository/layouts';
+import type { Layout } from '../types';
+import { SnapMenuAutoHide } from './auto-hide';
+import { SnapMenuDebugIntegration } from './debug-integration';
+import { SnapMenuLayoutSelector } from './layout-selector';
+import { SnapMenuPositionManager } from './position-manager';
+import type { MenuEventIds } from './renderer';
 import {
   createBackground,
   createCategoriesView,
   createFooter,
   createMenuContainer,
-} from './snap-menu-renderer';
-import { SnapMenuState } from './snap-menu-state';
-import type { Layout, LayoutGroup } from './types';
+} from './renderer';
+import { SnapMenuState } from './state';
 
 declare function log(message: string): void;
-
-// Re-export types for backward compatibility
-export type { Layout as SnapLayout, LayoutGroup as SnapLayoutGroup };
 
 export class SnapMenu {
   private container: St.BoxLayout | null = null;

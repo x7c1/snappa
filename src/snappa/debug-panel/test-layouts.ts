@@ -1,4 +1,4 @@
-import type { LayoutGroupSetting } from './types/layout-setting';
+import type { LayoutGroupSetting } from '../types/layout-setting';
 
 /**
  * Test layout groups for debugging purposes

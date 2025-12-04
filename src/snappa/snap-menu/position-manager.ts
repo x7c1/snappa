@@ -1,4 +1,4 @@
-/// <reference path="../types/gnome-shell-42.d.ts" />
+/// <reference path="../../types/gnome-shell-42.d.ts" />
 
 /**
  * SnapMenuPositionManager
@@ -7,7 +7,6 @@
  * Handles boundary adjustments.
  */
 
-import { adjustMenuPosition } from './positioning';
 import {
   CATEGORY_SPACING,
   DISPLAY_SPACING,
@@ -17,8 +16,9 @@ import {
   MENU_EDGE_PADDING,
   MENU_PADDING,
   MINIATURE_DISPLAY_WIDTH,
-} from './snap-menu-constants';
-import type { LayoutGroupCategory } from './types';
+} from '../constants';
+import { adjustMenuPosition } from '../positioning';
+import type { LayoutGroupCategory } from '../types';
 
 // @ts-expect-error - St is used for type annotations
 const St = imports.gi.St;
