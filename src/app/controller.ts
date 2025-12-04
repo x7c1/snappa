@@ -235,14 +235,10 @@ export class Controller {
   }
 
   /**
-   * Get WM_CLASS of current window
+   * Get current window
    */
-  private getCurrentWindowWmClass(): string | null {
-    const targetWindow = this.currentWindow || this.lastDraggedWindow;
-    if (!targetWindow) {
-      return null;
-    }
-    return targetWindow.get_wm_class();
+  private getCurrentWindow(): Meta.Window | null {
+    return this.currentWindow || this.lastDraggedWindow;
   }
 
   /**
@@ -254,8 +250,8 @@ export class Controller {
     }
 
     const cursor = this.getCursorPosition();
-    const wmClass = this.getCurrentWindowWmClass();
-    this.mainPanel.show(cursor, wmClass);
+    const window = this.getCurrentWindow();
+    this.mainPanel.show(cursor, window);
   }
 
   /**
@@ -273,9 +269,11 @@ export class Controller {
     }
 
     // Record layout selection in history
+    const windowId = targetWindow.get_id();
     const wmClass = targetWindow.get_wm_class();
+    const title = targetWindow.get_title();
     if (wmClass) {
-      setSelectedLayout(wmClass, layout.id);
+      setSelectedLayout(windowId, wmClass, title, layout.id);
       // Update panel button styles immediately
       this.mainPanel.updateSelectedLayoutHighlight(layout.id);
     } else {

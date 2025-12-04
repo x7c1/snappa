@@ -7,9 +7,11 @@
 
 import type { LayoutGroupCategory, Position, Size } from '../types';
 
+/// <reference path="../types/gnome-shell-42.d.ts" />
+
 export class MainPanelState {
   private categories: LayoutGroupCategory[] = [];
-  private currentWmClass: string | null = null;
+  private currentWindow: Meta.Window | null = null;
   private originalCursorX: number = 0;
   private originalCursorY: number = 0;
   private panelX: number = 0;
@@ -31,17 +33,17 @@ export class MainPanelState {
   }
 
   /**
-   * Get the current window WM_CLASS
+   * Get the current window
    */
-  getCurrentWmClass(): string | null {
-    return this.currentWmClass;
+  getCurrentWindow(): Meta.Window | null {
+    return this.currentWindow;
   }
 
   /**
-   * Set the current window WM_CLASS
+   * Set the current window
    */
-  setCurrentWmClass(wmClass: string | null): void {
-    this.currentWmClass = wmClass;
+  setCurrentWindow(window: Meta.Window | null): void {
+    this.currentWindow = window;
   }
 
   /**
@@ -97,6 +99,6 @@ export class MainPanelState {
     this.panelX = 0;
     this.panelY = 0;
     this.panelDimensions = null;
-    // Note: Keep currentWmClass and categories to preserve across panel reopens
+    // Note: Keep currentWindow and categories to preserve across panel reopens
   }
 }

@@ -52,11 +52,11 @@ export class MainPanel {
     this.debugIntegration.initialize(this.autoHide, () => {
       // Refresh panel when debug config changes
       // Use original cursor position (not adjusted position) to avoid shifting
-      // Pass current wmClass to preserve selection state
+      // Pass current window to preserve selection state
       if (this.container) {
         const cursor = this.state.getOriginalCursor();
-        const wmClass = this.state.getCurrentWmClass();
-        this.show(cursor, wmClass);
+        const window = this.state.getCurrentWindow();
+        this.show(cursor, window);
       }
     });
 
@@ -84,13 +84,13 @@ export class MainPanel {
   /**
    * Show the main panel at the specified position
    */
-  show(cursor: Position, wmClass: string | null = null): void {
+  show(cursor: Position, window: Meta.Window | null = null): void {
     // Hide existing panel if any
     this.hide();
 
-    // Store original cursor position and wmClass
+    // Store original cursor position and window
     this.state.updateOriginalCursor(cursor);
-    this.state.setCurrentWmClass(wmClass);
+    this.state.setCurrentWindow(window);
 
     // Reset auto-hide states
     this.autoHide.resetHoverStates();
@@ -163,7 +163,7 @@ export class MainPanel {
         miniatureDisplayHeight,
         categories,
         debugConfig,
-        wmClass,
+        window,
         (layout) => {
           if (onLayoutSelected) {
             onLayoutSelected(layout);

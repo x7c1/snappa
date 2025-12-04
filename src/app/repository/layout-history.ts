@@ -4,14 +4,29 @@ import { getExtensionDataPath } from './extension-path';
 
 declare function log(message: string): void;
 
-// Layout history: wmClass -> array of layout IDs (ordered by recency)
-// Design: Use array from day 1 to enable future multi-level history
-// Current implementation: Only use array[0] (most recent selection)
+// Layout history with three-tier identification:
+// 1. byWindowId: Session-only, most specific (volatile, not persisted)
+// 2. byWmClass: Persistent, used when only one layout per app
+// 3. byWmClassAndLabel: Persistent, used when multiple layouts per app
+//
+// Window Label: Currently uses window.get_title(), future: user-assignable labels
 interface LayoutHistory {
-  [wmClass: string]: string[]; // Layout IDs, array[0] is most recent
+  byWindowId: {
+    [windowId: number]: string; // windowId -> layoutId (volatile)
+  };
+  byWmClass: {
+    [wmClass: string]: string[]; // wmClass -> layoutId[] (persistent)
+  };
+  byWmClassAndLabel: {
+    [key: string]: string; // "wmClass::label" -> layoutId (persistent)
+  };
 }
 
-let currentHistory: LayoutHistory = {};
+let currentHistory: LayoutHistory = {
+  byWindowId: {},
+  byWmClass: {},
+  byWmClassAndLabel: {},
+};
 
 // Storage file path
 const HISTORY_FILE_NAME = 'layout-history.json';
@@ -21,7 +36,19 @@ function getHistoryFilePath(): string {
 }
 
 /**
+ * Get window label for identification
+ * Phase 1: Returns window.get_title()
+ * Phase 2: Will support user-assignable labels
+ */
+function getWindowLabel(_windowId: number, title: string): string {
+  // Future: Look up user-assigned label for this _windowId
+  // For now, just return the title
+  return title;
+}
+
+/**
  * Load layout history from disk on extension enable
+ * Supports migration from old format (flat wmClass -> layoutId[])
  */
 export function loadLayoutHistory(): void {
   const historyPath = getHistoryFilePath();
@@ -29,7 +56,11 @@ export function loadLayoutHistory(): void {
 
   if (!file.query_exists(null)) {
     log('[LayoutHistory] History file does not exist, using empty history');
-    currentHistory = {};
+    currentHistory = {
+      byWindowId: {},
+      byWmClass: {},
+      byWmClassAndLabel: {},
+    };
     return;
   }
 
@@ -37,22 +68,51 @@ export function loadLayoutHistory(): void {
     const [success, contents] = file.load_contents(null);
     if (!success) {
       log('[LayoutHistory] Failed to load history file');
-      currentHistory = {};
+      currentHistory = {
+        byWindowId: {},
+        byWmClass: {},
+        byWmClassAndLabel: {},
+      };
       return;
     }
 
     const contentsString = String.fromCharCode.apply(null, contents);
-    currentHistory = JSON.parse(contentsString);
+    const loaded = JSON.parse(contentsString);
 
-    log('[LayoutHistory] History loaded successfully');
+    // Check if this is the new format or old format
+    if (loaded.byWmClass !== undefined) {
+      // New format
+      currentHistory = {
+        byWindowId: {}, // Always start fresh (volatile)
+        byWmClass: loaded.byWmClass || {},
+        byWmClassAndLabel: loaded.byWmClassAndLabel || {},
+      };
+      log('[LayoutHistory] History loaded successfully (new format)');
+    } else {
+      // Old format: { [wmClass: string]: string[] }
+      // Migrate to new format
+      currentHistory = {
+        byWindowId: {},
+        byWmClass: loaded,
+        byWmClassAndLabel: {},
+      };
+      log('[LayoutHistory] History migrated from old format');
+      // Save in new format
+      saveLayoutHistory();
+    }
   } catch (e) {
     log(`[LayoutHistory] Error loading history: ${e}`);
-    currentHistory = {};
+    currentHistory = {
+      byWindowId: {},
+      byWmClass: {},
+      byWmClassAndLabel: {},
+    };
   }
 }
 
 /**
  * Save layout history to disk (auto-save on change)
+ * Only persists byWmClass and byWmClassAndLabel (byWindowId is volatile)
  */
 export function saveLayoutHistory(): void {
   const historyPath = getHistoryFilePath();
@@ -65,8 +125,12 @@ export function saveLayoutHistory(): void {
       parent.make_directory_with_parents(null);
     }
 
-    // Write to file
-    const json = JSON.stringify(currentHistory, null, 2);
+    // Write to file (omit byWindowId, which is session-only)
+    const persistentHistory = {
+      byWmClass: currentHistory.byWmClass,
+      byWmClassAndLabel: currentHistory.byWmClassAndLabel,
+    };
+    const json = JSON.stringify(persistentHistory, null, 2);
     file.replace_contents(json, null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
 
     log('[LayoutHistory] History saved successfully');
@@ -76,78 +140,104 @@ export function saveLayoutHistory(): void {
 }
 
 /**
- * Record layout selection for a given application
- * Phase 1: Maintains single element in array (most recent)
- * Phase 2: Can extend to multiple elements for gradient highlighting
+ * Record layout selection for a window
+ * Records in all three tiers: byWindowId, byWmClass, byWmClassAndLabel
  *
+ * @param windowId - Window ID (for session-only history)
  * @param wmClass - Application's WM_CLASS identifier
+ * @param title - Window title (used to generate label)
  * @param layoutId - Layout UUID to record
  */
-export function setSelectedLayout(wmClass: string, layoutId: string): void {
+export function setSelectedLayout(
+  windowId: number,
+  wmClass: string,
+  title: string,
+  layoutId: string
+): void {
   if (!wmClass) {
     log('[LayoutHistory] wmClass is empty, skipping history update');
     return;
   }
 
-  // Get current history for this app
-  const existingHistory = currentHistory[wmClass] || [];
+  // 1. Record in byWindowId (session-only, always updated)
+  currentHistory.byWindowId[windowId] = layoutId;
 
-  // If layout already selected (array[0] === layoutId): Do nothing (no duplicate)
-  if (existingHistory.length > 0 && existingHistory[0] === layoutId) {
-    log(`[LayoutHistory] Layout ${layoutId} already selected for ${wmClass}, no update needed`);
-    return;
+  // 2. Record in byWmClass (persistent)
+  const existingWmClassHistory = currentHistory.byWmClass[wmClass] || [];
+
+  // If layout already at top (array[0] === layoutId): skip update
+  if (existingWmClassHistory.length > 0 && existingWmClassHistory[0] === layoutId) {
+    log(`[LayoutHistory] Layout ${layoutId} already at top for ${wmClass}`);
+  } else {
+    // Remove layoutId if it exists elsewhere in the array
+    const filtered = existingWmClassHistory.filter((id) => id !== layoutId);
+    // Add layoutId to the front
+    currentHistory.byWmClass[wmClass] = [layoutId, ...filtered];
   }
 
-  // Replace array with single-element array [layoutId]
-  // This maintains single element for Phase 1, enables multi-element for Phase 2
-  currentHistory[wmClass] = [layoutId];
+  // 3. Record in byWmClassAndLabel (persistent)
+  const label = getWindowLabel(windowId, title);
+  const key = `${wmClass}::${label}`;
+  currentHistory.byWmClassAndLabel[key] = layoutId;
 
   // Auto-save on change
   saveLayoutHistory();
 
-  log(`[LayoutHistory] Recorded selection: ${wmClass} -> ${layoutId}`);
+  log(
+    `[LayoutHistory] Recorded selection: windowId=${windowId}, wmClass=${wmClass}, label=${label} -> ${layoutId}`
+  );
 }
 
 /**
- * Retrieve most recent layout selection ID for a given application
- * Returns null if no history exists for this app
+ * Retrieve most recent layout selection ID using three-tier lookup
+ * Lookup order:
+ * 1. byWindowId (most specific, session-only)
+ * 2. byWmClass (if only one layout for this app)
+ * 3. byWmClassAndLabel (if multiple layouts for this app)
  *
+ * @param windowId - Window ID
  * @param wmClass - Application's WM_CLASS identifier
+ * @param title - Window title (used to generate label)
  * @returns Layout ID (UUID) of most recent selection, or null
  */
-export function getSelectedLayoutId(wmClass: string): string | null {
+export function getSelectedLayoutId(
+  windowId: number,
+  wmClass: string,
+  title: string
+): string | null {
   if (!wmClass) {
     return null;
   }
 
-  const history = currentHistory[wmClass];
-  if (!history || history.length === 0) {
+  // 1. Try byWindowId (most specific)
+  const byWindowId = currentHistory.byWindowId[windowId];
+  if (byWindowId) {
+    log(`[LayoutHistory] Found by windowId: ${windowId} -> ${byWindowId}`);
+    return byWindowId;
+  }
+
+  // 2. Try byWmClass
+  const byWmClass = currentHistory.byWmClass[wmClass];
+  if (!byWmClass || byWmClass.length === 0) {
+    log(`[LayoutHistory] No history for wmClass: ${wmClass}`);
     return null;
   }
 
-  // Return most recent selection (array[0])
-  return history[0];
-}
-
-/**
- * Retrieve last n layout selection IDs for gradient highlighting (future enhancement)
- * Phase 1: Not used (only single-element history)
- * Phase 2: Enable multi-level history visualization
- *
- * @param wmClass - Application's WM_CLASS identifier
- * @param depth - Number of recent selections to retrieve (default: 3)
- * @returns Array of layout IDs, most recent first
- */
-export function getSelectedLayoutHistory(wmClass: string, depth = 3): string[] {
-  if (!wmClass) {
-    return [];
+  // If only one layout for this wmClass, use it
+  if (byWmClass.length === 1) {
+    log(`[LayoutHistory] Found single layout by wmClass: ${wmClass} -> ${byWmClass[0]}`);
+    return byWmClass[0];
   }
 
-  const history = currentHistory[wmClass];
-  if (!history || history.length === 0) {
-    return [];
+  // 3. Multiple layouts exist for this wmClass, try byWmClassAndLabel
+  const label = getWindowLabel(windowId, title);
+  const key = `${wmClass}::${label}`;
+  const byLabel = currentHistory.byWmClassAndLabel[key];
+  if (byLabel) {
+    log(`[LayoutHistory] Found by wmClass+label: ${key} -> ${byLabel}`);
+    return byLabel;
   }
 
-  // Return last n selections (most recent first)
-  return history.slice(0, depth);
+  log(`[LayoutHistory] Multiple layouts for ${wmClass}, but no match for label: ${label}`);
+  return null;
 }

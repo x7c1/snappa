@@ -27,7 +27,7 @@ export function createMiniatureDisplayView(
   displayWidth: number,
   displayHeight: number,
   debugConfig: DebugConfig | null,
-  wmClass: string | null,
+  window: Meta.Window | null,
   onLayoutSelected: (layout: Layout) => void,
   isLastInRow: boolean = false
 ): MiniatureDisplayView {
@@ -61,8 +61,16 @@ export function createMiniatureDisplayView(
   const layoutButtons = new Map<St.Button, Layout>();
   const buttonEvents: MiniatureDisplayView['buttonEvents'] = [];
 
-  // Get selected layout ID for this application
-  const selectedLayoutId = wmClass ? getSelectedLayoutId(wmClass) : null;
+  // Get selected layout ID for this window using three-tier lookup
+  let selectedLayoutId: string | null = null;
+  if (window) {
+    const windowId = window.get_id();
+    const wmClass = window.get_wm_class();
+    const title = window.get_title();
+    if (wmClass !== null) {
+      selectedLayoutId = getSelectedLayoutId(windowId, wmClass, title);
+    }
+  }
 
   // Add layout buttons from this group to the miniature display
   for (const layout of group.layouts) {

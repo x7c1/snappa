@@ -76,6 +76,8 @@ declare namespace Meta {
     is_fullscreen(): boolean;
     get_maximized(): number;
     get_wm_class(): string | null;
+    get_id(): number;
+    get_title(): string;
   }
 
   interface Display {

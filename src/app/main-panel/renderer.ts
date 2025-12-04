@@ -90,7 +90,7 @@ export function createCategoriesView(
   displayHeight: number,
   categories: LayoutGroupCategory[],
   debugConfig: DebugConfig | null,
-  wmClass: string | null,
+  window: Meta.Window | null,
   onLayoutSelected: (layout: Layout) => void
 ): CategoriesView {
   const categoriesContainer = new St.BoxLayout({
@@ -112,7 +112,7 @@ export function createCategoriesView(
       displayWidth,
       displayHeight,
       debugConfig,
-      wmClass,
+      window,
       onLayoutSelected,
       isLastCategory
     );
