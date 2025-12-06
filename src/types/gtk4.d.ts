@@ -60,7 +60,9 @@ declare namespace Gtk {
 
   class Widget {
     get_root(): Window | null;
-    connect(signal: string, callback: (...args: any[]) => boolean | undefined | void): number;
+
+    // biome-ignore lint: noConfusingVoidType
+    connect(signal: string, callback: (...args: any[]) => boolean | void): number;
     disconnect(id: number): void;
   }
 

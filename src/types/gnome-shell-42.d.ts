@@ -205,7 +205,9 @@ declare namespace St {
     set_child(child: Clutter.Actor): void;
     set_position(x: number, y: number): void;
     set_style(style: string): void;
-    connect(signal: string, callback: () => boolean | undefined | void): number;
+
+    // biome-ignore lint: noConfusingVoidType
+    connect(signal: string, callback: () => boolean | void): number;
     destroy(): void;
   }
 
