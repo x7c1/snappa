@@ -36,6 +36,8 @@ export class MainPanel {
   private layoutButtons: Map<St.Button, Layout> = new Map();
   private rendererEventIds: PanelEventIds | null = null;
   private metadata: ExtensionMetadata;
+  private onPanelShownCallback: (() => void) | null = null;
+  private onPanelHiddenCallback: (() => void) | null = null;
 
   // Component instances
   private state: MainPanelState = new MainPanelState();
@@ -82,6 +84,20 @@ export class MainPanel {
    */
   setOnLayoutSelected(callback: (layout: Layout) => void): void {
     this.layoutSelector.setOnLayoutSelected(callback);
+  }
+
+  /**
+   * Set callback for when panel is shown
+   */
+  setOnPanelShown(callback: () => void): void {
+    this.onPanelShownCallback = callback;
+  }
+
+  /**
+   * Set callback for when panel is hidden
+   */
+  setOnPanelHidden(callback: () => void): void {
+    this.onPanelHiddenCallback = callback;
   }
 
   /**
@@ -216,6 +232,11 @@ export class MainPanel {
 
     // Show debug panel if enabled - it will position itself relative to panel
     this.debugIntegration.showRelativeTo(position, panelDimensions);
+
+    // Notify that panel is shown
+    if (this.onPanelShownCallback) {
+      this.onPanelShownCallback();
+    }
   }
 
   /**
@@ -263,6 +284,11 @@ export class MainPanel {
 
       // Reset state (but keep currentWmClass and categories)
       this.state.reset();
+
+      // Notify that panel is hidden
+      if (this.onPanelHiddenCallback) {
+        this.onPanelHiddenCallback();
+      }
     }
   }
 
