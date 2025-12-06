@@ -5,35 +5,25 @@ import { Controller } from './app/controller';
 import { DBusReloader } from './reloader/dbus-reloader';
 import { ExtensionSettings } from './settings/extension-settings';
 
+declare function log(message: string): void;
+
+/**
+ * Initialize the extension
+ * This function is called when the extension is loaded by GNOME Shell
+ */
+// @ts-expect-error - Called by GNOME Shell runtime
+function init(metadata: ExtensionMetadata): Extension {
+  return new Extension(metadata);
+}
+
 // Extension class
 class Extension {
   private dbusReloader: DBusReloader | null;
   private controller: Controller;
 
   constructor(metadata: ExtensionMetadata) {
-    // Initialize DBusReloader only in development mode (before settings to ensure it always works)
     this.dbusReloader = __DEV__ ? new DBusReloader('snappa@x7c1.github.io', metadata.uuid) : null;
-
-    // Initialize settings (with error handling)
-    let settings: ExtensionSettings | null = null;
-    try {
-      // @ts-expect-error - log exists in GJS runtime
-      log('[Snappa] Loading settings...');
-      // @ts-expect-error - log exists in GJS runtime
-      log(`[Snappa] Extension metadata: uuid=${metadata.uuid}, dir=${metadata.dir?.get_path()}`);
-      settings = new ExtensionSettings(metadata);
-      // @ts-expect-error - log exists in GJS runtime
-      log('[Snappa] Settings loaded successfully');
-    } catch (e) {
-      // @ts-expect-error - log exists in GJS runtime
-      log(`[Snappa] Failed to load settings: ${e}`);
-      // @ts-expect-error - log exists in GJS runtime
-      log(`[Snappa] Error stack: ${e.stack}`);
-      // @ts-expect-error - log exists in GJS runtime
-      log('[Snappa] Extension will run without keyboard shortcut support');
-    }
-
-    // Initialize controller with settings and metadata
+    const settings = loadSettings(metadata);
     this.controller = new Controller(settings, metadata);
   }
 
@@ -49,10 +39,21 @@ class Extension {
 }
 
 /**
- * Initialize the extension
- * This function is called when the extension is loaded by GNOME Shell
+ * Try to load extension settings with error handling
  */
-// @ts-expect-error - Called by GNOME Shell runtime
-function init(metadata: ExtensionMetadata): Extension {
-  return new Extension(metadata);
+function loadSettings(metadata: ExtensionMetadata): ExtensionSettings | null {
+  try {
+    log('[Snappa] Loading settings...');
+    log(`[Snappa] Extension metadata: uuid=${metadata.uuid}, dir=${metadata.dir?.get_path()}`);
+    const settings = new ExtensionSettings(metadata);
+    log('[Snappa] Settings loaded successfully');
+    return settings;
+  } catch (e) {
+    log(`[Snappa] ERROR: Failed to load settings: ${e}`);
+    if (e instanceof Error && e.stack) {
+      log(`[Snappa] Error stack: ${e.stack}`);
+    }
+    log('[Snappa] Extension will run without keyboard shortcut support');
+    return null;
+  }
 }

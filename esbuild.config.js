@@ -34,31 +34,21 @@ async function build() {
         });
 
         // Build prefs.js (GTK4 preferences window)
-        // IMPORTANT: Use IIFE format to avoid 'module is not defined' error in GNOME Shell 42
         await esbuild.build({
             entryPoints: ['src/prefs.ts'],
             bundle: true,
             outfile: 'dist/prefs.js',
             platform: 'neutral',
             target: 'es2020',
-            format: 'iife',
-            globalName: 'prefs',
+            format: 'cjs',
             treeShaking: false,
             banner: {
                 js: '// GNOME Shell Extension Preferences - Bundled with esbuild',
             },
             logLevel: 'info',
-            // Note: No __DEV__ needed for prefs
-            footer: {
-                js: `
-// Export init and fillPreferencesWindow for GNOME Shell
-var init = prefs.default.init;
-var fillPreferencesWindow = prefs.default.fillPreferencesWindow;
-`,
-            },
         });
 
-        // Compile GSettings schema if it exists (added in Phase 3)
+        // Compile GSettings schema if it exists
         const schemaPath = 'dist/schemas/org.gnome.shell.extensions.snappa.gschema.xml';
         if (fs.existsSync(schemaPath)) {
             console.log('Compiling GSettings schema...');

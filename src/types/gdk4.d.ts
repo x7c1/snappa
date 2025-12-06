@@ -8,6 +8,18 @@ declare namespace Gdk {
   const KEY_space: number;
   const KEY_Tab: number;
 
+  // Modifier key constants
+  const KEY_Control_L: number;
+  const KEY_Control_R: number;
+  const KEY_Alt_L: number;
+  const KEY_Alt_R: number;
+  const KEY_Shift_L: number;
+  const KEY_Shift_R: number;
+  const KEY_Super_L: number;
+  const KEY_Super_R: number;
+  const KEY_Meta_L: number;
+  const KEY_Meta_R: number;
+
   // Modifier mask constants
   enum ModifierType {
     SHIFT_MASK = 1 << 0,

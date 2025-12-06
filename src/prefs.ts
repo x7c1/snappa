@@ -1,57 +1,61 @@
 // GNOME Shell Extension Preferences
 // Note: GNOME Shell 42 preferences use the imports API (not ES6 imports)
 
+// @ts-expect-error - GJS imports API
 const Adw = imports.gi.Adw;
+// @ts-expect-error - GJS imports API
 const Gdk = imports.gi.Gdk;
+// @ts-expect-error - GJS imports API
 const Gio = imports.gi.Gio;
+// @ts-expect-error - GJS imports API
 const Gtk = imports.gi.Gtk;
+// @ts-expect-error - GJS imports API
+const GLib = imports.gi.GLib;
 
 declare function log(message: string): void;
 
-// Store extension UUID for later use
+interface ExtensionMetadata {
+  uuid: string;
+  name: string;
+  description: string;
+}
+
+const SCHEMA_ID = 'org.gnome.shell.extensions.snappa';
+const SETTINGS_KEY_SHORTCUT = 'show-panel-shortcut';
+
 let extensionUuid: string | null = null;
 
 // GNOME Shell calls init() first when loading preferences
-function init(metadata: any) {
-  log('[Snappa Prefs] ===== init() called =====');
-  log(`[Snappa Prefs] UUID: ${metadata.uuid}`);
+function init(metadata: ExtensionMetadata): void {
+  log(`[Snappa Prefs] Initializing preferences for ${metadata.uuid}`);
   extensionUuid = metadata.uuid;
 }
 
 // GNOME Shell calls this function to populate the preferences window
-function fillPreferencesWindow(window: Adw.PreferencesWindow): void {
-  log('[Snappa Prefs] ===== fillPreferencesWindow() called =====');
-
+function fillPreferencesWindow(window: any): void {
   if (!extensionUuid) {
-    log('[Snappa Prefs] ERROR: UUID not available');
+    log('[Snappa Prefs] ERROR: Extension UUID not available');
     return;
   }
 
-  // Load settings from extension directory
-  let settings: Gio.Settings | null = null;
+  const settings = loadSettings(extensionUuid);
+  if (!settings) {
+    log('[Snappa Prefs] ERROR: Failed to load settings, preferences UI will not be created');
+    return;
+  }
+
+  buildPreferencesUI(window, settings);
+}
+
+/**
+ * Load GSettings schema for the extension
+ */
+function loadSettings(uuid: string): Gio.Settings | null {
   try {
-    log('[Snappa Prefs] Loading settings schema...');
-    log(`[Snappa Prefs] Extension UUID: ${extensionUuid}`);
-
-    // Try to find schema path (development mode first, then production)
-    const candidatePaths = [
-      `/tmp/${extensionUuid}/schemas`, // Development mode
-      `${imports.gi.GLib.get_home_dir()}/.local/share/gnome-shell/extensions/${extensionUuid}/schemas`, // Production mode
-    ];
-
-    let schemaPath: string | null = null;
-    for (const path of candidatePaths) {
-      log(`[Snappa Prefs] Trying schema path: ${path}`);
-      if (imports.gi.GLib.file_test(path, imports.gi.GLib.FileTest.IS_DIR)) {
-        schemaPath = path;
-        log(`[Snappa Prefs] Schema path found: ${schemaPath}`);
-        break;
-      }
-    }
-
+    const schemaPath = findSchemaPath(uuid);
     if (!schemaPath) {
-      log('[Snappa Prefs] ERROR: Could not find schema directory in any expected location');
-      return;
+      log('[Snappa Prefs] ERROR: Schema directory not found');
+      return null;
     }
 
     const schemaSource = Gio.SettingsSchemaSource.new_from_directory(
@@ -59,161 +63,69 @@ function fillPreferencesWindow(window: Adw.PreferencesWindow): void {
       Gio.SettingsSchemaSource.get_default(),
       false
     );
-    log('[Snappa Prefs] Created schema source');
 
-    const schema = schemaSource.lookup('org.gnome.shell.extensions.snappa', false);
-    log(`[Snappa Prefs] Schema lookup result: ${schema}`);
-
-    if (schema) {
-      log('[Snappa Prefs] Creating Gio.Settings...');
-      settings = new Gio.Settings({ settings_schema: schema });
-      log('[Snappa Prefs] Settings created successfully');
-    } else {
-      log('[Snappa Prefs] ERROR: Schema not found!');
+    const schema = schemaSource.lookup(SCHEMA_ID, false);
+    if (!schema) {
+      log('[Snappa Prefs] ERROR: Schema not found');
+      return null;
     }
+
+    return new Gio.Settings({ settings_schema: schema });
   } catch (e) {
-    log(`[Snappa Prefs] Failed to load settings: ${e}`);
+    log(`[Snappa Prefs] ERROR: Failed to load settings: ${e}`);
+    return null;
+  }
+}
+
+/**
+ * Find the schema directory by trying multiple candidate paths
+ */
+function findSchemaPath(uuid: string): string | null {
+  const candidatePaths = [
+    `/tmp/${uuid}/schemas`,
+    `${GLib.get_home_dir()}/.local/share/gnome-shell/extensions/${uuid}/schemas`,
+  ];
+
+  for (const path of candidatePaths) {
+    if (GLib.file_test(path, GLib.FileTest.IS_DIR)) {
+      return path;
+    }
   }
 
-  // Create preferences page
+  return null;
+}
+
+/**
+ * Build the preferences UI
+ */
+function buildPreferencesUI(window: any, settings: any): void {
   const page = new Adw.PreferencesPage();
   const group = new Adw.PreferencesGroup({
     title: 'Keyboard Shortcuts',
   });
 
-  // Create keyboard shortcut row
   const row = new Adw.ActionRow({
     title: 'Show Main Panel',
     subtitle: 'Keyboard shortcut to invoke main panel for focused window',
   });
 
-  // Shortcut display button
   const shortcutButton = new Gtk.Button({
     valign: Gtk.Align.CENTER,
     has_frame: true,
   });
 
-  // Load and display current shortcut
-  function updateShortcutLabel() {
-    if (!settings) {
-      shortcutButton.set_label('Disabled');
-      return;
-    }
-
-    const shortcuts = settings.get_strv('show-panel-shortcut');
-    if (shortcuts.length > 0) {
-      shortcutButton.set_label(shortcuts[0]);
-    } else {
-      shortcutButton.set_label('Disabled');
-    }
-  }
+  // Update shortcut button label from settings
+  const updateShortcutLabel = () => {
+    const shortcuts = settings.get_strv(SETTINGS_KEY_SHORTCUT);
+    shortcutButton.set_label(shortcuts.length > 0 ? shortcuts[0] : 'Disabled');
+  };
 
   updateShortcutLabel();
 
-  log('[Snappa Prefs] Registering click handler for shortcut button');
-
-  // Click to capture new shortcut
-  const handlerId = shortcutButton.connect('clicked', () => {
-    log('[Snappa Prefs] ===== CLICK HANDLER CALLED =====');
-    log(`[Snappa Prefs] settings = ${settings}`);
-    if (!settings) {
-      log('[Snappa Prefs] ERROR: settings is null, cannot create dialog');
-      return;
-    }
-
-    log('[Snappa Prefs] settings is valid, proceeding...');
-    try {
-      log('[Snappa Prefs] Creating dialog window...');
-      // Create custom dialog window for shortcut capture
-      const dialog = new Gtk.Window({
-        transient_for: window,
-        modal: true,
-        title: 'Press shortcut keys',
-      });
-
-      const box = new Gtk.Box({
-        orientation: Gtk.Orientation.VERTICAL,
-        spacing: 12,
-      });
-
-      const label = new Gtk.Label({
-        label: 'Press Escape to cancel or BackSpace to clear',
-      });
-
-      box.append(label);
-      dialog.set_child(box);
-
-      log('[Snappa Prefs] Adding event controller...');
-      // Capture key press
-      const controller = new Gtk.EventControllerKey();
-      controller.connect(
-        'key-pressed',
-        (_: any, keyval: number, _keycode: number, state: number) => {
-          // Parse key combination
-          const mask = state & Gtk.accelerator_get_default_mod_mask();
-
-          if (keyval === Gdk.KEY_Escape) {
-            dialog.close();
-            return true;
-          }
-
-          if (keyval === Gdk.KEY_BackSpace) {
-            if (settings) {
-              settings.set_strv('show-panel-shortcut', []);
-              updateShortcutLabel();
-            }
-            dialog.close();
-            return true;
-          }
-
-          // Ignore modifier keys pressed alone (Control_L, Control_R, Alt_L, Alt_R, Shift_L, Shift_R, Super_L, Super_R)
-          const isModifierKey =
-            keyval === Gdk.KEY_Control_L ||
-            keyval === Gdk.KEY_Control_R ||
-            keyval === Gdk.KEY_Alt_L ||
-            keyval === Gdk.KEY_Alt_R ||
-            keyval === Gdk.KEY_Shift_L ||
-            keyval === Gdk.KEY_Shift_R ||
-            keyval === Gdk.KEY_Super_L ||
-            keyval === Gdk.KEY_Super_R ||
-            keyval === Gdk.KEY_Meta_L ||
-            keyval === Gdk.KEY_Meta_R;
-
-          if (isModifierKey) {
-            return false;
-          }
-
-          // Valid shortcut must have modifier
-          if (mask === 0) {
-            return false;
-          }
-
-          // Format shortcut string
-          const accelerator = Gtk.accelerator_name(keyval, mask);
-
-          // Save to settings
-          if (settings) {
-            settings.set_strv('show-panel-shortcut', [accelerator]);
-            updateShortcutLabel();
-          }
-
-          dialog.close();
-          return true;
-        }
-      );
-
-      log('[Snappa Prefs] Adding controller to dialog...');
-      dialog.add_controller(controller);
-
-      log('[Snappa Prefs] Presenting dialog...');
-      dialog.present();
-      log('[Snappa Prefs] Dialog presented successfully');
-    } catch (e) {
-      log(`[Snappa Prefs] Error creating dialog: ${e}`);
-    }
+  // Show shortcut capture dialog on button click
+  shortcutButton.connect('clicked', () => {
+    showShortcutDialog(window, settings, updateShortcutLabel);
   });
-
-  log(`[Snappa Prefs] Click handler registered with ID: ${handlerId}`);
 
   // Clear button
   const clearButton = new Gtk.Button({
@@ -224,12 +136,8 @@ function fillPreferencesWindow(window: Adw.PreferencesWindow): void {
   });
 
   clearButton.connect('clicked', () => {
-    log('[Snappa Prefs] ===== CLEAR BUTTON CLICKED =====');
-    if (settings) {
-      settings.set_strv('show-panel-shortcut', []);
-      updateShortcutLabel();
-      log('[Snappa Prefs] Shortcut cleared');
-    }
+    settings.set_strv(SETTINGS_KEY_SHORTCUT, []);
+    updateShortcutLabel();
   });
 
   const box = new Gtk.Box({
@@ -245,5 +153,85 @@ function fillPreferencesWindow(window: Adw.PreferencesWindow): void {
   window.add(page);
 }
 
-// Export both functions as default for esbuild
-export default { init, fillPreferencesWindow };
+/**
+ * Create and show shortcut capture dialog
+ */
+function showShortcutDialog(window: any, settings: any, updateCallback: () => void): void {
+  const dialog = new Gtk.Window({
+    transient_for: window,
+    modal: true,
+    title: 'Press shortcut keys',
+  });
+
+  const box = new Gtk.Box({
+    orientation: Gtk.Orientation.VERTICAL,
+    spacing: 12,
+  });
+
+  const label = new Gtk.Label({
+    label: 'Press Escape to cancel or BackSpace to clear',
+  });
+
+  box.append(label);
+  dialog.set_child(box);
+
+  const controller = new Gtk.EventControllerKey();
+  controller.connect(
+    'key-pressed',
+    (_controller: unknown, keyval: number, _keycode: number, state: number) => {
+      const mask = state & Gtk.accelerator_get_default_mod_mask();
+
+      // Cancel on Escape
+      if (keyval === Gdk.KEY_Escape) {
+        dialog.close();
+        return true;
+      }
+
+      // Clear on BackSpace
+      if (keyval === Gdk.KEY_BackSpace) {
+        settings.set_strv(SETTINGS_KEY_SHORTCUT, []);
+        updateCallback();
+        dialog.close();
+        return true;
+      }
+
+      // Ignore standalone modifier keys
+      if (isModifierKey(keyval)) {
+        return false;
+      }
+
+      // Require at least one modifier key
+      if (mask === 0) {
+        return false;
+      }
+
+      // Save valid shortcut
+      const accelerator = Gtk.accelerator_name(keyval, mask);
+      settings.set_strv(SETTINGS_KEY_SHORTCUT, [accelerator]);
+      updateCallback();
+      dialog.close();
+      return true;
+    }
+  );
+
+  dialog.add_controller(controller);
+  dialog.present();
+}
+
+/**
+ * Check if a keyval represents a modifier key
+ */
+function isModifierKey(keyval: number): boolean {
+  return (
+    keyval === Gdk.KEY_Control_L ||
+    keyval === Gdk.KEY_Control_R ||
+    keyval === Gdk.KEY_Alt_L ||
+    keyval === Gdk.KEY_Alt_R ||
+    keyval === Gdk.KEY_Shift_L ||
+    keyval === Gdk.KEY_Shift_R ||
+    keyval === Gdk.KEY_Super_L ||
+    keyval === Gdk.KEY_Super_R ||
+    keyval === Gdk.KEY_Meta_L ||
+    keyval === Gdk.KEY_Meta_R
+  );
+}
