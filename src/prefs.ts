@@ -33,13 +33,26 @@ function fillPreferencesWindow(window: Adw.PreferencesWindow): void {
     log('[Snappa Prefs] Loading settings schema...');
     log(`[Snappa Prefs] Extension UUID: ${extensionUuid}`);
 
-    // Build extension directory path from UUID
-    const homeDir = imports.gi.GLib.get_home_dir();
-    const extensionPath = `${homeDir}/.local/share/gnome-shell/extensions/${extensionUuid}`;
-    const schemaPath = `${extensionPath}/schemas`;
+    // Try to find schema path (development mode first, then production)
+    const candidatePaths = [
+      `/tmp/${extensionUuid}/schemas`, // Development mode
+      `${imports.gi.GLib.get_home_dir()}/.local/share/gnome-shell/extensions/${extensionUuid}/schemas`, // Production mode
+    ];
 
-    log(`[Snappa Prefs] Extension path: ${extensionPath}`);
-    log(`[Snappa Prefs] Schema path: ${schemaPath}`);
+    let schemaPath: string | null = null;
+    for (const path of candidatePaths) {
+      log(`[Snappa Prefs] Trying schema path: ${path}`);
+      if (imports.gi.GLib.file_test(path, imports.gi.GLib.FileTest.IS_DIR)) {
+        schemaPath = path;
+        log(`[Snappa Prefs] Schema path found: ${schemaPath}`);
+        break;
+      }
+    }
+
+    if (!schemaPath) {
+      log('[Snappa Prefs] ERROR: Could not find schema directory in any expected location');
+      return;
+    }
 
     const schemaSource = Gio.SettingsSchemaSource.new_from_directory(
       schemaPath,
@@ -133,41 +146,61 @@ function fillPreferencesWindow(window: Adw.PreferencesWindow): void {
       log('[Snappa Prefs] Adding event controller...');
       // Capture key press
       const controller = new Gtk.EventControllerKey();
-    controller.connect('key-pressed', (_: any, keyval: number, _keycode: number, state: number) => {
-      // Parse key combination
-      const mask = state & Gtk.accelerator_get_default_mod_mask();
+      controller.connect(
+        'key-pressed',
+        (_: any, keyval: number, _keycode: number, state: number) => {
+          // Parse key combination
+          const mask = state & Gtk.accelerator_get_default_mod_mask();
 
-      if (keyval === Gdk.KEY_Escape) {
-        dialog.close();
-        return true;
-      }
+          if (keyval === Gdk.KEY_Escape) {
+            dialog.close();
+            return true;
+          }
 
-      if (keyval === Gdk.KEY_BackSpace) {
-        if (settings) {
-          settings.set_strv('show-panel-shortcut', []);
-          updateShortcutLabel();
+          if (keyval === Gdk.KEY_BackSpace) {
+            if (settings) {
+              settings.set_strv('show-panel-shortcut', []);
+              updateShortcutLabel();
+            }
+            dialog.close();
+            return true;
+          }
+
+          // Ignore modifier keys pressed alone (Control_L, Control_R, Alt_L, Alt_R, Shift_L, Shift_R, Super_L, Super_R)
+          const isModifierKey =
+            keyval === Gdk.KEY_Control_L ||
+            keyval === Gdk.KEY_Control_R ||
+            keyval === Gdk.KEY_Alt_L ||
+            keyval === Gdk.KEY_Alt_R ||
+            keyval === Gdk.KEY_Shift_L ||
+            keyval === Gdk.KEY_Shift_R ||
+            keyval === Gdk.KEY_Super_L ||
+            keyval === Gdk.KEY_Super_R ||
+            keyval === Gdk.KEY_Meta_L ||
+            keyval === Gdk.KEY_Meta_R;
+
+          if (isModifierKey) {
+            return false;
+          }
+
+          // Valid shortcut must have modifier
+          if (mask === 0) {
+            return false;
+          }
+
+          // Format shortcut string
+          const accelerator = Gtk.accelerator_name(keyval, mask);
+
+          // Save to settings
+          if (settings) {
+            settings.set_strv('show-panel-shortcut', [accelerator]);
+            updateShortcutLabel();
+          }
+
+          dialog.close();
+          return true;
         }
-        dialog.close();
-        return true;
-      }
-
-      // Valid shortcut must have modifier
-      if (mask === 0) {
-        return false;
-      }
-
-      // Format shortcut string
-      const accelerator = Gtk.accelerator_name(keyval, mask);
-
-      // Save to settings
-      if (settings) {
-        settings.set_strv('show-panel-shortcut', [accelerator]);
-        updateShortcutLabel();
-      }
-
-      dialog.close();
-      return true;
-    });
+      );
 
       log('[Snappa Prefs] Adding controller to dialog...');
       dialog.add_controller(controller);

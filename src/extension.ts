@@ -17,10 +17,18 @@ class Extension {
     // Initialize settings (with error handling)
     let settings: ExtensionSettings | null = null;
     try {
+      // @ts-expect-error - log exists in GJS runtime
+      log('[Snappa] Loading settings...');
+      // @ts-expect-error - log exists in GJS runtime
+      log(`[Snappa] Extension metadata: uuid=${metadata.uuid}, dir=${metadata.dir?.get_path()}`);
       settings = new ExtensionSettings(metadata);
+      // @ts-expect-error - log exists in GJS runtime
+      log('[Snappa] Settings loaded successfully');
     } catch (e) {
       // @ts-expect-error - log exists in GJS runtime
       log(`[Snappa] Failed to load settings: ${e}`);
+      // @ts-expect-error - log exists in GJS runtime
+      log(`[Snappa] Error stack: ${e.stack}`);
       // @ts-expect-error - log exists in GJS runtime
       log('[Snappa] Extension will run without keyboard shortcut support');
     }

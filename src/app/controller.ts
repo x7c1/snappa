@@ -73,6 +73,10 @@ export class Controller {
     // Register keyboard shortcut (only if settings are available)
     if (this.settings) {
       try {
+        log('[Controller] Registering keyboard shortcut...');
+        const shortcuts = this.settings.getShowPanelShortcut();
+        log(`[Controller] Current shortcut setting: ${JSON.stringify(shortcuts)}`);
+
         Main.wm.addKeybinding(
           'show-panel-shortcut',
           this.settings.getGSettings(),
@@ -80,9 +84,12 @@ export class Controller {
           Shell.ActionMode.NORMAL,
           () => this.onShowPanelShortcut()
         );
+        log('[Controller] Keyboard shortcut registered successfully');
       } catch (e) {
         log(`[Controller] Failed to register keyboard shortcut: ${e}`);
       }
+    } else {
+      log('[Controller] Settings not available, keyboard shortcut not registered');
     }
   }
 
@@ -344,6 +351,8 @@ export class Controller {
    * Handle keyboard shortcut to show main panel
    */
   private onShowPanelShortcut(): void {
+    log('[Controller] ===== KEYBOARD SHORTCUT TRIGGERED =====');
+
     // Get currently focused window
     const focusWindow = global.display.get_focus_window();
 
@@ -352,14 +361,19 @@ export class Controller {
       return;
     }
 
+    log(`[Controller] Focused window: ${focusWindow.get_title()}`);
+
     // Get current cursor position
     const cursor = this.getCursorPosition();
+    log(`[Controller] Cursor position: x=${cursor.x}, y=${cursor.y}`);
 
     // Store window reference (similar to drag behavior)
     this.currentWindow = focusWindow;
     this.lastDraggedWindow = focusWindow;
 
     // Show main panel at cursor position
+    log('[Controller] Showing main panel...');
     this.mainPanel.show(cursor, focusWindow);
+    log('[Controller] Main panel shown');
   }
 }

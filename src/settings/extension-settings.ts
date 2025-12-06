@@ -5,6 +5,8 @@
 
 /// <reference path="../types/gnome-shell-42.d.ts" />
 
+const Gio = imports.gi.Gio;
+
 export class ExtensionSettings {
   private settings: Gio.Settings;
 
