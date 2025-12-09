@@ -67,6 +67,11 @@ declare namespace Meta {
     IGNORE_AUTOREPEAT = 16,
   }
 
+  enum Cursor {
+    DEFAULT = 0,
+    POINTING_HAND = 60,
+  }
+
   interface Rectangle {
     x: number;
     y: number;
@@ -100,6 +105,7 @@ declare namespace Meta {
     get_current_monitor(): number;
     get_monitor_index_for_rect(rect: Rectangle): number;
     get_focus_window(): Window | null;
+    set_cursor(cursor: Cursor): void;
   }
 }
 

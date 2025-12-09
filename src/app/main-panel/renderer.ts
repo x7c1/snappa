@@ -1,6 +1,7 @@
 /// <reference path="../../types/gnome-shell-42.d.ts" />
 
 const St = imports.gi.St;
+const Meta = imports.gi.Meta;
 const Main = imports.ui.main;
 
 import {
@@ -142,6 +143,7 @@ export function createFooter(onSettingsClick: () => void): St.BoxLayout {
       border-radius: ${SETTINGS_BORDER_RADIUS}px;
       background-color: rgba(255, 255, 255, 0.1);
     `;
+    global.display.set_cursor(Meta.Cursor.POINTING_HAND);
   });
 
   settingsButton.connect('leave-event', () => {
@@ -150,6 +152,7 @@ export function createFooter(onSettingsClick: () => void): St.BoxLayout {
       padding: ${SETTINGS_PADDING_VERTICAL}px ${SETTINGS_PADDING_HORIZONTAL}px;
       border-radius: ${SETTINGS_BORDER_RADIUS}px;
     `;
+    global.display.set_cursor(Meta.Cursor.DEFAULT);
   });
 
   footerBox.add_child(leftSpacer);
