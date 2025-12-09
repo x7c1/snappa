@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if version changed
+        id: version-check
+        run: ./scripts/check-version-change.sh
+
+      - name: Setup Node.js
+        if: steps.version-check.outputs.changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        if: steps.version-check.outputs.changed == 'true'
+        run: npm ci
+
+      - name: Build Extension
+        if: steps.version-check.outputs.changed == 'true'
+        run: npm run build:release
+
+      - name: Package Extension
+        if: steps.version-check.outputs.changed == 'true'
+        id: package
+        run: |
+          ./scripts/package-extension.sh \
+            "${{ steps.version-check.outputs.uuid }}" \
+            "${{ steps.version-check.outputs.version }}"
+
+      - name: Create Release
+        if: steps.version-check.outputs.changed == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version-check.outputs.version }}
+          name: Release ${{ steps.version-check.outputs.version }}
+          files: ${{ steps.package.outputs.filename }}
+          generate_release_notes: true
