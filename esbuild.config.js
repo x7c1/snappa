@@ -46,6 +46,9 @@ async function build() {
                 js: '// GNOME Shell Extension Preferences - Bundled with esbuild',
             },
             logLevel: 'info',
+            define: {
+                '__DEV__': JSON.stringify(isDev),
+            },
         });
 
         // Compile GSettings schema if it exists

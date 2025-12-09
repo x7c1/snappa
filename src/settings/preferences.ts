@@ -132,6 +132,31 @@ function buildPreferencesUI(window: any, settings: any): void {
   row.add_suffix(box);
   group.add(row);
   page.add(group);
+
+  // Debug settings (only visible in debug builds)
+  if (__DEV__) {
+    const debugGroup = new Adw.PreferencesGroup({
+      title: 'Debug Settings',
+    });
+
+    const debugRow = new Adw.ActionRow({
+      title: 'Show Debug Panel',
+      subtitle: 'Display debug panel when in debug mode',
+    });
+
+    const debugSwitch = new Gtk.Switch({
+      valign: Gtk.Align.CENTER,
+    });
+
+    // Bind switch to settings
+    settings.bind('debug-panel-enabled', debugSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
+
+    debugRow.add_suffix(debugSwitch);
+    debugRow.activatable_widget = debugSwitch;
+    debugGroup.add(debugRow);
+    page.add(debugGroup);
+  }
+
   window.add(page);
 }
 

@@ -11,6 +11,7 @@ const St = imports.gi.St;
 const Main = imports.ui.main;
 const Gio = imports.gi.Gio;
 
+import { ExtensionSettings } from '../../settings/extension-settings';
 import { AUTO_HIDE_DELAY_MS, DEFAULT_LAYOUT_SETTINGS, MINIATURE_DISPLAY_WIDTH } from '../constants';
 import { getDebugConfig } from '../debug-panel/config';
 import { importSettings, loadLayouts } from '../repository/layouts';
@@ -55,17 +56,24 @@ export class MainPanel {
       this.hide();
     });
 
+    // Load extension settings for debug panel
+    const extensionSettings = new ExtensionSettings(metadata);
+
     // Initialize debug integration
-    this.debugIntegration.initialize(this.autoHide, () => {
-      // Refresh panel when debug config changes
-      // Use original cursor position (not adjusted position) to avoid shifting
-      // Pass current window to preserve selection state
-      if (this.container) {
-        const cursor = this.state.getOriginalCursor();
-        const window = this.state.getCurrentWindow();
-        this.show(cursor, window);
-      }
-    });
+    this.debugIntegration.initialize(
+      this.autoHide,
+      () => {
+        // Refresh panel when debug config changes
+        // Use original cursor position (not adjusted position) to avoid shifting
+        // Pass current window to preserve selection state
+        if (this.container) {
+          const cursor = this.state.getOriginalCursor();
+          const window = this.state.getCurrentWindow();
+          this.show(cursor, window);
+        }
+      },
+      extensionSettings
+    );
 
     // Initialize layouts repository
     // First launch: import default settings if repository is empty

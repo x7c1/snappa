@@ -7,6 +7,7 @@
  * Handles debug configuration changes and panel lifecycle.
  */
 
+import type { ExtensionSettings } from '../../settings/extension-settings';
 import { AUTO_HIDE_DELAY_MS } from '../constants';
 import { getDebugConfig, isDebugMode, loadDebugConfig } from '../debug-panel/config';
 import { DebugPanel } from '../debug-panel/index';
@@ -19,31 +20,39 @@ declare function log(message: string): void;
 
 export class MainPanelDebugIntegration {
   private debugPanel: DebugPanel | null = null;
+  private extensionSettings: ExtensionSettings | null = null;
 
   /**
-   * Initialize debug panel if debug mode is enabled
+   * Initialize debug panel integration
    */
-  initialize(autoHide: MainPanelAutoHide, onConfigChanged: () => void): void {
-    if (isDebugMode()) {
-      log('[MainPanelDebugIntegration] Debug mode is enabled, initializing debug panel');
-      loadDebugConfig();
-      this.debugPanel = new DebugPanel();
-
-      // Setup debug panel callbacks
-      this.debugPanel.setOnConfigChanged(() => {
-        onConfigChanged();
-      });
-
-      this.debugPanel.setOnEnter(() => {
-        autoHide.setDebugPanelHovered(true, AUTO_HIDE_DELAY_MS);
-      });
-
-      this.debugPanel.setOnLeave(() => {
-        autoHide.setDebugPanelHovered(false, AUTO_HIDE_DELAY_MS);
-      });
-    } else {
+  initialize(
+    autoHide: MainPanelAutoHide,
+    onConfigChanged: () => void,
+    extensionSettings: ExtensionSettings
+  ): void {
+    if (!isDebugMode()) {
       log('[MainPanelDebugIntegration] Debug mode is disabled');
+      return;
     }
+
+    log('[MainPanelDebugIntegration] Initializing debug panel integration');
+    this.extensionSettings = extensionSettings;
+
+    loadDebugConfig();
+    this.debugPanel = new DebugPanel();
+
+    // Setup debug panel callbacks
+    this.debugPanel.setOnConfigChanged(() => {
+      onConfigChanged();
+    });
+
+    this.debugPanel.setOnEnter(() => {
+      autoHide.setDebugPanelHovered(true, AUTO_HIDE_DELAY_MS);
+    });
+
+    this.debugPanel.setOnLeave(() => {
+      autoHide.setDebugPanelHovered(false, AUTO_HIDE_DELAY_MS);
+    });
   }
 
   /**
@@ -100,7 +109,15 @@ export class MainPanelDebugIntegration {
    * Show debug panel relative to main panel position
    */
   showRelativeTo(position: Position, size: Size): void {
-    if (this.debugPanel) {
+    if (!this.debugPanel || !this.extensionSettings) {
+      return;
+    }
+
+    // Check setting value each time main panel is shown
+    const debugPanelEnabled = this.extensionSettings.getDebugPanelEnabled();
+    log(`[MainPanelDebugIntegration] Debug panel enabled: ${debugPanelEnabled}`);
+
+    if (debugPanelEnabled) {
       log(
         `[MainPanelDebugIntegration] Showing debug panel relative to main panel at: x=${position.x}, y=${position.y}, width=${size.width}, height=${size.height}`
       );
