@@ -7,15 +7,15 @@ export const AUTO_HIDE_DELAY_MS = 500; // Time to wait before hiding panel when 
 export const MINIATURE_DISPLAY_WIDTH = 204; // Fixed width for miniature displays
 export const PANEL_PADDING = 12; // Padding around panel content
 export const PANEL_EDGE_PADDING = 10; // Minimum distance from screen edges
-export const DISPLAY_SPACING = 12; // Spacing between miniature displays (vertical within categories, or old vertical spacing)
-export const CATEGORY_SPACING = 16; // Vertical spacing between categories
+export const DISPLAY_SPACING = 4; // Spacing between miniature displays (vertical within categories, or old vertical spacing)
+export const CATEGORY_SPACING = 10; // Vertical spacing between categories
 export const DISPLAY_SPACING_HORIZONTAL = 12; // Horizontal spacing between displays within a category
 export const MAX_DISPLAYS_PER_ROW = 3; // Maximum number of displays per row in a category
 export const BUTTON_BORDER_WIDTH = 1; // Border width for layout buttons
-export const FOOTER_MARGIN_TOP = 12; // Margin above footer
+export const FOOTER_MARGIN_TOP = 8; // Margin above footer
 
 // Colors
-export const PANEL_BG_COLOR = 'rgba(40, 40, 40, 0.95)'; // Main panel background
+export const PANEL_BG_COLOR = 'rgba(40, 40, 40, 0.85)'; // Main panel background
 export const PANEL_BORDER_COLOR = 'rgba(255, 255, 255, 0.2)'; // Main panel border
 export const DISPLAY_BG_COLOR = 'rgba(20, 20, 20, 0.9)';
 export const BUTTON_BG_COLOR = 'rgba(80, 80, 80, 0.6)';

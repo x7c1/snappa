@@ -76,6 +76,7 @@ export function createFooter(onSettingsClick: () => void): St.BoxLayout {
     `,
     vertical: false,
     x_align: 2, // CENTER
+    y_align: 2, // CENTER (vertically align children)
   });
 
   // Text label
@@ -85,6 +86,7 @@ export function createFooter(onSettingsClick: () => void): St.BoxLayout {
       font-size: 12px;
       color: ${FOOTER_TEXT_COLOR};
     `,
+    y_align: 2, // CENTER (vertically center the label)
   });
 
   // Settings icon button
@@ -96,11 +98,12 @@ export function createFooter(onSettingsClick: () => void): St.BoxLayout {
       border-radius: 4px;
     `,
     track_hover: true,
+    y_align: 2, // CENTER (vertically center the button)
   });
 
   const icon = new St.Icon({
     icon_name: 'preferences-system-symbolic', // GNOME standard settings icon
-    icon_size: 14,
+    icon_size: 16,
     style: `color: ${FOOTER_TEXT_COLOR};`,
   });
 
@@ -193,7 +196,7 @@ export function createPanelContainer(): St.BoxLayout {
       background-color: ${PANEL_BG_COLOR};
       border: 2px solid ${PANEL_BORDER_COLOR};
       border-radius: 8px;
-      padding: ${PANEL_PADDING}px;
+      padding: ${PANEL_PADDING}px ${PANEL_PADDING}px ${PANEL_PADDING / 2}px ${PANEL_PADDING}px;
     `,
     vertical: true,
     visible: true,
