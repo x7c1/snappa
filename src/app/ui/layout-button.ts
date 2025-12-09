@@ -1,6 +1,7 @@
 /// <reference path="../../types/gnome-shell-42.d.ts" />
 
 const St = imports.gi.St;
+const Meta = imports.gi.Meta;
 const Main = imports.ui.main;
 
 import {
@@ -152,6 +153,7 @@ export function createLayoutButton(
         getButtonStyle(true, buttonWithMeta._isSelected, buttonWidth, buttonHeight, debugConfig)
       );
     }
+    global.display.set_cursor(Meta.Cursor.POINTING_HAND);
     return false; // Clutter.EVENT_PROPAGATE
   });
 
@@ -162,6 +164,7 @@ export function createLayoutButton(
         getButtonStyle(false, buttonWithMeta._isSelected, buttonWidth, buttonHeight, debugConfig)
       );
     }
+    global.display.set_cursor(Meta.Cursor.DEFAULT);
     return false; // Clutter.EVENT_PROPAGATE
   });
 
