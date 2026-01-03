@@ -1,5 +1,3 @@
-/// <reference path="../types/gnome-shell-42.d.ts" />
-
 /**
  * Extension Reloader
  *
@@ -11,13 +9,11 @@
  *   reloader.reload(); // Call this to reload the extension
  */
 
-// Import required modules
-const GLib = imports.gi.GLib;
-const Gio = imports.gi.Gio;
-const Main = imports.ui.main as any as { extensionManager: ExtensionManager };
+import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 // Declare TextEncoder/TextDecoder for TypeScript
-declare function log(message: string): void;
 declare class TextDecoder {
   constructor(encoding: string);
   decode(data: Uint8Array): string;
@@ -57,9 +53,9 @@ export class Reloader {
    */
   reload(): void {
     try {
-      log('[Reloader] Starting reload...');
+      console.log('[Reloader] Starting reload...');
 
-      const extensionManager = Main.extensionManager;
+      const extensionManager = (Main as any).extensionManager;
 
       // Clean up old instances
       this.cleanupOldInstances(extensionManager);
@@ -73,7 +69,11 @@ export class Reloader {
       const tmpDirFile = this.copyFilesToTemp(tmpDir);
       this.updateMetadata(tmpDirFile, newUuid);
 
-      // Load new extension
+      // Disable old extension first to unregister D-Bus interface
+      console.log('[Reloader] Disabling old extension...');
+      extensionManager.disableExtension(this.currentUuid);
+
+      // Load new extension after a short delay
       GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
         try {
           const newExtension = extensionManager.createExtensionObject(
@@ -89,22 +89,22 @@ export class Reloader {
           this.cleanupTempDirs(tmpDir);
           this.unloadOldExtension(extensionManager, this.currentUuid);
 
-          log('[Reloader] Reload complete!');
+          console.log('[Reloader] Reload complete!');
         } catch (e: unknown) {
-          log(`[Reloader] Error during reload: ${getErrorMessage(e)}`);
+          console.log(`[Reloader] Error during reload: ${getErrorMessage(e)}`);
         }
 
         return GLib.SOURCE_REMOVE;
       });
     } catch (e: unknown) {
-      log(`[Reloader] Failed to reload: ${getErrorMessage(e)}`);
+      console.log(`[Reloader] Failed to reload: ${getErrorMessage(e)}`);
     }
   }
 
   /**
    * Clean up old reload instances
    */
-  private cleanupOldInstances(extensionManager: ExtensionManager): void {
+  private cleanupOldInstances(extensionManager: any): void {
     const allExtensions = extensionManager._extensions;
     for (const [uuid, extension] of Object.entries(allExtensions)) {
       if ((uuid as string).includes('-reload-') && uuid !== this.currentUuid) {
@@ -112,7 +112,7 @@ export class Reloader {
           extensionManager.disableExtension(uuid);
           extensionManager.unloadExtension(extension);
         } catch (e: unknown) {
-          log(`[Reloader] Error removing ${uuid}: ${getErrorMessage(e)}`);
+          console.log(`[Reloader] Error removing ${uuid}: ${getErrorMessage(e)}`);
         }
       }
     }
@@ -220,26 +220,21 @@ export class Reloader {
   }
 
   /**
-   * Disable and unload old extension instance
+   * Unload old extension instance (already disabled)
    */
-  private unloadOldExtension(extensionManager: ExtensionManager, uuid: string): void {
+  private unloadOldExtension(extensionManager: any, uuid: string): void {
     GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
       const oldExtension = extensionManager.lookup(uuid);
       if (!oldExtension) {
         return GLib.SOURCE_REMOVE;
       }
 
-      extensionManager.disableExtension(uuid);
-
-      GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
-        try {
-          extensionManager.unloadExtension(oldExtension);
-          log(`[Reloader] Successfully unloaded: ${uuid}`);
-        } catch (e: unknown) {
-          log(`[Reloader] Error unloading: ${getErrorMessage(e)}`);
-        }
-        return GLib.SOURCE_REMOVE;
-      });
+      try {
+        extensionManager.unloadExtension(oldExtension);
+        console.log(`[Reloader] Successfully unloaded: ${uuid}`);
+      } catch (e: unknown) {
+        console.log(`[Reloader] Error unloading: ${getErrorMessage(e)}`);
+      }
 
       return GLib.SOURCE_REMOVE;
     });
