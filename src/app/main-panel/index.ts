@@ -8,12 +8,25 @@ import Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import type {Layout} from '../types/index.js';
 import {parse, evaluate} from '../layout-expression/index.js';
+import {MainPanelAutoHide, type AutoHideEventIds} from './auto-hide.js';
+
+const AUTO_HIDE_DELAY_MS = 500; // milliseconds
 
 export class MainPanel {
   private panel: St.BoxLayout | null = null;
   private buttons: St.Button[] = [];
   private currentWindow: Meta.Window | null = null;
   private onLayoutSelected: ((layout: Layout) => void) | null = null;
+  private autoHide: MainPanelAutoHide;
+  private autoHideEventIds: AutoHideEventIds | null = null;
+
+  constructor() {
+    this.autoHide = new MainPanelAutoHide();
+    this.autoHide.setOnHide(() => {
+      console.log('[MainPanel] Auto-hide triggered');
+      this.hide();
+    });
+  }
 
   /**
    * Set the current window being dragged
@@ -62,6 +75,9 @@ export class MainPanel {
     const panelY = y !== undefined ? y : monitor.y + Math.floor(monitor.height / 2);
 
     this.panel.set_position(panelX, panelY);
+
+    // Setup auto-hide
+    this.autoHideEventIds = this.autoHide.setupAutoHide(this.panel, AUTO_HIDE_DELAY_MS);
 
     console.log('[MainPanel] Panel created and positioned at', panelX, panelY);
   }
@@ -162,6 +178,16 @@ export class MainPanel {
     }
 
     console.log('[MainPanel] Hiding panel...');
+
+    // Disconnect auto-hide events
+    if (this.autoHideEventIds && this.panel) {
+      this.panel.disconnect(this.autoHideEventIds.leaveEventId);
+      this.panel.disconnect(this.autoHideEventIds.enterEventId);
+      this.autoHideEventIds = null;
+    }
+
+    // Cleanup auto-hide
+    this.autoHide.cleanup();
 
     // Remove from UI
     (Main.layoutManager as any).removeChrome(this.panel);

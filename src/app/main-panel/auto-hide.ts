@@ -1,4 +1,4 @@
-/// <reference path="../../types/gnome-shell-42.d.ts" />
+import GLib from 'gi://GLib';
 
 export interface AutoHideEventIds {
   leaveEventId: number;
@@ -27,7 +27,6 @@ export class MainPanelAutoHide {
   /**
    * Setup auto-hide event handlers on panel container
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setupAutoHide(container: any, autoHideDelayMs: number): AutoHideEventIds {
     // Connect leave-event to check and start auto-hide timer
     const leaveEventId = container.connect('leave-event', () => {
@@ -90,8 +89,8 @@ export class MainPanelAutoHide {
     // Clear existing timeout if any
     this.clearAutoHideTimeout();
 
-    // Start new timeout
-    this.autoHideTimeoutId = imports.mainloop.timeout_add(autoHideDelayMs, () => {
+    // Start new timeout (using GLib instead of imports.mainloop)
+    this.autoHideTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, autoHideDelayMs, () => {
       // Double-check that neither panel nor debug panel is hovered before hiding
       if (!this.isPanelHovered && !this.isDebugPanelHovered) {
         if (this.onHide) {
@@ -99,7 +98,7 @@ export class MainPanelAutoHide {
         }
       }
       this.autoHideTimeoutId = null;
-      return false; // Don't repeat
+      return GLib.SOURCE_REMOVE; // Don't repeat
     });
   }
 
@@ -108,7 +107,7 @@ export class MainPanelAutoHide {
    */
   private clearAutoHideTimeout(): void {
     if (this.autoHideTimeoutId !== null) {
-      imports.mainloop.source_remove(this.autoHideTimeoutId);
+      GLib.Source.remove(this.autoHideTimeoutId);
       this.autoHideTimeoutId = null;
     }
   }
