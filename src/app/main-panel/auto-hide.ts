@@ -89,7 +89,7 @@ export class MainPanelAutoHide {
     // Clear existing timeout if any
     this.clearAutoHideTimeout();
 
-    // Start new timeout (using GLib instead of imports.mainloop)
+    // Start new timeout
     this.autoHideTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, autoHideDelayMs, () => {
       // Double-check that neither panel nor debug panel is hovered before hiding
       if (!this.isPanelHovered && !this.isDebugPanelHovered) {
