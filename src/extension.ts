@@ -12,55 +12,53 @@ export default class SnappaExtension extends Extension {
   enable() {
     console.log('[Snappa] Extension enabled');
 
-    this.dbusReloader = this.initializeDevReloader();
+    this.dbusReloader = this.initializeDBusReloader();
+    this.dbusReloader?.enable();
 
-    const settings = this.initializeSettings();
-    this.controller = settings ? this.initializeController(settings) : null;
+    this.controller = this.initializeController();
+    this.controller?.enable();
   }
 
   disable() {
     console.log('[Snappa] Extension disabled');
 
     // Clean up controller
-    if (this.controller) {
-      this.controller.disable();
-      this.controller = null;
-    }
+    this.controller?.disable();
+    this.controller = null;
 
     // Clean up D-Bus reloader
-    if (this.dbusReloader) {
-      this.dbusReloader.disable();
-      this.dbusReloader = null;
-    }
+    this.dbusReloader?.disable();
+    this.dbusReloader = null;
   }
 
-  private initializeDevReloader(): DBusReloader | null {
+  private initializeDBusReloader(): DBusReloader | null {
     if (!__DEV__) {
       return null;
     }
-
-    const reloader = new DBusReloader('snappa@x7c1.github.io', this.metadata.uuid);
-    reloader.enable();
-    return reloader;
+    try {
+      return new DBusReloader('snappa@x7c1.github.io', this.metadata.uuid);
+    } catch (e) {
+      console.log(`[Snappa] ERROR: Failed to initialize DBusReloader: ${e}`);
+      return null;
+    }
   }
 
   private initializeSettings(): ExtensionSettings | null {
     try {
-      const settings = new ExtensionSettings(this.metadata);
-      console.log('[Snappa] Settings loaded successfully');
-      return settings;
+      return new ExtensionSettings(this.metadata);
     } catch (e) {
-      console.log(`[Snappa] ERROR: Failed to load settings: ${e}`);
+      console.log(`[Snappa] ERROR: Failed to initialize settings: ${e}`);
       return null;
     }
   }
 
-  private initializeController(settings: ExtensionSettings): Controller | null {
+  private initializeController(): Controller | null {
+    const settings = this.initializeSettings();
+    if (!settings) {
+      return null;
+    }
     try {
-      const controller = new Controller(settings, this.metadata);
-      controller.enable();
-      console.log('[Snappa] Controller initialized');
-      return controller;
+      return new Controller(settings, this.metadata);
     } catch (e) {
       console.log(`[Snappa] ERROR: Failed to initialize controller: ${e}`);
       return null;
