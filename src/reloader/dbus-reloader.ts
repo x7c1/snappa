@@ -1,5 +1,3 @@
-/// <reference path="../types/gnome-shell-42.d.ts" />
-
 /**
  * D-Bus Reloader Interface
  *
@@ -12,13 +10,9 @@
  *     --method io.github.x7c1.Snappa.Reload
  */
 
-import { Reloader } from './reloader';
-
-const Gio = imports.gi.Gio;
-const GLib = imports.gi.GLib;
-
-// Declare log function for TypeScript
-declare function log(message: string): void;
+import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+import { Reloader } from './reloader.js';
 
 // D-Bus interface XML definition
 const DBUS_INTERFACE_XML = `
@@ -50,18 +44,22 @@ export class DBusReloader {
    */
   enable(): void {
     try {
-      log('[DBusReloader] Starting D-Bus registration...');
+      console.log('[DBusReloader] Starting D-Bus registration...');
 
       // Get the session bus connection
       const connection = Gio.bus_get_sync(Gio.BusType.SESSION, null);
-      log('[DBusReloader] Got session bus connection');
+      console.log('[DBusReloader] Got session bus connection');
 
       // Parse the XML interface definition
       const nodeInfo = Gio.DBusNodeInfo.new_for_xml(DBUS_INTERFACE_XML);
-      log('[DBusReloader] Parsed XML interface definition');
+      console.log('[DBusReloader] Parsed XML interface definition');
 
       const interfaceInfo = nodeInfo.lookup_interface('io.github.x7c1.Snappa');
-      log('[DBusReloader] Looked up interface info');
+      console.log('[DBusReloader] Looked up interface info');
+
+      if (!interfaceInfo) {
+        throw new Error('Failed to lookup D-Bus interface info');
+      }
 
       // Register the D-Bus object
       this.dbusId = connection.register_object(
@@ -76,7 +74,7 @@ export class DBusReloader {
           _parameters: any,
           invocation: any
         ) => {
-          log(`[DBusReloader] Method called: ${method_name}`);
+          console.log(`[DBusReloader] Method called: ${method_name}`);
           if (method_name === 'Reload') {
             this.handleReload(invocation);
           }
@@ -85,11 +83,11 @@ export class DBusReloader {
         null // set_property
       );
 
-      log(
+      console.log(
         `[DBusReloader] D-Bus interface registered at /io/github/x7c1/Snappa with ID: ${this.dbusId}`
       );
     } catch (e: unknown) {
-      log(`[DBusReloader] Failed to register D-Bus interface: ${this.getErrorMessage(e)}`);
+      console.log(`[DBusReloader] Failed to register D-Bus interface: ${this.getErrorMessage(e)}`);
     }
   }
 
@@ -102,9 +100,9 @@ export class DBusReloader {
         const connection = Gio.bus_get_sync(Gio.BusType.SESSION, null);
         connection.unregister_object(this.dbusId);
         this.dbusId = null;
-        log('[DBusReloader] D-Bus interface unregistered');
+        console.log('[DBusReloader] D-Bus interface unregistered');
       } catch (e: unknown) {
-        log(`[DBusReloader] Failed to unregister: ${this.getErrorMessage(e)}`);
+        console.log(`[DBusReloader] Failed to unregister: ${this.getErrorMessage(e)}`);
       }
     }
   }
@@ -114,13 +112,13 @@ export class DBusReloader {
    */
   private handleReload(invocation: Gio.DBusMethodInvocation): void {
     try {
-      log('[DBusReloader] Reload method called via D-Bus');
+      console.log('[DBusReloader] Reload method called via D-Bus');
       this.reloader.reload();
 
       // Return success
       invocation.return_value(GLib.Variant.new('(b)', [true]));
     } catch (e: unknown) {
-      log(`[DBusReloader] Reload failed: ${this.getErrorMessage(e)}`);
+      console.log(`[DBusReloader] Reload failed: ${this.getErrorMessage(e)}`);
 
       // Return error
       invocation.return_error_literal(0, 1, `Reload failed: ${this.getErrorMessage(e)}`);

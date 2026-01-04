@@ -1,8 +1,5 @@
-/// <reference path="../../types/build-mode.d.ts" />
-
-const Gio = imports.gi.Gio;
-
-import { getExtensionDataPath } from '../repository/extension-path';
+import Gio from 'gi://Gio';
+import { getExtensionDataPath } from '../repository/extension-path.js';
 
 declare function log(message: string): void;
 
@@ -96,7 +93,7 @@ export function loadDebugConfig(): void {
       return;
     }
 
-    const contentsString = String.fromCharCode.apply(null, contents);
+    const contentsString = new TextDecoder('utf-8').decode(contents);
     const data = JSON.parse(contentsString);
 
     // Restore config from JSON

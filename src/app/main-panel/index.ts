@@ -1,5 +1,3 @@
-/// <reference path="../../types/gnome-shell-42.d.ts" />
-
 /**
  * Main Panel
  *
@@ -7,29 +5,34 @@
  * The panel appears at the cursor position when the user drags a window to a screen edge.
  */
 
-const St = imports.gi.St;
-const Meta = imports.gi.Meta;
-const Main = imports.ui.main;
-const Gio = imports.gi.Gio;
+import Gio from 'gi://Gio';
+import Meta from 'gi://Meta';
+import St from 'gi://St';
+import type { ExtensionMetadata } from 'resource:///org/gnome/shell/extensions/extension.js';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import { ExtensionSettings } from '../../settings/extension-settings';
-import { AUTO_HIDE_DELAY_MS, DEFAULT_LAYOUT_SETTINGS, MINIATURE_DISPLAY_WIDTH } from '../constants';
-import { getDebugConfig } from '../debug-panel/config';
-import { importSettings, loadLayouts } from '../repository/layouts';
-import type { Layout, Position } from '../types';
-import { MainPanelAutoHide } from './auto-hide';
-import { MainPanelDebugIntegration } from './debug-integration';
-import { MainPanelKeyboardNavigator } from './keyboard-navigator';
-import { MainPanelLayoutSelector } from './layout-selector';
-import { MainPanelPositionManager } from './position-manager';
-import type { PanelEventIds } from './renderer';
+import { ExtensionSettings } from '../../settings/extension-settings.js';
+import {
+  AUTO_HIDE_DELAY_MS,
+  DEFAULT_LAYOUT_SETTINGS,
+  MINIATURE_DISPLAY_WIDTH,
+} from '../constants.js';
+import { getDebugConfig } from '../debug-panel/config.js';
+import { importSettings, loadLayouts } from '../repository/layouts.js';
+import type { Layout, Position } from '../types/index.js';
+import { MainPanelAutoHide } from './auto-hide.js';
+import { MainPanelDebugIntegration } from './debug-integration.js';
+import { MainPanelKeyboardNavigator } from './keyboard-navigator.js';
+import { MainPanelLayoutSelector } from './layout-selector.js';
+import { MainPanelPositionManager } from './position-manager.js';
+import type { PanelEventIds } from './renderer.js';
 import {
   createBackground,
   createCategoriesView,
   createFooter,
   createPanelContainer,
-} from './renderer';
-import { MainPanelState } from './state';
+} from './renderer.js';
+import { MainPanelState } from './state.js';
 
 declare function log(message: string): void;
 

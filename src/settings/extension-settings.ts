@@ -3,9 +3,8 @@
  * Provides access to GSettings schema for keyboard shortcuts
  */
 
-/// <reference path="../types/gnome-shell-42.d.ts" />
-
-const Gio = imports.gi.Gio;
+import Gio from 'gi://Gio';
+import type { ExtensionMetadata } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 export class ExtensionSettings {
   private settings: Gio.Settings;
@@ -13,8 +12,13 @@ export class ExtensionSettings {
   constructor(metadata: ExtensionMetadata) {
     // Get schema from extension directory
     const schemaDir = metadata.dir.get_child('schemas');
+    const schemaPath = schemaDir.get_path();
+    if (!schemaPath) {
+      throw new Error('Failed to get schema directory path');
+    }
+
     const schemaSource = Gio.SettingsSchemaSource.new_from_directory(
-      schemaDir.get_path(),
+      schemaPath,
       Gio.SettingsSchemaSource.get_default(),
       false
     );

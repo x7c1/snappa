@@ -1,86 +1,16 @@
-declare function log(message: string): void;
+/// <reference path="../types/build-mode.d.ts" />
 
-// Note: GNOME Shell 42 preferences use the imports API (not ES6 imports)
-const Adw = imports.gi.Adw;
-const Gdk = imports.gi.Gdk;
-const Gio = imports.gi.Gio;
-const Gtk = imports.gi.Gtk;
-const GLib = imports.gi.GLib;
+import Adw from 'gi://Adw';
+import Gdk from 'gi://Gdk';
+import Gio from 'gi://Gio';
+import Gtk from 'gi://Gtk';
 
-const SCHEMA_ID = 'org.gnome.shell.extensions.snappa';
 const SETTINGS_KEY_SHORTCUT = 'show-panel-shortcut';
-
-// GNOME Shell Extension Preferences
-export class Preferences {
-  private extensionUuid: string;
-
-  constructor(metadata: ExtensionMetadata) {
-    this.extensionUuid = metadata.uuid;
-  }
-
-  fillWindow(window: any): void {
-    const settings = loadSettings(this.extensionUuid);
-    if (!settings) {
-      log('[Snappa Prefs] ERROR: Failed to load settings, preferences UI will not be created');
-      return;
-    }
-
-    buildPreferencesUI(window, settings);
-  }
-}
-
-/**
- * Load GSettings schema for the extension
- */
-function loadSettings(uuid: string): Gio.Settings | null {
-  try {
-    const schemaPath = findSchemaPath(uuid);
-    if (!schemaPath) {
-      log('[Snappa Prefs] ERROR: Schema directory not found');
-      return null;
-    }
-
-    const schemaSource = Gio.SettingsSchemaSource.new_from_directory(
-      schemaPath,
-      Gio.SettingsSchemaSource.get_default(),
-      false
-    );
-
-    const schema = schemaSource.lookup(SCHEMA_ID, false);
-    if (!schema) {
-      log('[Snappa Prefs] ERROR: Schema not found');
-      return null;
-    }
-
-    return new Gio.Settings({ settings_schema: schema });
-  } catch (e) {
-    log(`[Snappa Prefs] ERROR: Failed to load settings: ${e}`);
-    return null;
-  }
-}
-
-/**
- * Find the schema directory by trying multiple candidate paths
- */
-function findSchemaPath(uuid: string): string | null {
-  const candidatePaths = [
-    `/tmp/${uuid}/schemas`,
-    `${GLib.get_home_dir()}/.local/share/gnome-shell/extensions/${uuid}/schemas`,
-  ];
-
-  for (const path of candidatePaths) {
-    if (GLib.file_test(path, GLib.FileTest.IS_DIR)) {
-      return path;
-    }
-  }
-
-  return null;
-}
 
 /**
  * Build the preferences UI
  */
-function buildPreferencesUI(window: any, settings: any): void {
+export function buildPreferencesUI(window: Adw.PreferencesWindow, settings: Gio.Settings): void {
   const page = new Adw.PreferencesPage();
   const group = new Adw.PreferencesGroup({
     title: 'Keyboard Shortcuts',
@@ -149,7 +79,12 @@ function buildPreferencesUI(window: any, settings: any): void {
     });
 
     // Bind switch to settings
-    settings.bind('debug-panel-enabled', debugSwitch, 'active', Gio.SettingsBindFlags.DEFAULT);
+    settings.bind(
+      'debug-panel-enabled',
+      debugSwitch as any,
+      'active',
+      Gio.SettingsBindFlags.DEFAULT
+    );
 
     debugRow.add_suffix(debugSwitch);
     debugRow.activatable_widget = debugSwitch;
@@ -163,7 +98,11 @@ function buildPreferencesUI(window: any, settings: any): void {
 /**
  * Create and show shortcut capture dialog
  */
-function showShortcutDialog(window: any, settings: any, updateCallback: () => void): void {
+function showShortcutDialog(
+  window: Adw.PreferencesWindow,
+  settings: Gio.Settings,
+  updateCallback: () => void
+): void {
   const dialog = new Gtk.Window({
     transient_for: window,
     modal: true,

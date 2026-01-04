@@ -1,59 +1,67 @@
-/// <reference path="./types/gnome-shell-42.d.ts" />
 /// <reference path="./types/build-mode.d.ts" />
 
-import { Controller } from './app/controller';
-import { DBusReloader } from './reloader/dbus-reloader';
-import { ExtensionSettings } from './settings/extension-settings';
+import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
+import { Controller } from './app/controller.js';
+import { DBusReloader } from './reloader/dbus-reloader.js';
+import { ExtensionSettings } from './settings/extension-settings.js';
 
-declare function log(message: string): void;
+export default class SnappaExtension extends Extension {
+  private dbusReloader: DBusReloader | null = null;
+  private controller: Controller | null = null;
 
-/**
- * Initialize the extension
- * This function is called when the extension is loaded by GNOME Shell
- */
-// @ts-expect-error - Called by GNOME Shell runtime
-function init(metadata: ExtensionMetadata): Extension {
-  return new Extension(metadata);
-}
+  enable() {
+    console.log('[Snappa] Extension enabled');
 
-// Extension class
-class Extension {
-  private dbusReloader: DBusReloader | null;
-  private controller: Controller;
-
-  constructor(metadata: ExtensionMetadata) {
-    this.dbusReloader = __DEV__ ? new DBusReloader('snappa@x7c1.github.io', metadata.uuid) : null;
-    const settings = loadSettings(metadata);
-    this.controller = new Controller(settings, metadata);
-  }
-
-  enable(): void {
+    this.dbusReloader = this.initializeDBusReloader();
     this.dbusReloader?.enable();
-    this.controller.enable();
+
+    this.controller = this.initializeController();
+    this.controller?.enable();
   }
 
-  disable(): void {
+  disable() {
+    console.log('[Snappa] Extension disabled');
+
+    // Clean up controller
+    this.controller?.disable();
+    this.controller = null;
+
+    // Clean up D-Bus reloader
     this.dbusReloader?.disable();
-    this.controller.disable();
+    this.dbusReloader = null;
   }
-}
 
-/**
- * Try to load extension settings with error handling
- */
-function loadSettings(metadata: ExtensionMetadata): ExtensionSettings | null {
-  try {
-    log('[Snappa] Loading settings...');
-    log(`[Snappa] Extension metadata: uuid=${metadata.uuid}, dir=${metadata.dir?.get_path()}`);
-    const settings = new ExtensionSettings(metadata);
-    log('[Snappa] Settings loaded successfully');
-    return settings;
-  } catch (e) {
-    log(`[Snappa] ERROR: Failed to load settings: ${e}`);
-    if (e instanceof Error && e.stack) {
-      log(`[Snappa] Error stack: ${e.stack}`);
+  private initializeDBusReloader(): DBusReloader | null {
+    if (!__DEV__) {
+      return null;
     }
-    log('[Snappa] Extension will run without keyboard shortcut support');
-    return null;
+    try {
+      return new DBusReloader('snappa@x7c1.github.io', this.metadata.uuid);
+    } catch (e) {
+      console.log(`[Snappa] ERROR: Failed to initialize DBusReloader: ${e}`);
+      return null;
+    }
+  }
+
+  private initializeSettings(): ExtensionSettings | null {
+    try {
+      return new ExtensionSettings(this.metadata);
+    } catch (e) {
+      console.log(`[Snappa] ERROR: Failed to initialize settings: ${e}`);
+      return null;
+    }
+  }
+
+  private initializeController(): Controller | null {
+    const settings = this.initializeSettings();
+    if (!settings) {
+      return null;
+    }
+    try {
+      return new Controller(settings, this.metadata);
+    } catch (e) {
+      console.log(`[Snappa] ERROR: Failed to initialize controller: ${e}`);
+      return null;
+    }
   }
 }

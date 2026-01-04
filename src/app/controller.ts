@@ -1,5 +1,3 @@
-/// <reference path="../types/gnome-shell-42.d.ts" />
-
 /**
  * Controller
  *
@@ -8,16 +6,17 @@
  * Allows users to quickly snap windows to predefined positions by dropping them on panel buttons.
  */
 
-const Meta = imports.gi.Meta;
-const GLib = imports.gi.GLib;
-const Main = imports.ui.main;
-const Shell = imports.gi.Shell;
+import GLib from 'gi://GLib';
+import Meta from 'gi://Meta';
+import Shell from 'gi://Shell';
+import type { ExtensionMetadata } from 'resource:///org/gnome/shell/extensions/extension.js';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import type { ExtensionSettings } from '../settings/extension-settings';
-import { evaluate, parse } from './layout-expression';
-import { MainPanel } from './main-panel/index';
-import { loadLayoutHistory, setSelectedLayout } from './repository/layout-history';
-import type { Layout, Position } from './types';
+import type { ExtensionSettings } from '../settings/extension-settings.js';
+import { evaluate, parse } from './layout-expression/index.js';
+import { MainPanel } from './main-panel/index.js';
+import { loadLayoutHistory, setSelectedLayout } from './repository/layout-history.js';
+import type { Layout, Position } from './types/index.js';
 
 declare function log(message: string): void;
 
