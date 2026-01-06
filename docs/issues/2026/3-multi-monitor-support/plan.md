@@ -16,6 +16,23 @@ A Display Group is a mapping of monitors to Layout Groups. For example, in a 2-m
 
 Each Display Group contains fully expanded Layout Groups for each monitor, with unique IDs for all layouts to enable per-monitor selection history tracking.
 
+**Implementation Strategy:**
+This plan uses a **staged, backward-compatible approach**:
+- **Phase 1-2**: Add new functionality while preserving existing features
+  - MonitorManager integrated with existing code
+  - New data types coexist with old types
+  - All existing functionality continues to work
+- **Phase 3**: Complete UI migration to Display Group structure
+  - All new components implemented together
+  - Error handling for missing monitors included
+  - First breaking change: old layout data automatically migrated
+- **Phase 4-5**: Multi-monitor features activated
+  - Per-monitor layout application
+  - Per-monitor history tracking with automatic migration
+- **Phase 6-7**: Cleanup and polish
+
+This approach allows testing existing functionality after each major phase while minimizing throwaway code.
+
 ## User Requirements
 
 - **Display**: Show all monitors' layouts simultaneously in their physical 2D arrangement
@@ -135,7 +152,8 @@ export interface PerMonitorLayoutHistory {
 
 /**
  * Note: Version 2 format is required for per-monitor history.
- * During development, delete existing layout-history.json before implementation.
+ * Migration from version 1 (old format) is handled automatically in Phase 5.
+ * Old history entries are migrated to monitor "0".
  */
 ```
 
@@ -169,8 +187,8 @@ export interface LayoutCategorySetting {
   displayGroups: DisplayGroupSetting[];
 }
 
-// NEW: Global structure with separated Layout Groups (for import input)
-export interface GlobalLayoutSettings {
+// NEW: Complete layout configuration structure (for import input)
+export interface LayoutConfiguration {
   layoutGroups: LayoutGroupSetting[]; // Global, reusable Layout Groups
   layoutCategories: LayoutCategorySetting[]; // Categories with Display Groups
 }
@@ -542,7 +560,7 @@ export function getSelectedLayoutIdForMonitor(
 
 Key changes:
 - All history tracking now uses per-monitor storage in `byMonitor[monitorKey]`
-- No backward compatibility needed (see Pre-Implementation: Data Cleanup section)
+- Backward-compatible migration: old format automatically migrated to monitor "0" (see Pre-Implementation: Data Migration Strategy section)
 
 ### Repository Changes
 
@@ -558,13 +576,13 @@ export function loadLayouts(): LayoutCategory[]
 function saveLayouts(categories: LayoutCategory[]): void
 
 // Import settings and convert to runtime format
-export function importSettings(settings: GlobalLayoutSettings): void
+export function importSettings(settings: LayoutConfiguration): void
 ```
 
 Key changes:
 - **loadLayouts()** now returns `LayoutCategory[]` (array of categories with Display Groups)
 - Display Groups contain fully expanded Layout Groups with unique IDs
-- **importSettings()** accepts `GlobalLayoutSettings` (with global layoutGroups and layoutCategories)
+- **importSettings()** accepts `LayoutConfiguration` (with global layoutGroups and layoutCategories)
 - Import process:
   1. Read global layoutGroups array
   2. For each DisplayGroup in each Category:
@@ -587,10 +605,10 @@ export const DISPLAY_GROUP_SPACING = 16; // Vertical spacing between Display Gro
 
 **Update DEFAULT_LAYOUT_SETTINGS structure:**
 
-Change from `LayoutCategorySetting[]` to `GlobalLayoutSettings`:
+Change from `LayoutCategorySetting[]` to `LayoutConfiguration`:
 
 ```typescript
-export const DEFAULT_LAYOUT_SETTINGS: GlobalLayoutSettings = {
+export const DEFAULT_LAYOUT_SETTINGS: LayoutConfiguration = {
   layoutGroups: [
     {
       name: 'vertical 2-split',
@@ -642,184 +660,140 @@ This structure:
 
 ## Implementation Steps
 
-### Phase 1: Foundation (Monitor Detection)
+### Phase 1: Foundation (Monitor Detection and Integration)
 - Create `src/app/types/monitor-config.ts` with type definitions
 - Create `src/app/monitor/manager.ts` with MonitorManager class
 - Modify `src/app/controller.ts`:
   - Initialize MonitorManager in constructor
   - Call `detectMonitors()` in `enable()`
   - Connect to `monitors-changed` signal
-- Test: Log detected monitors and their properties
+  - **Replace existing monitor detection code** with MonitorManager:
+    - Update `isAtScreenEdge()` to use MonitorManager
+    - Update `applyLayoutToCurrentWindow()` to use MonitorManager for work area
+- **Test: Verify existing functionality works with MonitorManager**
+  - Drag window to edge → panel appears ✓
+  - Select layout → window snaps correctly ✓
+  - Multiple monitors: verify correct monitor detection ✓
 
-### Phase 2: Data Structure Refactoring
-- **BEFORE STARTING**: Delete existing data files (see "Pre-Implementation: Data Cleanup" section)
+### Phase 2: Data Structure Preparation (Backward Compatible)
+**Goal: Add new types and support WITHOUT breaking existing functionality**
+
 - Update `src/app/types/layout-setting.ts`:
   - Add `DisplayGroupSetting` interface
-  - Add `GlobalLayoutSettings` interface
-  - Update `LayoutCategorySetting` to use `displayGroups`
+  - Add `LayoutConfiguration` interface
+  - **Keep existing `LayoutCategorySetting` unchanged**
+- Create `src/app/types/display-group.ts` (runtime type)
+- Create `src/app/types/layout-category.ts` (runtime type)
 - Modify `src/app/constants.ts`:
-  - Change `DEFAULT_LAYOUT_SETTINGS` from `LayoutCategorySetting[]` to `GlobalLayoutSettings`
-  - Separate Layout Groups into global array
-  - Create Display Groups with monitors "0" and "1" for dual-monitor setup by default
+  - **Keep `DEFAULT_LAYOUT_SETTINGS: LayoutCategorySetting[]` unchanged**
+  - Add new constant: `DEFAULT_LAYOUT_CONFIGURATION: LayoutConfiguration`
+  - This configuration has dual-monitor Display Groups by default
 - Modify `src/app/repository/layouts.ts`:
-  - Update `loadLayouts()` to return `LayoutCategory[]` (with expanded Display Groups)
-  - Update `saveLayouts()` to save `LayoutCategory[]` structure
-  - Update `importSettings()` to accept `GlobalLayoutSettings` and expand Layout Group names
+  - Add new function: `importLayoutConfiguration(config: LayoutConfiguration): void`
+  - Add new function: `loadLayoutsAsCategories(): LayoutCategory[]` (reads new format)
+  - **Keep existing `loadLayouts()` and `importSettings()` functions**
+  - Implement conversion logic: LayoutConfiguration → LayoutCategory[] with expanded Display Groups
 - Modify `src/app/repository/layout-history.ts`:
-  - Add per-monitor history functions (with version 2 structure)
-  - Update `setSelectedLayout` to work with new structure
-  - Update `getSelectedLayoutId` to work with new structure
-- Test: Verify data loads correctly with new structure
+  - Add version field support (prepare for version 2)
+  - Add new functions (not yet used):
+    - `setSelectedLayoutForMonitor(monitorKey, windowId, wmClass, title, layoutId)`
+    - `getSelectedLayoutIdForMonitor(monitorKey, windowId, wmClass, title)`
+  - **Keep existing functions working**
+- **Test: Verify existing functionality still works**
+  - Extension loads without errors ✓
+  - Existing layouts display correctly ✓
+  - Layout selection and history work ✓
 
-### Phase 3: UI Rendering
-- Create `src/app/ui/monitor-section.ts`
-- Implement `createMonitorSectionView()` function (takes MonitorInfo and assigned LayoutGroup)
-- Create `src/app/ui/display-group-section.ts`
-- Implement `createDisplayGroupSectionView()` function:
-  - Takes DisplayGroup (with expanded LayoutGroups), MonitorManager
-  - Creates 2D spatial layout of monitor sections
-  - Uses absolute positioning for monitors
-- Modify `src/app/main-panel/renderer.ts`:
-  - Replace `createCategoriesView()` with multi-monitor version:
-    - Update signature to accept monitors and categories (with DisplayGroups containing expanded LayoutGroups)
-    - Iterate through categories
-    - For each category, iterate through Display Groups
-    - Call `createDisplayGroupSectionView()` to create 2D monitor layout
-    - Stack Display Groups vertically
-  - Note: Single-monitor is NOT a special case - all systems use Display Groups
-- Modify `src/app/main-panel/index.ts`:
-  - Pass MonitorManager to renderer
-  - Update panel creation to use new structure
-- Test: Verify Display Group sections render correctly with physical 2D layout preserved
+### Phase 3: UI Migration (Complete Replacement)
+**Goal: Implement all new UI components and switch to new data structure**
 
-### Phase 4: Layout Application
+**Implementation order (all in one phase, but in this sequence):**
+
+1. **Create monitor-section.ts**
+   - Implement `createMonitorSectionView()` function
+   - Takes MonitorInfo and assigned LayoutGroup
+   - Returns monitor section with header and miniature display
+
+2. **Create display-group-section.ts**
+   - Implement `createDisplayGroupSectionView()` function
+   - Takes DisplayGroup with expanded LayoutGroups
+   - Creates 2D spatial layout using Clutter.FixedLayout()
+   - **Include error handling**: Missing monitors show error indicator
+   - Implement `createMonitorErrorSection()` helper
+
+3. **Update renderer.ts**
+   - Replace `createCategoriesView()` signature:
+     - Add `monitors: Map<string, MonitorInfo>` parameter
+     - Change `categories: LayoutGroupCategory[]` to `categories: LayoutCategory[]`
+   - Update implementation:
+     - Iterate through categories with Display Groups
+     - Call `createDisplayGroupSectionView()` for each Display Group
+     - Stack Display Groups vertically
+
+4. **Update main-panel/index.ts**
+   - Pass MonitorManager to renderer
+   - Switch from `loadLayouts()` to `loadLayoutsAsCategories()`
+   - Update panel creation to use new structure
+
+5. **Update constants.ts**
+   - Switch `DEFAULT_LAYOUT_SETTINGS` to use `DEFAULT_LAYOUT_CONFIGURATION`
+   - Use `importLayoutConfiguration()` instead of `importSettings()`
+
+**Test after Phase 3 completion:**
+- Single monitor: Displays correctly with Display Group structure ✓
+- Dual monitor: Both monitors display in 2D arrangement ✓
+- Missing monitor: Error indicator displays correctly ✓
+- Layout buttons render and respond to hover ✓
+
+### Phase 4: Layout Application (Multi-Monitor Support)
 - Modify `src/app/controller.ts`:
-  - Update `applyLayoutToCurrentWindow` signature to accept monitorKey
+  - Update `applyLayoutToCurrentWindow()` signature to accept `monitorKey` parameter
   - Use monitor-specific work area for layout calculations
-  - Update callback in MainPanel.setOnLayoutSelected
+  - Record layout selection with `setSelectedLayoutForMonitor()` (per-monitor history)
 - Modify `src/app/ui/monitor-section.ts`:
-  - Pass monitorKey to layout selection callback
-- Test: Verify layouts are applied to correct monitor with correct work area
+  - Pass monitorKey to layout selection callback: `onLayoutSelected(layout, monitorKey)`
+- Modify MainPanel layout selection callback flow:
+  - Update `setOnLayoutSelected` callback signature to include monitorKey
+- **Test: Verify layouts are applied to correct monitor**
+  - Click layout on monitor 0 → window snaps to monitor 0 work area ✓
+  - Click layout on monitor 1 → window snaps to monitor 1 work area ✓
+  - Layout expressions evaluated using correct monitor dimensions ✓
 
-### Phase 5: Per-Monitor History
+### Phase 5: Per-Monitor History (Complete Implementation)
 - Modify `src/app/repository/layout-history.ts`:
-  - Implement `setSelectedLayoutForMonitor`
-  - Implement `getSelectedLayoutIdForMonitor`
-  - Update load/save to handle version 2 format
-- Modify `src/app/controller.ts`:
-  - Use per-monitor history functions
-- Modify `src/app/ui/layout-button.ts`:
-  - Update button highlighting to use per-monitor history
-- Test: Verify history is tracked separately per monitor
+  - Migrate to version 2 format with `byMonitor` structure
+  - Implement migration from old format: existing history → monitor "0"
+  - Activate `setSelectedLayoutForMonitor()` and `getSelectedLayoutIdForMonitor()` functions
+  - Update `loadLayoutHistory()` to handle version 1 → version 2 migration
+- Modify `src/app/ui/monitor-section.ts`:
+  - Use `getSelectedLayoutIdForMonitor(monitorKey, ...)` for button highlighting
+  - Pass monitorKey when creating layout buttons
+- Modify `src/app/ui/miniature-display.ts` (if still used):
+  - Update to use per-monitor history lookup
+- **Test: Verify history is tracked separately per monitor**
+  - Select layout on monitor 0 → recorded in monitor "0" history ✓
+  - Select layout on monitor 1 → recorded in monitor "1" history ✓
+  - Same app on different monitors → different history per monitor ✓
+  - Old history migrated to monitor "0" correctly ✓
 
-### Phase 6: Error Handling for Missing Monitors
+### Phase 6: Cleanup and Edge Cases
+- **Remove old code**:
+  - Delete or deprecate old `loadLayouts()` if no longer needed
+  - Delete or deprecate old `importSettings()` if no longer needed
+  - Remove `DEFAULT_LAYOUT_SETTINGS` (replaced by `DEFAULT_LAYOUT_CONFIGURATION`)
+  - Consider removing `src/app/ui/category.ts` and `src/app/ui/miniature-display.ts` if fully replaced
+- **Edge case handling**:
+  - Handle monitor disconnect/reconnect gracefully (re-render panel via `monitors-changed` signal)
+  - Handle primary monitor changes
+  - Handle resolution changes (trigger monitors-changed signal, re-render)
+  - Handle missing Layout Group names during import (validation error with clear message)
+- **Test: All edge case scenarios**
+  - Monitor disconnect while panel open → panel updates gracefully ✓
+  - Monitor reconnect → config restored correctly ✓
+  - Resolution change → panel re-renders correctly ✓
+  - Invalid Layout Group name in import → validation error reported ✓
 
-**Strategy: Option B - Display error indicator in monitor section**
-
-When a Display Group references a monitor that doesn't exist (e.g., monitor "1" disconnected), display an error indicator in place of the monitor section.
-
-**Implementation in `src/app/ui/display-group-section.ts`:**
-
-```typescript
-function createDisplayGroupSectionView(
-  displayGroup: DisplayGroup,
-  monitors: Map<string, MonitorInfo>,
-  debugConfig: DebugConfig | null,
-  window: Meta.Window | null,
-  onLayoutSelected: (layout: Layout, monitorKey: string) => void
-): DisplayGroupSectionView {
-  // ... create container with FixedLayout ...
-
-  for (const [monitorKey, layoutGroup] of Object.entries(displayGroup.displays)) {
-    const monitorInfo = monitors.get(monitorKey);
-
-    if (!monitorInfo) {
-      // Monitor not found - create error indicator
-      const errorSection = createMonitorErrorSection(
-        monitorKey,
-        scaledWidth,  // Use expected dimensions for layout consistency
-        scaledHeight
-      );
-      errorSection.set_position(scaledX, scaledY);
-      container.add_child(errorSection);
-      continue;
-    }
-
-    // Normal monitor section creation...
-  }
-}
-```
-
-**Create error section view:**
-
-```typescript
-function createMonitorErrorSection(
-  monitorKey: string,
-  width: number,
-  height: number
-): St.Widget {
-  const container = new St.BoxLayout({
-    vertical: true,
-    style_class: 'monitor-section-error',
-    width: width,
-    height: height
-  });
-
-  const header = new St.Label({
-    text: `Monitor ${parseInt(monitorKey) + 1}`,
-    style_class: 'monitor-section-header'
-  });
-
-  const errorBox = new St.BoxLayout({
-    vertical: true,
-    x_align: Clutter.ActorAlign.CENTER,
-    y_align: Clutter.ActorAlign.CENTER,
-    style_class: 'monitor-error-box'
-  });
-
-  const errorIcon = new St.Icon({
-    icon_name: 'dialog-warning-symbolic',
-    icon_size: 24,
-    style_class: 'monitor-error-icon'
-  });
-
-  const errorLabel = new St.Label({
-    text: 'Not Connected',
-    style_class: 'monitor-error-label'
-  });
-
-  errorBox.add_child(errorIcon);
-  errorBox.add_child(errorLabel);
-
-  container.add_child(header);
-  container.add_child(errorBox);
-
-  return container;
-}
-```
-
-**Visual appearance:**
-
-```
-┌─ Monitor 0 ─────────┐  ┌─ Monitor 1 ──────────┐
-│ [Normal layouts]    │  │  ⚠️                   │
-│                     │  │  Not Connected       │
-└─────────────────────┘  └──────────────────────┘
-```
-
-**Testing:**
-- Test edge case: Display Group references monitor "1" but only monitor "0" exists
-- Verify error section displays correctly
-- Verify no crashes or layout issues
-
-### Phase 7: Additional Edge Cases
-- Handle monitor disconnect/reconnect gracefully (re-render panel)
-- Handle primary monitor changes
-- Handle resolution changes (trigger monitors-changed signal, re-render)
-- Handle missing Layout Group names during import (validation error)
-- Test: All edge case scenarios
-
-### Phase 8: Polish & Documentation
+### Phase 7: Polish & Documentation
 - Add debug logging for monitor operations
 - Update README.md with multi-monitor features
 - Add inline code documentation
@@ -837,9 +811,9 @@ function createMonitorErrorSection(
 - `src/app/ui/display-group-section.ts` - Display Group section UI component (2D monitor layout)
 
 ### Modified Files
-- `src/app/types/layout-setting.ts` - Add DisplayGroupSetting, GlobalLayoutSettings
-- `src/app/constants.ts` - Update DEFAULT_LAYOUT_SETTINGS to GlobalLayoutSettings structure, add MAX_PANEL_WIDTH/HEIGHT
-- `src/app/repository/layouts.ts` - Import GlobalLayoutSettings, expand Layout Groups, save LayoutCategory[] runtime format
+- `src/app/types/layout-setting.ts` - Add DisplayGroupSetting, LayoutConfiguration
+- `src/app/constants.ts` - Update DEFAULT_LAYOUT_SETTINGS to LayoutConfiguration structure, add MAX_PANEL_WIDTH/HEIGHT
+- `src/app/repository/layouts.ts` - Import LayoutConfiguration, expand Layout Groups, save LayoutCategory[] runtime format
 - `src/app/repository/layout-history.ts` - Per-monitor history support (version 2)
 - `src/app/controller.ts` - Integrate MonitorManager, update layout application with monitorKey
 - `src/app/main-panel/index.ts` - Pass MonitorManager to renderer
@@ -847,36 +821,53 @@ function createMonitorErrorSection(
 - `src/app/ui/layout-button.ts` - Per-monitor history highlighting
 - `src/app/types/index.ts` - Export new types (DisplayGroup, LayoutCategory, MonitorInfo, etc.)
 
-## Pre-Implementation: Data Cleanup
+## Pre-Implementation: Data Migration Strategy
 
-**IMPORTANT**: Before implementing this feature, the following files must be deleted or reinitialized to work with the new Display Group structure.
+**IMPORTANT**: This implementation uses a **backward-compatible migration strategy**. No manual data deletion is required.
 
-### Files to Delete
+### Migration Approach
 
-Delete all existing data files in the extension data directory (`~/.local/share/gnome-shell/extensions/snappa@x7c1.github.io/`):
+**Phase 2 Strategy (Backward Compatible):**
+- New data types coexist with old types
+- Old `imported-layouts.json` continues to work during Phases 1-2
+- New `LayoutConfiguration` format is prepared but not yet used
+- History format upgrade is prepared but not yet activated
+
+**Phase 3 Strategy (Data Format Switch):**
+- When switching `DEFAULT_LAYOUT_CONFIGURATION` in constants.ts:
+  - Extension will use new Display Group structure
+  - Old `imported-layouts.json` will be replaced with new format on first load
+  - Users may want to backup their custom layouts before Phase 3
+
+**Phase 5 Strategy (History Migration):**
+- Old history format (flat structure) is automatically migrated:
+  - Existing history entries → assigned to monitor "0"
+  - New per-monitor tracking starts from Phase 5
+- Migration is automatic and transparent to users
+
+### Recommended Backup (Optional)
+
+Before starting Phase 3 implementation, users may optionally backup existing data:
 
 ```bash
-rm ~/.local/share/gnome-shell/extensions/snappa@x7c1.github.io/imported-layouts.json
-rm ~/.local/share/gnome-shell/extensions/snappa@x7c1.github.io/layout-history.json
+# Optional backup before Phase 3
+cp ~/.local/share/gnome-shell/extensions/snappa@x7c1.github.io/imported-layouts.json \
+   ~/.local/share/gnome-shell/extensions/snappa@x7c1.github.io/imported-layouts.json.backup
+
+cp ~/.local/share/gnome-shell/extensions/snappa@x7c1.github.io/layout-history.json \
+   ~/.local/share/gnome-shell/extensions/snappa@x7c1.github.io/layout-history.json.backup
 ```
-
-### What Happens After Deletion
-
-1. **imported-layouts.json**: Will be recreated from `DEFAULT_LAYOUT_SETTINGS` with new Display Group structure on next extension enable
-2. **layout-history.json**: Will be recreated with version 2 structure (with `byMonitor` sections) when first layout is selected
 
 ### Single Monitor Behavior
 
-- Default Display Groups in `DEFAULT_LAYOUT_SETTINGS` assign Layout Groups to monitors "0" and "1" (dual monitor setup)
-- Single monitor systems: Renderer only displays monitor "0" section (monitor "1" is skipped since it doesn't exist)
-- Monitor headers are shown based on system monitor count (not Display Group configuration)
-  - Single monitor system: Headers shown
-  - Multi-monitor system: Headers shown (even if Display Group only references one monitor)
+- Default Display Groups in `DEFAULT_LAYOUT_CONFIGURATION` assign Layout Groups to monitors "0" and "1" (dual monitor setup)
+- Single monitor systems: Only monitor "0" section is displayed (monitor "1" shows error indicator if Display Group references it)
+- Monitor headers are shown based on Display Group configuration
 - No special-case code needed - single monitor is handled by the same multi-monitor rendering logic
 
-### Error Handling
+### Error Handling (Integrated in Phase 3)
 
-- If monitor in Display Group doesn't exist: Show error indicator (⚠️ "Not Connected") at expected position (Option B)
+- If monitor in Display Group doesn't exist: Show error indicator (⚠️ "Not Connected") at expected position
 - If monitor disconnected while panel open: Panel re-renders with error indicators
 - If monitor reconnected: Panel re-renders with normal monitor sections
 - If no monitors detected (shouldn't happen): Fallback to single monitor with index 0
@@ -988,22 +979,29 @@ This preserves the spatial relationship: Monitor 2 is below and aligned with Mon
 ## Estimation
 
 ### Complexity: High
-- New subsystem (MonitorManager) introduction
+- New subsystem (MonitorManager) introduction and integration with existing code
 - Multiple file modifications across UI, repository, and controller layers
 - Two-format system (input format with name references → runtime format with expanded IDs)
+- Backward-compatible migration strategy during implementation
 - Edge case handling for monitor configuration changes
 
 ### Estimated Points: 23 points
 
 **Breakdown:**
-- Phase 1 (Foundation): 3 points
-- Phase 2 (Data Structure Refactoring): 3 points
-- Phase 3 (UI Rendering): 5 points
-- Phase 4 (Layout Application): 3 points
-- Phase 5 (Per-Monitor History): 3 points
-- Phase 6 (Error Handling for Missing Monitors): 2 points
-- Phase 7 (Additional Edge Cases): 2 points
-- Phase 8 (Polish & Documentation): 2 points
+- Phase 1 (Foundation - Monitor Detection and Integration): 4 points
+  - MonitorManager implementation: 2 points
+  - Integration with existing controller code: 2 points
+- Phase 2 (Data Structure Preparation - Backward Compatible): 4 points
+  - New type definitions and runtime types: 2 points
+  - Repository layer dual-format support: 2 points
+- Phase 3 (UI Migration - Complete Replacement): 5 points
+  - monitor-section.ts and display-group-section.ts: 2 points
+  - renderer.ts and main-panel/index.ts updates: 2 points
+  - Error handling integration: 1 point
+- Phase 4 (Layout Application - Multi-Monitor Support): 3 points
+- Phase 5 (Per-Monitor History - Complete Implementation): 3 points
+- Phase 6 (Cleanup and Edge Cases): 2 points
+- Phase 7 (Polish & Documentation): 2 points
 
 ## Notes
 
@@ -1012,13 +1010,16 @@ This preserves the spatial relationship: Monitor 2 is below and aligned with Mon
 - **Panel layout**: Mirrors physical monitor arrangement using absolute positioning within each Display Group
 - **Display Groups**: Represent different monitor-to-Layout Group assignment patterns
   - A Category can have multiple Display Groups (e.g., "both monitors same", "different per monitor")
-  - User creates Display Groups by editing input configuration (GlobalLayoutSettings format)
+  - User creates Display Groups by editing input configuration (LayoutConfiguration format)
 - **Input vs Runtime formats**:
-  - **Input format** (user writes): GlobalLayoutSettings with global layoutGroups array, displayGroups reference by name
+  - **Input format** (user writes): LayoutConfiguration with global layoutGroups array, displayGroups reference by name
   - **Runtime format** (stored in imported-layouts.json): LayoutCategory[] with Display Groups containing expanded LayoutGroups with unique IDs
 - **Layout Group expansion**: During import, Snappa resolves Layout Group names and creates separate instances with unique IDs for each monitor in each Display Group
 - **History tracking**: Per-monitor to support different workflows on different monitors (version 2 format)
 - **Scale factor**: Calculated per Display Group to fit all referenced monitors in panel while preserving aspect ratios and spatial relationships
-- **Error handling**: Missing monitors show error indicator (Option B)
-- **Breaking change**: Requires deleting existing `imported-layouts.json` and `layout-history.json` before implementation (backup first)
+- **Error handling**: Missing monitors show error indicator (integrated in Phase 3)
+- **Migration strategy**: Backward-compatible during Phases 1-2, with automatic data migration in Phases 3 and 5
+  - Phase 3: Old layout data automatically replaced with new Display Group structure
+  - Phase 5: Old history data automatically migrated to monitor "0"
+  - Optional backup recommended before Phase 3 implementation
 
