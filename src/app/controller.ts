@@ -48,8 +48,8 @@ export class Controller {
     // Load layout history
     loadLayoutHistory();
 
-    // Initialize main panel with metadata
-    this.mainPanel = new MainPanel(metadata);
+    // Initialize main panel with metadata and monitor manager (Phase 3)
+    this.mainPanel = new MainPanel(metadata, this.monitorManager);
     this.mainPanel.setOnLayoutSelected((layout) => {
       this.applyLayoutToCurrentWindow(layout);
     });

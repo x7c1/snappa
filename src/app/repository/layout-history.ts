@@ -294,4 +294,3 @@ export function getSelectedLayoutIdForMonitor(
   );
   return getSelectedLayoutId(windowId, wmClass, title);
 }
-

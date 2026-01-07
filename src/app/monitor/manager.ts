@@ -5,7 +5,7 @@
  * Tracks connected monitors and provides lookup methods.
  */
 
-import Meta from 'gi://Meta';
+import type Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import type { BoundingBox, Monitor } from '../types/monitor-config.js';

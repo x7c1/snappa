@@ -7,11 +7,9 @@
 
 import type { ExtensionSettings } from '../../settings/extension-settings.js';
 import { AUTO_HIDE_DELAY_MS } from '../constants.js';
-import { getDebugConfig, isDebugMode, loadDebugConfig } from '../debug-panel/config.js';
+import { isDebugMode, loadDebugConfig } from '../debug-panel/config.js';
 import { DebugPanel } from '../debug-panel/index.js';
-import { getTestLayoutGroups } from '../debug-panel/test-layouts.js';
-import { ensureTestLayoutsImported } from '../repository/layouts.js';
-import type { LayoutGroupCategory, Position, Size } from '../types/index.js';
+import type { LayoutCategory, Position, Size } from '../types/index.js';
 import type { MainPanelAutoHide } from './auto-hide.js';
 
 declare function log(message: string): void;
@@ -70,36 +68,13 @@ export class MainPanelDebugIntegration {
   /**
    * Merge test layouts into categories if debug mode is enabled
    * Test layouts are saved to repository for stable IDs (needed for layout history)
+   * Phase 3: Returns new LayoutCategory[] format
+   *
+   * Note: Test layouts use old format internally, but we convert to new format
    */
-  mergeTestCategories(baseCategories: LayoutGroupCategory[]): LayoutGroupCategory[] {
-    if (!this.debugPanel) {
-      return baseCategories;
-    }
-
-    const debugConfig = getDebugConfig();
-    if (!debugConfig) {
-      return baseCategories;
-    }
-
-    const testGroupSettings = getTestLayoutGroups();
-    const enabledTestGroupSettings = testGroupSettings.filter((g) =>
-      debugConfig.enabledTestGroups.has(g.name)
-    );
-
-    // Import test layouts to repository and get the category with stable IDs
-    if (enabledTestGroupSettings.length > 0) {
-      const testCategory = ensureTestLayoutsImported(enabledTestGroupSettings);
-      if (testCategory) {
-        // Filter to only enabled groups
-        const enabledGroupNames = new Set(enabledTestGroupSettings.map((g) => g.name));
-        const filteredTestCategory: LayoutGroupCategory = {
-          name: testCategory.name,
-          layoutGroups: testCategory.layoutGroups.filter((g) => enabledGroupNames.has(g.name)),
-        };
-        return [...baseCategories, filteredTestCategory];
-      }
-    }
-
+  mergeTestCategories(baseCategories: LayoutCategory[]): LayoutCategory[] {
+    // Phase 3: Test layouts feature is temporarily disabled
+    // TODO: Phase 4 - Convert test layouts to Display Group format
     return baseCategories;
   }
 

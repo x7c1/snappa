@@ -354,6 +354,42 @@ export function importLayoutConfiguration(config: LayoutConfiguration): void {
 }
 
 /**
+ * Validate that data is in the new LayoutCategory[] format
+ * Returns true if valid, false if old format or invalid
+ */
+function isValidLayoutCategoryData(data: unknown): data is LayoutCategory[] {
+  if (!Array.isArray(data)) {
+    return false;
+  }
+
+  // Check if all categories have displayGroups (new format)
+  for (const category of data) {
+    if (typeof category !== 'object' || category === null) {
+      return false;
+    }
+
+    // Check for old format (has layoutGroups instead of displayGroups)
+    if ('layoutGroups' in category && !('displayGroups' in category)) {
+      log(
+        `[LayoutsRepository] Detected old format: category "${category.name}" has layoutGroups instead of displayGroups`
+      );
+      return false;
+    }
+
+    // Check for required fields in new format
+    if (!('name' in category) || !('displayGroups' in category)) {
+      return false;
+    }
+
+    if (!Array.isArray(category.displayGroups)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
  * Load layouts as categories (returns LayoutCategory[] with expanded Display Groups)
  * (Phase 2: NEW function for multi-monitor support)
  */
@@ -374,10 +410,24 @@ export function loadLayoutsAsCategories(): LayoutCategory[] {
     }
 
     const contentsString = new TextDecoder('utf-8').decode(contents);
-    const categories: LayoutCategory[] = JSON.parse(contentsString);
+    const data: unknown = JSON.parse(contentsString);
+
+    // Validate data format
+    if (!isValidLayoutCategoryData(data)) {
+      log('[LayoutsRepository] WARNING: Invalid or old format data detected in layouts file');
+      log('[LayoutsRepository] Deleting old format file and returning empty array');
+      // Delete the old format file
+      try {
+        file.delete(null);
+        log('[LayoutsRepository] Old format file deleted successfully');
+      } catch (deleteError) {
+        log(`[LayoutsRepository] Failed to delete old format file: ${deleteError}`);
+      }
+      return [];
+    }
 
     log('[LayoutsRepository] Layout categories loaded successfully');
-    return categories;
+    return data;
   } catch (e) {
     log(`[LayoutsRepository] Error loading layout categories: ${e}`);
     return [];

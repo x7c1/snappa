@@ -17,14 +17,15 @@ import {
   PANEL_PADDING,
 } from '../constants.js';
 import { adjustMainPanelPosition } from '../positioning/index.js';
-import type { LayoutGroupCategory, Position, Size } from '../types/index.js';
+import type { LayoutCategory, Position, Size } from '../types/index.js';
 
 export class MainPanelPositionManager {
   /**
    * Calculate panel dimensions based on categories to render
+   * Phase 3: Only supports new LayoutCategory format
    */
   calculatePanelDimensions(
-    categoriesToRender: LayoutGroupCategory[],
+    categoriesToRender: LayoutCategory[],
     aspectRatio: number,
     showFooter: boolean
   ): Size {
@@ -40,7 +41,12 @@ export class MainPanelPositionManager {
     // Calculate width: maximum category width
     let maxCategoryWidth = 0;
     for (const category of categoriesToRender) {
-      const numDisplays = category.layoutGroups.length;
+      // Defensive check: ensure category has displayGroups array
+      if (!category.displayGroups || !Array.isArray(category.displayGroups)) {
+        continue;
+      }
+
+      const numDisplays = category.displayGroups.length;
       if (numDisplays > 0) {
         const displaysInWidestRow = Math.min(numDisplays, MAX_DISPLAYS_PER_ROW);
         const categoryWidth =
@@ -55,7 +61,13 @@ export class MainPanelPositionManager {
     let totalHeight = PANEL_PADDING; // Top padding
     for (let i = 0; i < categoriesToRender.length; i++) {
       const category = categoriesToRender[i];
-      const numDisplays = category.layoutGroups.length;
+
+      // Defensive check: ensure category has displayGroups array
+      if (!category.displayGroups || !Array.isArray(category.displayGroups)) {
+        continue;
+      }
+
+      const numDisplays = category.displayGroups.length;
       if (numDisplays > 0) {
         const numRows = Math.ceil(numDisplays / MAX_DISPLAYS_PER_ROW);
         // Each row has display height + bottom margin (DISPLAY_SPACING)

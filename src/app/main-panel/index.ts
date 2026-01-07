@@ -12,13 +12,10 @@ import type { ExtensionMetadata } from 'resource:///org/gnome/shell/extensions/e
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import { ExtensionSettings } from '../../settings/extension-settings.js';
-import {
-  AUTO_HIDE_DELAY_MS,
-  DEFAULT_LAYOUT_SETTINGS,
-  MINIATURE_DISPLAY_WIDTH,
-} from '../constants.js';
+import { AUTO_HIDE_DELAY_MS, DEFAULT_LAYOUT_CONFIGURATION } from '../constants.js';
 import { getDebugConfig } from '../debug-panel/config.js';
-import { importSettings, loadLayouts } from '../repository/layouts.js';
+import type { MonitorManager } from '../monitor/manager.js';
+import { importLayoutConfiguration, loadLayoutsAsCategories } from '../repository/layouts.js';
 import type { Layout, Position } from '../types/index.js';
 import { MainPanelAutoHide } from './auto-hide.js';
 import { MainPanelDebugIntegration } from './debug-integration.js';
@@ -28,7 +25,7 @@ import { MainPanelPositionManager } from './position-manager.js';
 import type { PanelEventIds } from './renderer.js';
 import {
   createBackground,
-  createCategoriesView,
+  createCategoriesViewWithDisplayGroups,
   createFooter,
   createPanelContainer,
 } from './renderer.js';
@@ -44,6 +41,7 @@ export class MainPanel {
   private metadata: ExtensionMetadata;
   private onPanelShownCallback: (() => void) | null = null;
   private onPanelHiddenCallback: (() => void) | null = null;
+  private monitorManager: MonitorManager; // Phase 3: Always required
 
   // Component instances
   private state: MainPanelState = new MainPanelState();
@@ -53,8 +51,9 @@ export class MainPanel {
   private autoHide: MainPanelAutoHide = new MainPanelAutoHide();
   private keyboardNavigator: MainPanelKeyboardNavigator = new MainPanelKeyboardNavigator();
 
-  constructor(metadata: ExtensionMetadata) {
+  constructor(metadata: ExtensionMetadata, monitorManager: MonitorManager) {
     this.metadata = metadata;
+    this.monitorManager = monitorManager;
     // Setup auto-hide callback
     this.autoHide.setOnHide(() => {
       this.hide();
@@ -79,13 +78,13 @@ export class MainPanel {
       extensionSettings
     );
 
-    // Initialize layouts repository
+    // Initialize layouts repository (Phase 3: NEW format with Display Groups)
     // First launch: import default settings if repository is empty
-    let layouts = loadLayouts();
+    let layouts = loadLayoutsAsCategories();
     if (layouts.length === 0) {
-      log('[MainPanel] Layouts repository is empty, importing default settings');
-      importSettings(DEFAULT_LAYOUT_SETTINGS);
-      layouts = loadLayouts();
+      log('[MainPanel] Layouts repository is empty, importing default configuration');
+      importLayoutConfiguration(DEFAULT_LAYOUT_CONFIGURATION);
+      layouts = loadLayoutsAsCategories();
     }
 
     // Filter out Test Layouts from base categories (they are added dynamically in debug mode)
@@ -190,16 +189,19 @@ export class MainPanel {
       });
       this.layoutButtons.clear();
     } else {
-      const miniatureDisplayHeight = MINIATURE_DISPLAY_WIDTH * aspectRatio;
       const onLayoutSelected = this.layoutSelector.getOnLayoutSelected();
-      const categoriesView = createCategoriesView(
-        MINIATURE_DISPLAY_WIDTH,
-        miniatureDisplayHeight,
+
+      // Phase 3: Use new multi-monitor renderer
+      const monitors = this.monitorManager.getMonitors();
+      const categoriesView = createCategoriesViewWithDisplayGroups(
+        monitors,
         categories,
         debugConfig,
         window,
-        (layout) => {
+        (layout, _monitorKey) => {
           if (onLayoutSelected) {
+            // For now, ignore monitorKey and use old callback
+            // Phase 4 will update this to use per-monitor selection
             onLayoutSelected(layout);
           }
         }

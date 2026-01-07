@@ -10,8 +10,9 @@ import {
   PANEL_PADDING,
 } from '../constants.js';
 import type { DebugConfig } from '../debug-panel/config.js';
-import type { Layout, LayoutGroupCategory } from '../types/index.js';
+import type { Layout, LayoutCategory, LayoutGroupCategory, Monitor } from '../types/index.js';
 import { createCategoryView } from '../ui/index.js';
+import { createMiniatureSpaceView } from '../ui/miniature-space.js';
 
 declare function log(message: string): void;
 
@@ -163,6 +164,7 @@ export function createFooter(onSettingsClick: () => void): St.BoxLayout {
 /**
  * Create categories view with category-based rendering
  */
+// OLD: Single-monitor version (kept for backward compatibility during Phase 3)
 export function createCategoriesView(
   displayWidth: number,
   displayHeight: number,
@@ -201,6 +203,66 @@ export function createCategoriesView(
       layoutButtons.set(button, layout);
     }
     buttonEvents.push(...view.buttonEvents);
+  }
+
+  return { categoriesContainer, layoutButtons, buttonEvents };
+}
+
+/**
+ * NEW: Multi-monitor version (Phase 3)
+ * Create categories view with Display Groups and multi-monitor support
+ */
+export function createCategoriesViewWithDisplayGroups(
+  monitors: Map<string, Monitor>,
+  categories: LayoutCategory[],
+  debugConfig: DebugConfig | null,
+  window: Meta.Window | null,
+  onLayoutSelected: (layout: Layout, monitorKey: string) => void
+): CategoriesView {
+  const categoriesContainer = new St.BoxLayout({
+    style_class: 'snap-categories-container',
+    vertical: true, // Vertical layout: stack Display Groups
+    x_expand: false,
+    y_expand: false,
+  });
+
+  const layoutButtons = new Map<St.Button, Layout>();
+  const buttonEvents: PanelEventIds['buttonEvents'] = [];
+
+  // Create Miniature Spaces for each Display Group in each category
+  for (const category of categories) {
+    // Defensive check: ensure category has displayGroups array
+    if (!category || !category.displayGroups || !Array.isArray(category.displayGroups)) {
+      log(
+        `[Renderer] WARNING: Invalid category data detected (missing or invalid displayGroups), skipping category: ${category?.name ?? 'unknown'}`
+      );
+      continue;
+    }
+
+    for (const displayGroup of category.displayGroups) {
+      // Defensive check: ensure displayGroup is valid
+      if (!displayGroup || !displayGroup.displays) {
+        log(
+          `[Renderer] WARNING: Invalid display group detected in category "${category.name}", skipping`
+        );
+        continue;
+      }
+
+      const view = createMiniatureSpaceView(
+        displayGroup,
+        monitors,
+        debugConfig,
+        window,
+        onLayoutSelected
+      );
+      categoriesContainer.add_child(view.spaceContainer);
+
+      // Collect layout buttons and events
+      for (const [button, layout] of view.layoutButtons) {
+        layoutButtons.set(button, layout);
+      }
+      buttonEvents.push(...view.buttonEvents);
+    }
   }
 
   return { categoriesContainer, layoutButtons, buttonEvents };
