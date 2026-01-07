@@ -241,3 +241,57 @@ export function getSelectedLayoutId(
   log(`[LayoutHistory] Multiple layouts for ${wmClass}, but no match for label: ${label}`);
   return null;
 }
+
+// ============================================================================
+// NEW: Per-monitor history support (Phase 2)
+// Note: These functions are prepared but not yet activated
+// They will be used in Phase 5 when history format is migrated to version 2
+// ============================================================================
+
+/**
+ * Record layout selection for a window on a specific monitor (Phase 2: prepared, not yet active)
+ *
+ * @param monitorKey - Monitor key ("0", "1", "2"...)
+ * @param windowId - Window ID (for session-only history)
+ * @param wmClass - Application's WM_CLASS identifier
+ * @param title - Window title (used to generate label)
+ * @param layoutId - Layout UUID to record
+ */
+export function setSelectedLayoutForMonitor(
+  monitorKey: string,
+  windowId: number,
+  wmClass: string,
+  title: string,
+  layoutId: string
+): void {
+  // This function will be implemented in Phase 5
+  // For now, it delegates to the global setSelectedLayout function
+  log(
+    `[LayoutHistory] Per-monitor history not yet active, recording to global history (monitor: ${monitorKey})`
+  );
+  setSelectedLayout(windowId, wmClass, title, layoutId);
+}
+
+/**
+ * Retrieve layout selection for a window on a specific monitor (Phase 2: prepared, not yet active)
+ *
+ * @param monitorKey - Monitor key ("0", "1", "2"...)
+ * @param windowId - Window ID
+ * @param wmClass - Application's WM_CLASS identifier
+ * @param title - Window title (used to generate label)
+ * @returns Layout ID (UUID) of most recent selection, or null
+ */
+export function getSelectedLayoutIdForMonitor(
+  monitorKey: string,
+  windowId: number,
+  wmClass: string,
+  title: string
+): string | null {
+  // This function will be implemented in Phase 5
+  // For now, it delegates to the global getSelectedLayoutId function
+  log(
+    `[LayoutHistory] Per-monitor history not yet active, reading from global history (monitor: ${monitorKey})`
+  );
+  return getSelectedLayoutId(windowId, wmClass, title);
+}
+

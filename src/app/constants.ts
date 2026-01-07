@@ -1,4 +1,4 @@
-import type { LayoutCategorySetting } from './types/layout-setting';
+import type { LayoutCategorySetting, LayoutConfiguration } from './types/layout-setting';
 
 // Timing
 export const AUTO_HIDE_DELAY_MS = 500; // Time to wait before hiding panel when cursor leaves
@@ -365,3 +365,73 @@ export const DEFAULT_LAYOUT_SETTINGS: LayoutCategorySetting[] = [
     ],
   },
 ];
+
+// NEW: Multi-monitor panel constants (Phase 2)
+export const MAX_PANEL_WIDTH = 800; // Maximum width for multi-monitor panel layout
+export const MAX_PANEL_HEIGHT = 600; // Maximum height for multi-monitor panel layout
+export const DISPLAY_GROUP_SPACING = 16; // Vertical spacing between Display Group sections
+
+// NEW: Default layout configuration (multi-monitor structure) (Phase 2)
+// Note: Will be used in Phase 3 to replace DEFAULT_LAYOUT_SETTINGS
+// For now, includes a basic dual-monitor configuration
+export const DEFAULT_LAYOUT_CONFIGURATION: LayoutConfiguration = {
+  layoutGroups: [
+    {
+      name: 'vertical 2-split',
+      layouts: [
+        { label: 'Left Half', x: '0', y: '0', width: '50%', height: '100%' },
+        { label: 'Right Half', x: '50%', y: '0', width: '50%', height: '100%' },
+      ],
+    },
+    {
+      name: 'vertical 3-split',
+      layouts: [
+        { label: 'Left Third', x: '0', y: '0', width: '1/3', height: '100%' },
+        { label: 'Center Third', x: '1/3', y: '0', width: '1/3', height: '100%' },
+        { label: 'Right Third', x: '2/3', y: '0', width: '1/3', height: '100%' },
+      ],
+    },
+    {
+      name: 'grid 2x2',
+      layouts: [
+        { label: 'Top Left', x: '0', y: '0', width: '50%', height: '50%' },
+        { label: 'Top Right', x: '50%', y: '0', width: '50%', height: '50%' },
+        { label: 'Bottom Left', x: '0', y: '50%', width: '50%', height: '50%' },
+        { label: 'Bottom Right', x: '50%', y: '50%', width: '50%', height: '50%' },
+      ],
+    },
+  ],
+  layoutCategories: [
+    {
+      name: 'Vertical Division Patterns',
+      displayGroups: [
+        {
+          name: 'Browsing (both monitors)',
+          displays: {
+            '0': 'vertical 3-split',
+            '1': 'vertical 3-split',
+          },
+        },
+        {
+          name: 'Coding (editor + terminal)',
+          displays: {
+            '0': 'vertical 2-split',
+            '1': 'vertical 3-split',
+          },
+        },
+      ],
+    },
+    {
+      name: 'Grid Patterns',
+      displayGroups: [
+        {
+          name: 'Both monitors 2x2',
+          displays: {
+            '0': 'grid 2x2',
+            '1': 'grid 2x2',
+          },
+        },
+      ],
+    },
+  ],
+};

@@ -1,8 +1,17 @@
 import Gio from 'gi://Gio';
 
-import type { Layout, LayoutGroup, LayoutGroupCategory } from '../types/index.js';
 import type {
+  DisplayGroup,
+  Layout,
+  LayoutCategory,
+  LayoutGroup,
+  LayoutGroupCategory,
+} from '../types/index.js';
+import type {
+  DisplayGroupSetting,
   LayoutCategorySetting,
+  LayoutCategoryWithDisplayGroups,
+  LayoutConfiguration,
   LayoutGroupSetting,
   LayoutSetting,
 } from '../types/layout-setting.js';
@@ -259,5 +268,143 @@ export function addLayout(setting: LayoutSetting, categoryName: string, groupNam
     log('[LayoutsRepository] Layout added successfully');
   } catch (e) {
     log(`[LayoutsRepository] Error adding layout: ${e}`);
+  }
+}
+
+// ============================================================================
+// NEW: Multi-monitor support functions (Phase 2)
+// ============================================================================
+
+/**
+ * Convert DisplayGroupSetting to DisplayGroup (runtime type)
+ * Expands Layout Group names to full LayoutGroup objects with unique IDs
+ */
+function settingToDisplayGroup(
+  displayGroupSetting: DisplayGroupSetting,
+  layoutGroupSettings: LayoutGroupSetting[]
+): DisplayGroup {
+  const displays: { [monitorKey: string]: LayoutGroup } = {};
+
+  // For each monitor in the Display Group
+  for (const [monitorKey, layoutGroupName] of Object.entries(displayGroupSetting.displays)) {
+    // Find the Layout Group definition by name
+    const layoutGroupSetting = layoutGroupSettings.find((g) => g.name === layoutGroupName);
+
+    if (!layoutGroupSetting) {
+      log(
+        `[LayoutsRepository] Warning: Layout Group "${layoutGroupName}" not found for monitor ${monitorKey}`
+      );
+      continue;
+    }
+
+    // Create a new LayoutGroup instance with unique IDs for this monitor
+    // Each monitor gets its own LayoutGroup instance with separate IDs
+    const layoutGroup: LayoutGroup = {
+      name: layoutGroupSetting.name,
+      layouts: layoutGroupSetting.layouts.map(settingToLayout),
+    };
+
+    displays[monitorKey] = layoutGroup;
+  }
+
+  return {
+    id: generateUUID(),
+    name: displayGroupSetting.name,
+    displays,
+  };
+}
+
+/**
+ * Convert LayoutCategoryWithDisplayGroups to LayoutCategory (runtime type)
+ */
+function settingToCategoryWithDisplayGroups(
+  categorySetting: LayoutCategoryWithDisplayGroups,
+  layoutGroupSettings: LayoutGroupSetting[]
+): LayoutCategory {
+  return {
+    name: categorySetting.name,
+    displayGroups: categorySetting.displayGroups.map((dg) =>
+      settingToDisplayGroup(dg, layoutGroupSettings)
+    ),
+  };
+}
+
+/**
+ * Convert LayoutConfiguration to LayoutCategory[] (runtime type)
+ * Expands Layout Group references into full LayoutGroup objects with unique IDs
+ */
+function configurationToCategories(config: LayoutConfiguration): LayoutCategory[] {
+  return config.layoutCategories.map((categorySetting) =>
+    settingToCategoryWithDisplayGroups(categorySetting, config.layoutGroups)
+  );
+}
+
+/**
+ * Import layout configuration and convert to runtime format
+ * (Phase 2: NEW function for multi-monitor support)
+ */
+export function importLayoutConfiguration(config: LayoutConfiguration): void {
+  try {
+    const categories = configurationToCategories(config);
+    saveCategoriesWithDisplayGroups(categories);
+    log('[LayoutsRepository] Layout configuration imported successfully');
+  } catch (e) {
+    log(`[LayoutsRepository] Error importing layout configuration: ${e}`);
+  }
+}
+
+/**
+ * Load layouts as categories (returns LayoutCategory[] with expanded Display Groups)
+ * (Phase 2: NEW function for multi-monitor support)
+ */
+export function loadLayoutsAsCategories(): LayoutCategory[] {
+  const layoutsPath = getLayoutsFilePath();
+  const file = Gio.File.new_for_path(layoutsPath);
+
+  if (!file.query_exists(null)) {
+    log('[LayoutsRepository] Layouts file does not exist, returning empty array');
+    return [];
+  }
+
+  try {
+    const [success, contents] = file.load_contents(null);
+    if (!success) {
+      log('[LayoutsRepository] Failed to load layouts file');
+      return [];
+    }
+
+    const contentsString = new TextDecoder('utf-8').decode(contents);
+    const categories: LayoutCategory[] = JSON.parse(contentsString);
+
+    log('[LayoutsRepository] Layout categories loaded successfully');
+    return categories;
+  } catch (e) {
+    log(`[LayoutsRepository] Error loading layout categories: ${e}`);
+    return [];
+  }
+}
+
+/**
+ * Save LayoutCategory[] to disk (runtime format with Display Groups)
+ * (Phase 2: NEW internal helper)
+ */
+function saveCategoriesWithDisplayGroups(categories: LayoutCategory[]): void {
+  const layoutsPath = getLayoutsFilePath();
+  const file = Gio.File.new_for_path(layoutsPath);
+
+  try {
+    // Ensure directory exists
+    const parent = file.get_parent();
+    if (parent && !parent.query_exists(null)) {
+      parent.make_directory_with_parents(null);
+    }
+
+    // Write to file
+    const json = JSON.stringify(categories, null, 2);
+    file.replace_contents(json, null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
+
+    log('[LayoutsRepository] Layout categories saved successfully');
+  } catch (e) {
+    log(`[LayoutsRepository] Error saving layout categories: ${e}`);
   }
 }

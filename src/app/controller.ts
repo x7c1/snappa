@@ -15,6 +15,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import type { ExtensionSettings } from '../settings/extension-settings.js';
 import { evaluate, parse } from './layout-expression/index.js';
 import { MainPanel } from './main-panel/index.js';
+import { MonitorManager } from './monitor/manager.js';
 import { loadLayoutHistory, setSelectedLayout } from './repository/layout-history.js';
 import type { Layout, Position } from './types/index.js';
 
@@ -36,9 +37,13 @@ export class Controller {
   private mainPanel: MainPanel;
   private settings: ExtensionSettings | null;
   private hideShortcutRegistered: boolean = false;
+  private monitorManager: MonitorManager;
 
   constructor(settings: ExtensionSettings | null, metadata: ExtensionMetadata) {
     this.settings = settings;
+
+    // Initialize monitor manager
+    this.monitorManager = new MonitorManager();
 
     // Load layout history
     loadLayoutHistory();
@@ -61,6 +66,19 @@ export class Controller {
    * Enable the controller
    */
   enable(): void {
+    // Detect monitors
+    this.monitorManager.detectMonitors();
+
+    // Connect to monitor changes
+    this.monitorManager.connectToMonitorChanges(() => {
+      // Re-render panel if visible when monitors change
+      if (this.mainPanel.isVisible()) {
+        const cursor = this.getCursorPosition();
+        const window = this.getCurrentWindow();
+        this.mainPanel.show(cursor, window);
+      }
+    });
+
     this.connectWindowDragSignals();
     this.registerShowPanelKeyboardShortcut();
   }
@@ -169,6 +187,9 @@ export class Controller {
     this.unregisterKeyboardShortcuts();
     this.clearEdgeTimer();
     this.resetState();
+
+    // Disconnect monitor changes
+    this.monitorManager.disconnectMonitorChanges();
   }
 
   /**
@@ -337,9 +358,13 @@ export class Controller {
    * Check if cursor is at screen edge
    */
   private isAtScreenEdge(cursor: Position): boolean {
-    // Get primary monitor geometry
-    const monitor = global.display.get_current_monitor();
-    const geometry = global.display.get_monitor_geometry(monitor);
+    // Get current monitor (uses GNOME Shell's built-in detection)
+    const monitor = this.monitorManager.getCurrentMonitor();
+    if (!monitor) {
+      return false;
+    }
+
+    const { geometry } = monitor;
 
     // Check if cursor is within EDGE_THRESHOLD of any edge
     const atLeft = cursor.x <= geometry.x + EDGE_THRESHOLD;
@@ -396,9 +421,13 @@ export class Controller {
       log('[Controller] Window has no WM_CLASS, skipping history update');
     }
 
-    // Get work area (excludes panels, top bar, etc.)
-    const monitor = global.display.get_current_monitor();
-    const workArea = Main.layoutManager.getWorkAreaForMonitor(monitor);
+    // Get monitor for current window
+    const targetMonitor = this.monitorManager.getMonitorForWindow(targetWindow);
+    if (!targetMonitor) {
+      log('[Controller] Could not determine monitor for window');
+      return;
+    }
+    const workArea = targetMonitor.workArea;
 
     // Helper to resolve layout values
     const resolve = (value: string, containerSize: number): number => {

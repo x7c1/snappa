@@ -585,20 +585,26 @@ Key changes:
 Update to handle new Display Group structure:
 
 ```typescript
-// Load layouts (returns LayoutCategory[] with expanded Display Groups)
-export function loadLayouts(): LayoutCategory[]
+// NEW (Phase 2): Load layouts as categories (returns LayoutCategory[] with expanded Display Groups)
+export function loadLayoutsAsCategories(): LayoutCategory[]
 
-// Save layouts with new structure
+// NEW (Phase 2): Import configuration and convert to runtime format
+export function importLayoutConfiguration(config: LayoutConfiguration): void
+
+// EXISTING: Keep old functions for backward compatibility during Phase 1-2
+export function loadLayouts(): LayoutGroupCategory[]  // Old format
+export function importSettings(settings: LayoutCategorySetting[]): void  // Old format
+
+// Internal helper
 function saveLayouts(categories: LayoutCategory[]): void
-
-// Import settings and convert to runtime format
-export function importSettings(settings: LayoutConfiguration): void
 ```
 
 Key changes:
-- **loadLayouts()** now returns `LayoutCategory[]` (array of categories with Display Groups)
-- Display Groups contain fully expanded Layout Groups with unique IDs
-- **importSettings()** accepts `LayoutConfiguration` (with global layoutGroups and layoutCategories)
+- **Phase 2**: Add new functions `loadLayoutsAsCategories()` and `importLayoutConfiguration()`
+- **Phase 2**: Keep existing `loadLayouts()` and `importSettings()` working
+- **Phase 3**: Switch to using new functions in main-panel/index.ts
+- **Phase 6**: Deprecate/remove old functions
+- **importLayoutConfiguration()** accepts `LayoutConfiguration` (with global layoutGroups and layoutCategories)
 - Import process:
   1. Read global layoutGroups array
   2. For each DisplayGroup in each Category:
@@ -909,7 +915,7 @@ cp ~/.local/share/gnome-shell/extensions/snappa@x7c1.github.io/layout-history.js
 - [ ] Primary monitor change: Detected and handled
 
 ### UI Rendering
-- [ ] Single monitor system: Monitor headers shown based on system monitor count (not Display Group count)
+- [ ] Single monitor system: Monitor "0" displays correctly, monitor "1" shows error indicator (Display Group references both)
 - [ ] Dual monitor: Two sections displayed in physical 2D arrangement
 - [ ] Triple monitor: Three sections displayed in physical 2D arrangement
 - [ ] Different aspect ratios: Miniature displays scaled correctly
