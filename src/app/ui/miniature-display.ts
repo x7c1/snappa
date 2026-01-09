@@ -3,10 +3,7 @@ import type Meta from 'gi://Meta';
 import St from 'gi://St';
 import { DISPLAY_BG_COLOR, DISPLAY_SPACING, DISPLAY_SPACING_HORIZONTAL } from '../constants.js';
 import type { DebugConfig } from '../debug-panel/config.js';
-import {
-  getSelectedLayoutId,
-  getSelectedLayoutIdForMonitor,
-} from '../repository/layout-history.js';
+import { getSelectedLayoutIdForMonitor } from '../repository/layout-history.js';
 import type { Layout, LayoutGroup, Monitor } from '../types/index.js';
 import { createLayoutButton } from './layout-button.js';
 
@@ -23,7 +20,7 @@ export interface MiniatureDisplayView {
 
 /**
  * Create a miniature display view with light black background for a specific group
- * (Phase 3: Extended to support monitor headers and per-monitor selection)
+ *
  */
 export function createMiniatureDisplayView(
   group: LayoutGroup,
@@ -33,8 +30,8 @@ export function createMiniatureDisplayView(
   window: Meta.Window | null,
   onLayoutSelected: (layout: Layout, monitorKey: string) => void,
   isLastInRow: boolean = false,
-  monitor: Monitor | null = null, // NEW: Monitor information for header
-  monitorKey: string | null = null // NEW: Monitor key for selection callback
+  monitor: Monitor | null = null,
+  monitorKey: string
 ): MiniatureDisplayView {
   const HEADER_HEIGHT = monitor ? 20 : 0; // Reserve space for header if monitor is provided
   // Apply debug configuration
@@ -64,7 +61,7 @@ export function createMiniatureDisplayView(
     reactive: true,
   });
 
-  // NEW: Add monitor header if monitor information is provided
+  // Add monitor header if monitor information is provided
   if (monitor) {
     const monitorLabel = monitor.isPrimary
       ? `Monitor ${monitor.index + 1} (Primary)`
@@ -87,20 +84,13 @@ export function createMiniatureDisplayView(
   const buttonEvents: MiniatureDisplayView['buttonEvents'] = [];
 
   // Get selected layout ID for this window using three-tier lookup
-  // Phase 4: Use per-monitor history when monitorKey is provided
   let selectedLayoutId: string | null = null;
   if (window) {
     const windowId = window.get_id();
     const wmClass = window.get_wm_class();
     const title = window.get_title();
     if (wmClass !== null) {
-      if (monitorKey !== null) {
-        // Phase 4: Use per-monitor history
-        selectedLayoutId = getSelectedLayoutIdForMonitor(monitorKey, windowId, wmClass, title);
-      } else {
-        // Fallback: Use global history (for old code paths)
-        selectedLayoutId = getSelectedLayoutId(windowId, wmClass, title);
-      }
+      selectedLayoutId = getSelectedLayoutIdForMonitor(monitorKey, windowId, wmClass, title);
     }
   }
 
@@ -111,8 +101,7 @@ export function createMiniatureDisplayView(
 
     // Create layout button with per-monitor selection callback
     const wrappedCallback = (selectedLayout: Layout) => {
-      // If monitorKey is provided, use it; otherwise use "0" as default
-      onLayoutSelected(selectedLayout, monitorKey ?? '0');
+      onLayoutSelected(selectedLayout, monitorKey);
     };
 
     const result = createLayoutButton(
@@ -125,7 +114,7 @@ export function createMiniatureDisplayView(
     );
     layoutButtons.set(result.button, layout);
 
-    // NEW: Adjust button position to account for header
+    // Adjust button position to account for header
     if (HEADER_HEIGHT > 0) {
       const [currentX, currentY] = result.button.get_position();
       result.button.set_position(currentX, currentY + HEADER_HEIGHT);
@@ -176,7 +165,7 @@ export function createMiniatureDisplayView(
 
 /**
  * Create error view for missing/disconnected monitor
- * (Phase 3: NEW function)
+ *
  */
 export function createMiniatureDisplayErrorView(
   monitorKey: string,

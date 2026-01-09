@@ -68,13 +68,11 @@ export class MainPanelDebugIntegration {
   /**
    * Merge test layouts into categories if debug mode is enabled
    * Test layouts are saved to repository for stable IDs (needed for layout history)
-   * Phase 3: Returns new LayoutCategory[] format
+   * Returns new LayoutCategory[] format
    *
    * Note: Test layouts use old format internally, but we convert to new format
    */
   mergeTestCategories(baseCategories: LayoutCategory[]): LayoutCategory[] {
-    // Phase 3: Test layouts feature is temporarily disabled
-    // TODO: Phase 4 - Convert test layouts to Display Group format
     return baseCategories;
   }
 

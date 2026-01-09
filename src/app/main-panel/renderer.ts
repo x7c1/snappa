@@ -10,8 +10,7 @@ import {
   PANEL_PADDING,
 } from '../constants.js';
 import type { DebugConfig } from '../debug-panel/config.js';
-import type { Layout, LayoutCategory, LayoutGroupCategory, Monitor } from '../types/index.js';
-import { createCategoryView } from '../ui/index.js';
+import type { Layout, LayoutCategory, Monitor } from '../types/index.js';
 import { createMiniatureSpaceView } from '../ui/miniature-space.js';
 
 declare function log(message: string): void;
@@ -162,54 +161,6 @@ export function createFooter(onSettingsClick: () => void): St.BoxLayout {
 }
 
 /**
- * Create categories view with category-based rendering
- */
-// OLD: Single-monitor version (kept for backward compatibility during Phase 3)
-export function createCategoriesView(
-  displayWidth: number,
-  displayHeight: number,
-  categories: LayoutGroupCategory[],
-  debugConfig: DebugConfig | null,
-  window: Meta.Window | null,
-  onLayoutSelected: (layout: Layout) => void
-): CategoriesView {
-  const categoriesContainer = new St.BoxLayout({
-    style_class: 'snap-categories-container',
-    vertical: true, // Vertical layout: stack categories
-    x_expand: false,
-    y_expand: false,
-  });
-
-  const layoutButtons = new Map<St.Button, Layout>();
-  const buttonEvents: PanelEventIds['buttonEvents'] = [];
-
-  // Create one category view for each category
-  for (let i = 0; i < categories.length; i++) {
-    const category = categories[i];
-    const isLastCategory = i === categories.length - 1;
-    const view = createCategoryView(
-      category,
-      displayWidth,
-      displayHeight,
-      debugConfig,
-      window,
-      onLayoutSelected,
-      isLastCategory
-    );
-    categoriesContainer.add_child(view.categoryContainer);
-
-    // Collect layout buttons and events
-    for (const [button, layout] of view.layoutButtons) {
-      layoutButtons.set(button, layout);
-    }
-    buttonEvents.push(...view.buttonEvents);
-  }
-
-  return { categoriesContainer, layoutButtons, buttonEvents };
-}
-
-/**
- * NEW: Multi-monitor version (Phase 3)
  * Create categories view with Display Groups and multi-monitor support
  */
 export function createCategoriesViewWithDisplayGroups(

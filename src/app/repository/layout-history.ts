@@ -11,7 +11,7 @@ declare function log(message: string): void;
 //
 // Window Label: Currently uses window.get_title(), future: user-assignable labels
 
-// Version 2 format (Phase 5: per-monitor history)
+// Version 2 format
 interface PerMonitorHistory {
   byWindowId: {
     [windowId: number]: string; // windowId -> layoutId (volatile)
@@ -45,12 +45,10 @@ function getHistoryFilePath(): string {
 
 /**
  * Get window label for identification
- * Phase 1: Returns window.get_title()
- * Phase 2: Will support user-assignable labels
+ * Returns window.get_title()
+ * Can be extended to support user-assignable labels
  */
 function getWindowLabel(_windowId: number, title: string): string {
-  // Future: Look up user-assigned label for this _windowId
-  // For now, just return the title
   return title;
 }
 
@@ -141,7 +139,7 @@ export function loadLayoutHistory(): void {
 
 /**
  * Get or create monitor history entry
- * Phase 5: Helper for version 2 per-monitor history
+ * Helper for version 2 per-monitor history
  */
 function getMonitorHistory(monitorKey: string): PerMonitorHistory {
   if (!currentHistory.byMonitor[monitorKey]) {
@@ -156,7 +154,7 @@ function getMonitorHistory(monitorKey: string): PerMonitorHistory {
 
 /**
  * Save layout history to disk (auto-save on change)
- * Phase 5: Saves version 2 format with per-monitor history
+ * Saves version 2 format with per-monitor history
  * Only persists byWmClass and byWmClassAndLabel (byWindowId is volatile)
  */
 export function saveLayoutHistory(): void {
@@ -192,56 +190,12 @@ export function saveLayoutHistory(): void {
   }
 }
 
-/**
- * Record layout selection for a window
- * Phase 5: Delegates to monitor "0" for backward compatibility
- * Records in all three tiers: byWindowId, byWmClass, byWmClassAndLabel
- *
- * @param windowId - Window ID (for session-only history)
- * @param wmClass - Application's WM_CLASS identifier
- * @param title - Window title (used to generate label)
- * @param layoutId - Layout UUID to record
- */
-export function setSelectedLayout(
-  windowId: number,
-  wmClass: string,
-  title: string,
-  layoutId: string
-): void {
-  // Phase 5: Delegate to monitor "0" for backward compatibility
-  setSelectedLayoutForMonitor('0', windowId, wmClass, title, layoutId);
-}
-
-/**
- * Retrieve most recent layout selection ID using three-tier lookup
- * Phase 5: Delegates to monitor "0" for backward compatibility
- * Lookup order:
- * 1. byWindowId (most specific, session-only)
- * 2. byWmClass (if only one layout for this app)
- * 3. byWmClassAndLabel (if multiple layouts for this app)
- *
- * @param windowId - Window ID
- * @param wmClass - Application's WM_CLASS identifier
- * @param title - Window title (used to generate label)
- * @returns Layout ID (UUID) of most recent selection, or null
- */
-export function getSelectedLayoutId(
-  windowId: number,
-  wmClass: string,
-  title: string
-): string | null {
-  // Phase 5: Delegate to monitor "0" for backward compatibility
-  return getSelectedLayoutIdForMonitor('0', windowId, wmClass, title);
-}
-
 // ============================================================================
-// NEW: Per-monitor history support (Phase 2)
-// Note: These functions are prepared but not yet activated
-// They will be used in Phase 5 when history format is migrated to version 2
+// Per-monitor history support
 // ============================================================================
 
 /**
- * Record layout selection for a window on a specific monitor (Phase 2: prepared, not yet active)
+ * Record layout selection for a window on a specific monitor
  *
  * @param monitorKey - Monitor key ("0", "1", "2"...)
  * @param windowId - Window ID (for session-only history)
@@ -295,7 +249,7 @@ export function setSelectedLayoutForMonitor(
 }
 
 /**
- * Retrieve layout selection for a window on a specific monitor (Phase 2: prepared, not yet active)
+ * Retrieve layout selection for a window on a specific monitor
  *
  * @param monitorKey - Monitor key ("0", "1", "2"...)
  * @param windowId - Window ID

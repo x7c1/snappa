@@ -11,7 +11,6 @@ import type { LayoutCategory, Position, Size } from '../types/index.js';
 declare function log(message: string): void;
 
 export class MainPanelState {
-  // Phase 3: Only support new LayoutCategory type
   private categories: LayoutCategory[] = [];
   private currentWindow: Meta.Window | null = null;
   private originalCursorX: number = 0;

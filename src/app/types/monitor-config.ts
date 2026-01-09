@@ -26,6 +26,6 @@ export interface PerMonitorLayoutHistory {
 
 /**
  * Note: Version 2 format is required for per-monitor history.
- * Migration from version 1 (old format) is handled automatically in Phase 5.
+ * Migration from version 1 (old format) is handled automatically.
  * Old history entries are migrated to monitor "0".
  */

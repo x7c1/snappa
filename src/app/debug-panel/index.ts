@@ -2,7 +2,7 @@ import Clutter from 'gi://Clutter';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import { DEFAULT_LAYOUT_SETTINGS, PANEL_EDGE_PADDING } from '../constants.js';
+import { DEFAULT_LAYOUT_CONFIGURATION, PANEL_EDGE_PADDING } from '../constants.js';
 import { adjustDebugPanelPosition } from '../positioning/index.js';
 import type { CheckboxButtonWithMetadata } from '../types/button.js';
 import type { Position, Size } from '../types/index.js';
@@ -271,7 +271,7 @@ export class DebugPanel {
     this.container.add_child(separator);
 
     // Display total number of categories
-    const totalCategories = DEFAULT_LAYOUT_SETTINGS.length;
+    const totalCategories = DEFAULT_LAYOUT_CONFIGURATION.layoutCategories.length;
     const summaryLabel = new St.Label({
       text: `Total Categories: ${totalCategories}`,
       style: `
@@ -283,16 +283,26 @@ export class DebugPanel {
     this.container.add_child(summaryLabel);
 
     // Display each category with hierarchy
-    for (const category of DEFAULT_LAYOUT_SETTINGS) {
-      const displayCount = category.layoutGroups.length;
-      const totalButtons = category.layoutGroups.reduce(
-        (sum: number, group) => sum + group.layouts.length,
-        0
-      );
+    for (const category of DEFAULT_LAYOUT_CONFIGURATION.layoutCategories) {
+      const displayGroupCount = category.displayGroups.length;
 
-      // Category name and display count
+      // Count total buttons across all display groups
+      let totalButtons = 0;
+      for (const displayGroup of category.displayGroups) {
+        for (const monitorKey in displayGroup.displays) {
+          const layoutGroupName = displayGroup.displays[monitorKey];
+          const layoutGroup = DEFAULT_LAYOUT_CONFIGURATION.layoutGroups.find(
+            (g) => g.name === layoutGroupName
+          );
+          if (layoutGroup) {
+            totalButtons += layoutGroup.layouts.length;
+          }
+        }
+      }
+
+      // Category name and display group count
       const categoryLabel = new St.Label({
-        text: `├─ ${category.name} (${displayCount} displays, ${totalButtons} buttons)`,
+        text: `├─ ${category.name} (${displayGroupCount} display groups, ${totalButtons} buttons)`,
         style: `
                     color: rgba(120, 180, 255, 0.9);
                     font-size: 8pt;
@@ -302,14 +312,26 @@ export class DebugPanel {
       });
       this.container.add_child(categoryLabel);
 
-      // Display each layout group (display)
-      for (let i = 0; i < category.layoutGroups.length; i++) {
-        const group = category.layoutGroups[i];
-        const isLastDisplay = i === category.layoutGroups.length - 1;
-        const displayPrefix = isLastDisplay ? '  └─' : '  ├─';
+      // Display each display group
+      for (let i = 0; i < category.displayGroups.length; i++) {
+        const displayGroup = category.displayGroups[i];
+        const isLastDisplayGroup = i === category.displayGroups.length - 1;
+        const displayPrefix = isLastDisplayGroup ? '  └─' : '  ├─';
+
+        // Count buttons in this display group
+        let buttonCount = 0;
+        for (const monitorKey in displayGroup.displays) {
+          const layoutGroupName = displayGroup.displays[monitorKey];
+          const layoutGroup = DEFAULT_LAYOUT_CONFIGURATION.layoutGroups.find(
+            (g) => g.name === layoutGroupName
+          );
+          if (layoutGroup) {
+            buttonCount += layoutGroup.layouts.length;
+          }
+        }
 
         const displayLabel = new St.Label({
-          text: `${displayPrefix} ${group.name} (${group.layouts.length} buttons)`,
+          text: `${displayPrefix} ${displayGroup.name} (${buttonCount} buttons)`,
           style: `
                         color: rgba(180, 220, 180, 0.8);
                         font-size: 7pt;

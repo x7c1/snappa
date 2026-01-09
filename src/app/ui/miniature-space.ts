@@ -148,8 +148,8 @@ export function createMiniatureSpaceView(
       window,
       onLayoutSelected,
       false, // isLastInRow
-      monitor, // NEW: Pass monitor for header
-      monitorKey // NEW: Pass monitorKey for selection
+      monitor,
+      monitorKey // Pass monitorKey for selection
     );
 
     // Position the miniature display

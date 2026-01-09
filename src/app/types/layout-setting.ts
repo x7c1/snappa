@@ -12,13 +12,7 @@ export interface LayoutGroupSetting {
   layouts: LayoutSetting[];
 }
 
-// OLD: For backward compatibility
-export interface LayoutCategorySetting {
-  name: string;
-  layoutGroups: LayoutGroupSetting[];
-}
-
-// NEW: Display Group Setting - defines Layout Group assignment per monitor (for import input)
+// Display Group Setting - defines Layout Group assignment per monitor (for import input)
 export interface DisplayGroupSetting {
   name: string;
   displays: {
@@ -26,13 +20,13 @@ export interface DisplayGroupSetting {
   };
 }
 
-// NEW: Layout Category with Display Groups (for import input)
+// Layout Category with Display Groups (for import input)
 export interface LayoutCategoryWithDisplayGroups {
   name: string;
   displayGroups: DisplayGroupSetting[];
 }
 
-// NEW: Complete layout configuration structure (for import input)
+// Complete layout configuration structure (for import input)
 export interface LayoutConfiguration {
   layoutGroups: LayoutGroupSetting[]; // Global, reusable Layout Groups
   layoutCategories: LayoutCategoryWithDisplayGroups[]; // Categories with Display Groups

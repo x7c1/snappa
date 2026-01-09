@@ -48,9 +48,9 @@ export class Controller {
     // Load layout history
     loadLayoutHistory();
 
-    // Initialize main panel with metadata and monitor manager (Phase 3)
+    // Initialize main panel with metadata and monitor manager
     this.mainPanel = new MainPanel(metadata, this.monitorManager);
-    // Phase 4: Receive monitorKey from layout selection
+    // Receive monitorKey from layout selection for per-monitor application
     this.mainPanel.setOnLayoutSelected((layout, monitorKey) => {
       this.applyLayoutToCurrentWindow(layout, monitorKey);
     });
@@ -398,7 +398,6 @@ export class Controller {
 
   /**
    * Apply layout to currently dragged window (called when panel button is clicked)
-   * Phase 4: Added monitorKey parameter for multi-monitor support
    */
   private applyLayoutToCurrentWindow(layout: Layout, monitorKey?: string): void {
     log(`[Controller] Apply layout: ${layout.label} (ID: ${layout.id})`);
@@ -414,7 +413,7 @@ export class Controller {
     // Determine which monitor to use
     let targetMonitor: import('./types/index.js').Monitor | null;
     if (monitorKey !== undefined) {
-      // Phase 4: Use explicitly specified monitor from user selection
+      // Use explicitly specified monitor from user selection
       log(`[Controller] Using user-selected monitor: ${monitorKey}`);
       targetMonitor = this.monitorManager.getMonitorByKey(monitorKey);
       if (!targetMonitor) {
@@ -438,7 +437,7 @@ export class Controller {
     const wmClass = targetWindow.get_wm_class();
     const title = targetWindow.get_title();
     if (wmClass) {
-      // Phase 4: Use per-monitor history
+      // Use per-monitor history
       setSelectedLayoutForMonitor(monitorKey, windowId, wmClass, title, layout.id);
       // Update panel button styles immediately
       this.mainPanel.updateSelectedLayoutHighlight(layout.id);

@@ -41,7 +41,7 @@ export class MainPanel {
   private metadata: ExtensionMetadata;
   private onPanelShownCallback: (() => void) | null = null;
   private onPanelHiddenCallback: (() => void) | null = null;
-  private monitorManager: MonitorManager; // Phase 3: Always required
+  private monitorManager: MonitorManager; // Always required
 
   // Component instances
   private state: MainPanelState = new MainPanelState();
@@ -78,7 +78,7 @@ export class MainPanel {
       extensionSettings
     );
 
-    // Initialize layouts repository (Phase 3: NEW format with Display Groups)
+    // Initialize layouts repository
     // First launch: import default settings if repository is empty
     let layouts = loadLayoutsAsCategories();
     if (layouts.length === 0) {
@@ -94,7 +94,7 @@ export class MainPanel {
 
   /**
    * Set callback for when a layout is selected
-   * Phase 4: Now includes monitorKey parameter
+   * Now includes monitorKey parameter
    */
   setOnLayoutSelected(callback: (layout: Layout, monitorKey: string) => void): void {
     this.layoutSelector.setOnLayoutSelected(callback);
@@ -192,7 +192,6 @@ export class MainPanel {
     } else {
       const onLayoutSelected = this.layoutSelector.getOnLayoutSelected();
 
-      // Phase 3: Use new multi-monitor renderer
       const monitors = this.monitorManager.getMonitors();
       const categoriesView = createCategoriesViewWithDisplayGroups(
         monitors,
@@ -201,7 +200,6 @@ export class MainPanel {
         window,
         (layout, monitorKey) => {
           if (onLayoutSelected) {
-            // Phase 4: Pass monitorKey to controller for per-monitor layout application
             onLayoutSelected(layout, monitorKey);
           }
         }
@@ -253,7 +251,6 @@ export class MainPanel {
     // Enable keyboard navigation
     const onLayoutSelected = this.layoutSelector.getOnLayoutSelected();
     if (this.container && onLayoutSelected) {
-      // Phase 4: Wrap callback to support optional monitorKey for keyboard navigation
       // When monitorKey is undefined, controller auto-detects monitor from window
       this.keyboardNavigator.enable(this.container, this.layoutButtons, (layout, monitorKey) => {
         onLayoutSelected(layout, monitorKey ?? '0');

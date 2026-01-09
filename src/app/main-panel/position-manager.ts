@@ -22,7 +22,7 @@ import type { LayoutCategory, Position, Size } from '../types/index.js';
 export class MainPanelPositionManager {
   /**
    * Calculate panel dimensions based on categories to render
-   * Phase 3: Only supports new LayoutCategory format
+   * Only supports new LayoutCategory format
    */
   calculatePanelDimensions(
     categoriesToRender: LayoutCategory[],
