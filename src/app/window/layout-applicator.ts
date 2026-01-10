@@ -28,7 +28,7 @@ export class LayoutApplicator {
   /**
    * Apply layout to window
    */
-  applyLayout(window: Meta.Window | null, layout: Layout, monitorKey?: string): void {
+  applyLayout(window: Meta.Window | null, layout: Layout): void {
     log(`[LayoutApplicator] Apply layout: ${layout.label} (ID: ${layout.id})`);
 
     if (!window) {
@@ -36,22 +36,11 @@ export class LayoutApplicator {
       return;
     }
 
-    let targetMonitor: import('../types/index.js').Monitor | null;
-    if (monitorKey !== undefined) {
-      log(`[LayoutApplicator] Using user-selected monitor: ${monitorKey}`);
-      targetMonitor = this.monitorManager.getMonitorByKey(monitorKey);
-      if (!targetMonitor) {
-        log(`[LayoutApplicator] Could not find monitor with key: ${monitorKey}`);
-        return;
-      }
-    } else {
-      log('[LayoutApplicator] Auto-detecting monitor from window');
-      targetMonitor = this.monitorManager.getMonitorForWindow(window);
-      if (!targetMonitor) {
-        log('[LayoutApplicator] Could not determine monitor for window');
-        return;
-      }
-      monitorKey = String(targetMonitor.index);
+    log(`[LayoutApplicator] Using monitor from layout: ${layout.monitorKey}`);
+    const targetMonitor = this.monitorManager.getMonitorByKey(layout.monitorKey);
+    if (!targetMonitor) {
+      log(`[LayoutApplicator] Could not find monitor with key: ${layout.monitorKey}`);
+      return;
     }
     const workArea = targetMonitor.workArea;
 
@@ -60,14 +49,14 @@ export class LayoutApplicator {
     const title = window.get_title();
     if (wmClass) {
       this.layoutHistoryRepository.setSelectedLayoutForMonitor(
-        monitorKey,
+        layout.monitorKey,
         windowId,
         wmClass,
         title,
         layout.id
       );
       if (this.callbacks.onLayoutApplied) {
-        this.callbacks.onLayoutApplied(layout.id, monitorKey);
+        this.callbacks.onLayoutApplied(layout.id, layout.monitorKey);
       }
     } else {
       log('[LayoutApplicator] Window has no WM_CLASS, skipping history update');

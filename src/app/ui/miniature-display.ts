@@ -28,7 +28,7 @@ export function createMiniatureDisplayView(
   displayHeight: number,
   debugConfig: DebugConfig | null,
   window: Meta.Window | null,
-  onLayoutSelected: (layout: Layout, monitorKey: string) => void,
+  onLayoutSelected: (layout: Layout) => void,
   isLastInRow: boolean = false,
   monitor: Monitor | null = null,
   monitorKey: string,
@@ -105,9 +105,9 @@ export function createMiniatureDisplayView(
     // Determine if this layout is selected
     const isSelected = selectedLayoutId !== null && layout.id === selectedLayoutId;
 
-    // Create layout button with per-monitor selection callback
+    // Create layout button with selection callback
     const wrappedCallback = (selectedLayout: Layout) => {
-      onLayoutSelected(selectedLayout, monitorKey);
+      onLayoutSelected(selectedLayout);
     };
 
     const result = createLayoutButton(
@@ -116,8 +116,7 @@ export function createMiniatureDisplayView(
       displayHeight,
       debugConfig,
       isSelected,
-      wrappedCallback,
-      monitorKey
+      wrappedCallback
     );
     layoutButtons.set(result.button, layout);
 

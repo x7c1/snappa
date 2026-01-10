@@ -31,12 +31,12 @@ export class MainPanelKeyboardNavigator {
   private focusedButton: St.Button | null = null;
   private layoutButtons: Map<St.Button, Layout> = new Map();
   private keyEventId: number | null = null;
-  private onLayoutSelected: ((layout: Layout, monitorKey?: string) => void) | null = null;
+  private onLayoutSelected: ((layout: Layout) => void) | null = null;
 
   enable(
     container: St.BoxLayout,
     layoutButtons: Map<St.Button, Layout>,
-    onLayoutSelected: (layout: Layout, monitorKey?: string) => void
+    onLayoutSelected: (layout: Layout) => void
   ): void {
     this.container = container;
     this.layoutButtons = layoutButtons;
@@ -297,6 +297,6 @@ export class MainPanelKeyboardNavigator {
     const layout = this.layoutButtons.get(this.focusedButton);
     if (!layout || !this.onLayoutSelected) return;
 
-    this.onLayoutSelected(layout, undefined);
+    this.onLayoutSelected(layout);
   }
 }

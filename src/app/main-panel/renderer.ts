@@ -169,7 +169,7 @@ export function createCategoriesViewWithDisplayGroups(
   categories: LayoutCategory[],
   debugConfig: DebugConfig | null,
   window: Meta.Window | null,
-  onLayoutSelected: (layout: Layout, monitorKey: string) => void,
+  onLayoutSelected: (layout: Layout) => void,
   layoutHistoryRepository: LayoutHistoryRepository
 ): CategoriesView {
   const categoriesContainer = new St.BoxLayout({

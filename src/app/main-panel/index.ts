@@ -101,9 +101,8 @@ export class MainPanel {
 
   /**
    * Set callback for when a layout is selected
-   * Now includes monitorKey parameter
    */
-  setOnLayoutSelected(callback: (layout: Layout, monitorKey: string) => void): void {
+  setOnLayoutSelected(callback: (layout: Layout) => void): void {
     this.layoutSelector.setOnLayoutSelected(callback);
   }
 
@@ -221,9 +220,9 @@ export class MainPanel {
         categories,
         debugConfig,
         window,
-        (layout, monitorKey) => {
+        (layout) => {
           if (onLayoutSelected) {
-            onLayoutSelected(layout, monitorKey);
+            onLayoutSelected(layout);
           }
         },
         this.layoutHistoryRepository
@@ -275,9 +274,8 @@ export class MainPanel {
     // Enable keyboard navigation
     const onLayoutSelected = this.layoutSelector.getOnLayoutSelected();
     if (this.container && onLayoutSelected) {
-      // When monitorKey is undefined, controller auto-detects monitor from window
-      this.keyboardNavigator.enable(this.container, this.layoutButtons, (layout, monitorKey) => {
-        onLayoutSelected(layout, monitorKey ?? '0');
+      this.keyboardNavigator.enable(this.container, this.layoutButtons, (layout) => {
+        onLayoutSelected(layout);
       });
     }
 

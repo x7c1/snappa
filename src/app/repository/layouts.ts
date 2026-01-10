@@ -49,11 +49,12 @@ function generateUUID(): string {
 /**
  * Converts a LayoutSetting to a Layout by adding ID and hash
  */
-function settingToLayout(setting: LayoutSetting): Layout {
+function settingToLayout(setting: LayoutSetting, monitorKey: string): Layout {
   return {
     id: generateUUID(),
     hash: generateLayoutHash(setting.x, setting.y, setting.width, setting.height),
     label: setting.label,
+    monitorKey,
     x: setting.x,
     y: setting.y,
     width: setting.width,
@@ -64,10 +65,13 @@ function settingToLayout(setting: LayoutSetting): Layout {
 /**
  * Converts LayoutGroupSetting to LayoutGroup
  */
-function settingToLayoutGroup(groupSetting: LayoutGroupSetting): LayoutGroup {
+function settingToLayoutGroup(
+  groupSetting: LayoutGroupSetting,
+  monitorKey: string = '0'
+): LayoutGroup {
   return {
     name: groupSetting.name,
-    layouts: groupSetting.layouts.map(settingToLayout),
+    layouts: groupSetting.layouts.map((setting) => settingToLayout(setting, monitorKey)),
   };
 }
 
@@ -76,7 +80,7 @@ function settingToLayoutGroup(groupSetting: LayoutGroupSetting): LayoutGroup {
  * Used for test layouts in debug mode
  */
 export function convertLayoutGroupSettings(groupSettings: LayoutGroupSetting[]): LayoutGroup[] {
-  return groupSettings.map(settingToLayoutGroup);
+  return groupSettings.map((setting) => settingToLayoutGroup(setting, '0'));
 }
 
 // ============================================================================
@@ -109,7 +113,7 @@ function settingToDisplayGroup(
     // Each monitor gets its own LayoutGroup instance with separate IDs
     const layoutGroup: LayoutGroup = {
       name: layoutGroupSetting.name,
-      layouts: layoutGroupSetting.layouts.map(settingToLayout),
+      layouts: layoutGroupSetting.layouts.map((setting) => settingToLayout(setting, monitorKey)),
     };
 
     displays[monitorKey] = layoutGroup;

@@ -80,7 +80,7 @@ export function createMiniatureSpaceView(
   monitors: Map<string, Monitor>,
   debugConfig: DebugConfig | null,
   window: Meta.Window | null,
-  onLayoutSelected: (layout: Layout, monitorKey: string) => void,
+  onLayoutSelected: (layout: Layout) => void,
   layoutHistoryRepository: LayoutHistoryRepository
 ): MiniatureSpaceView {
   // Calculate bounding box for all monitors in this Display Group

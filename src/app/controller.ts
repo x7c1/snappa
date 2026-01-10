@@ -73,8 +73,8 @@ export class Controller {
     this.keyboardShortcutManager = new KeyboardShortcutManager(settings);
 
     this.mainPanel = new MainPanel(metadata, this.monitorManager, this.layoutHistoryRepository);
-    this.mainPanel.setOnLayoutSelected((layout, monitorKey) => {
-      this.applyLayoutToCurrentWindow(layout, monitorKey);
+    this.mainPanel.setOnLayoutSelected((layout) => {
+      this.applyLayoutToCurrentWindow(layout);
     });
     // Dynamic registration prevents shortcut conflicts when panel is hidden
     this.mainPanel.setOnPanelShown(() => {
@@ -237,10 +237,10 @@ export class Controller {
   /**
    * Apply layout to currently dragged window (called when panel button is clicked)
    */
-  private applyLayoutToCurrentWindow(layout: Layout, monitorKey?: string): void {
+  private applyLayoutToCurrentWindow(layout: Layout): void {
     // currentWindow is null after drag ends, so fallback to lastDraggedWindow
     const targetWindow = this.currentWindow || this.lastDraggedWindow;
-    this.layoutApplicator.applyLayout(targetWindow, layout, monitorKey);
+    this.layoutApplicator.applyLayout(targetWindow, layout);
   }
 
   /**
