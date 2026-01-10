@@ -20,7 +20,6 @@ export class DragSignalHandler {
    * Connect window drag signals
    */
   connect(callbacks: DragCallbacks): void {
-    // Connect to grab-op-begin signal to detect window dragging
     this.grabOpBeginId = global.display.connect(
       'grab-op-begin',
       (_display: Meta.Display, window: Meta.Window, op: Meta.GrabOp) => {
@@ -28,7 +27,6 @@ export class DragSignalHandler {
       }
     );
 
-    // Connect to grab-op-end signal to detect when dragging stops
     this.grabOpEndId = global.display.connect(
       'grab-op-end',
       (_display: Meta.Display, window: Meta.Window, op: Meta.GrabOp) => {

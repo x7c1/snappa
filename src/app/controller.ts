@@ -50,19 +50,16 @@ export class Controller {
   private historyLoaded: boolean = false;
 
   constructor(settings: ExtensionSettings, metadata: ExtensionMetadata) {
-    // Initialize monitor manager
     this.monitorManager = new MonitorManager();
 
-    // Initialize layout history repository (will be loaded on first panel display)
+    // Lazy load to avoid I/O until panel is actually displayed
     this.layoutHistoryRepository = new LayoutHistoryRepository();
 
-    // Initialize drag-related managers
     this.edgeDetector = new EdgeDetector(EDGE_THRESHOLD);
     this.edgeTimerManager = new EdgeTimerManager(EDGE_DELAY);
     this.motionMonitor = new MotionMonitor(MONITOR_INTERVAL);
     this.dragSignalHandler = new DragSignalHandler();
 
-    // Initialize layout applicator
     this.layoutApplicator = new LayoutApplicator(
       this.monitorManager,
       this.layoutHistoryRepository,
@@ -73,16 +70,13 @@ export class Controller {
       }
     );
 
-    // Initialize keyboard shortcut manager
     this.keyboardShortcutManager = new KeyboardShortcutManager(settings);
 
-    // Initialize main panel with metadata, monitor manager, and layout history repository
     this.mainPanel = new MainPanel(metadata, this.monitorManager, this.layoutHistoryRepository);
-    // Receive monitorKey from layout selection for per-monitor application
     this.mainPanel.setOnLayoutSelected((layout, monitorKey) => {
       this.applyLayoutToCurrentWindow(layout, monitorKey);
     });
-    // Register/unregister hide shortcut when panel is shown/hidden
+    // Dynamic registration prevents shortcut conflicts when panel is hidden
     this.mainPanel.setOnPanelShown(() => {
       this.keyboardShortcutManager.registerHidePanelShortcut(() => this.onHidePanelShortcut());
     });
@@ -95,12 +89,10 @@ export class Controller {
    * Enable the controller
    */
   enable(): void {
-    // Detect monitors
     this.monitorManager.detectMonitors();
 
-    // Connect to monitor changes
     this.monitorManager.connectToMonitorChanges(() => {
-      // Re-render panel if visible when monitors change
+      // Re-render panel when monitors change to reflect new configuration
       if (this.mainPanel.isVisible()) {
         const cursor = this.getCursorPosition();
         const window = this.getCurrentWindow();
@@ -108,13 +100,11 @@ export class Controller {
       }
     });
 
-    // Connect window drag signals
     this.dragSignalHandler.connect({
       onDragBegin: (window, op) => this.onGrabOpBegin(window, op),
       onDragEnd: (window, op) => this.onGrabOpEnd(window, op),
     });
 
-    // Register keyboard shortcuts
     this.keyboardShortcutManager.registerShowPanelShortcut(() => this.onShowPanelShortcut());
   }
 
@@ -127,8 +117,6 @@ export class Controller {
     this.keyboardShortcutManager.unregisterAll();
     this.edgeTimerManager.clear();
     this.resetState();
-
-    // Disconnect monitor changes
     this.monitorManager.disconnectMonitorChanges();
   }
 
@@ -155,7 +143,6 @@ export class Controller {
    * Handle grab operation begin
    */
   private onGrabOpBegin(window: Meta.Window, op: Meta.GrabOp): void {
-    // Check if this is a window move operation
     if (op !== Meta.GrabOp.MOVING) {
       return;
     }
@@ -164,13 +151,12 @@ export class Controller {
     this.lastDraggedWindow = window;
     this.isDragging = true;
 
-    // Start monitoring cursor position
     this.motionMonitor.start(() => {
       if (!this.isDragging) {
-        return false; // Stop monitoring
+        return false;
       }
       this.onMotion();
-      return true; // Continue monitoring
+      return true;
     });
   }
 
@@ -178,7 +164,6 @@ export class Controller {
    * Handle grab operation end
    */
   private onGrabOpEnd(window: Meta.Window, op: Meta.GrabOp): void {
-    // Check if this is the end of a window move operation
     if (op !== Meta.GrabOp.MOVING || window !== this.currentWindow) {
       return;
     }
@@ -187,14 +172,10 @@ export class Controller {
     this.currentWindow = null;
     this.isAtEdge = false;
 
-    // Stop monitoring cursor position
     this.motionMonitor.stop();
-
-    // Clear edge timer
     this.edgeTimerManager.clear();
 
-    // Keep panel visible until a button is clicked
-    // (panel will be hidden when layout is applied)
+    // Panel stays visible until user selects a layout
   }
 
   /**
@@ -206,7 +187,6 @@ export class Controller {
     const atEdge = this.edgeDetector.isAtScreenEdge(cursor, monitor);
 
     if (atEdge && !this.isAtEdge) {
-      // Just reached edge - start timer
       this.isAtEdge = true;
       this.edgeTimerManager.start(() => {
         if (this.isAtEdge && this.isDragging) {
@@ -214,14 +194,11 @@ export class Controller {
         }
       });
     } else if (!atEdge && this.isAtEdge && !this.mainPanel.isVisible()) {
-      // Left edge and panel is not visible - cancel timer
       this.isAtEdge = false;
       this.edgeTimerManager.clear();
     }
-    // Note: If panel is visible, keep isAtEdge true even if cursor is not at edge
-    // This prevents the panel from disappearing when user moves cursor to panel
+    // Keep isAtEdge=true while panel is visible to prevent accidental dismissal
 
-    // Update panel position if visible
     if (this.mainPanel.isVisible()) {
       this.mainPanel.updatePosition(cursor);
     }
@@ -247,10 +224,9 @@ export class Controller {
    */
   private showMainPanel(): void {
     if (this.mainPanel.isVisible()) {
-      return; // Already visible
+      return;
     }
 
-    // Load layout history on first panel display
     this.ensureHistoryLoaded();
 
     const cursor = this.getCursorPosition();
@@ -262,7 +238,7 @@ export class Controller {
    * Apply layout to currently dragged window (called when panel button is clicked)
    */
   private applyLayoutToCurrentWindow(layout: Layout, monitorKey?: string): void {
-    // Use lastDraggedWindow since currentWindow might be null if drag just ended
+    // currentWindow is null after drag ends, so fallback to lastDraggedWindow
     const targetWindow = this.currentWindow || this.lastDraggedWindow;
     this.layoutApplicator.applyLayout(targetWindow, layout, monitorKey);
   }
@@ -273,14 +249,12 @@ export class Controller {
   private onShowPanelShortcut(): void {
     log('[Controller] ===== KEYBOARD SHORTCUT TRIGGERED =====');
 
-    // If panel is already visible, hide it (toggle behavior)
     if (this.mainPanel.isVisible()) {
       log('[Controller] Panel is already visible, hiding it');
       this.mainPanel.hide();
       return;
     }
 
-    // Get currently focused window
     const focusWindow = global.display.get_focus_window();
 
     if (!focusWindow) {
@@ -290,14 +264,12 @@ export class Controller {
 
     log(`[Controller] Focused window: ${focusWindow.get_title()}`);
 
-    // Load layout history on first panel display
     this.ensureHistoryLoaded();
 
-    // Store window reference (similar to drag behavior)
+    // Track window reference for layout application
     this.currentWindow = focusWindow;
     this.lastDraggedWindow = focusWindow;
 
-    // Show main panel at window center position
     log('[Controller] Showing main panel...');
     this.mainPanel.showAtWindowCenter(focusWindow);
     log('[Controller] Main panel shown');
@@ -309,7 +281,6 @@ export class Controller {
   private onHidePanelShortcut(): void {
     log('[Controller] ===== HIDE PANEL SHORTCUT TRIGGERED =====');
 
-    // Only hide if panel is visible
     if (this.mainPanel.isVisible()) {
       log('[Controller] Hiding panel');
       this.mainPanel.hide();

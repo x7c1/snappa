@@ -20,7 +20,6 @@ export class EdgeDetector {
 
     const { geometry } = monitor;
 
-    // Check if cursor is within edge threshold of any edge
     const atLeft = cursor.x <= geometry.x + this.edgeThreshold;
     const atRight = cursor.x >= geometry.x + geometry.width - this.edgeThreshold;
     const atTop = cursor.y <= geometry.y + this.edgeThreshold;

@@ -17,10 +17,9 @@ export class MotionMonitor {
    */
   start(onMotion: () => boolean): void {
     if (this.motionId !== null) {
-      return; // Already monitoring
+      return;
     }
 
-    // Use GLib.timeout_add to periodically check cursor position
     this.motionId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, this.monitorIntervalMs, () => {
       const shouldContinue = onMotion();
       if (!shouldContinue) {
