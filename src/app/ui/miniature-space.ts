@@ -9,7 +9,13 @@
 import Clutter from 'gi://Clutter';
 import type Meta from 'gi://Meta';
 import St from 'gi://St';
-import { DISPLAY_GROUP_SPACING, MAX_PANEL_HEIGHT, MAX_PANEL_WIDTH } from '../constants.js';
+import {
+  DISPLAY_GROUP_SPACING,
+  MAX_PANEL_HEIGHT,
+  MAX_PANEL_WIDTH,
+  MINIATURE_SPACE_BG_COLOR,
+  MONITOR_MARGIN,
+} from '../constants.js';
 import type { LayoutHistoryRepository } from '../repository/layout-history.js';
 import type { DisplayGroup, Layout, Monitor } from '../types/index.js';
 import {
@@ -89,9 +95,12 @@ export function createMiniatureSpaceView(
   const scaleY = MAX_PANEL_HEIGHT / bbox.height;
   const scale = Math.min(scaleX, scaleY, 1.0); // Never scale up
 
-  // Create container with absolute positioning
+  // Create container with absolute positioning (size will be calculated after placing displays)
+  // FixedLayout doesn't respect padding, so we handle margins via position calculation
   const spaceContainer = new St.Widget({
     style: `
+      background-color: ${MINIATURE_SPACE_BG_COLOR};
+      border-radius: 6px;
       margin-bottom: ${DISPLAY_GROUP_SPACING}px;
     `,
     layout_manager: new Clutter.FixedLayout(),
@@ -99,6 +108,12 @@ export function createMiniatureSpaceView(
 
   const allLayoutButtons = new Map<St.Button, Layout>();
   const allButtonEvents: MiniatureSpaceView['buttonEvents'] = [];
+
+  // Track actual bounding box of placed displays (including margins)
+  let actualMinX = Infinity;
+  let actualMinY = Infinity;
+  let actualMaxX = -Infinity;
+  let actualMaxY = -Infinity;
 
   // Create miniature display for each monitor in the Display Group
   for (const [monitorKey, layoutGroup] of Object.entries(displayGroup.displays)) {
@@ -119,12 +134,15 @@ export function createMiniatureSpaceView(
     }
 
     // Calculate scaled dimensions for this monitor
-    const scaledWidth = monitor.workArea.width * scale;
-    const scaledHeight = monitor.workArea.height * scale;
+    // Use geometry (physical size) instead of workArea for consistent sizing across monitors
+    // Reduce size by MONITOR_MARGIN (half on each side) to create gap between adjacent displays
+    const scaledWidth = monitor.geometry.width * scale - MONITOR_MARGIN;
+    const scaledHeight = monitor.geometry.height * scale - MONITOR_MARGIN;
 
     // Calculate position relative to bounding box origin
-    const scaledX = (monitor.geometry.x - bbox.minX) * scale;
-    const scaledY = (monitor.geometry.y - bbox.minY) * scale;
+    // Add MONITOR_MARGIN offset to create outer margin (FixedLayout doesn't respect padding)
+    const scaledX = (monitor.geometry.x - bbox.minX) * scale + MONITOR_MARGIN;
+    const scaledY = (monitor.geometry.y - bbox.minY) * scale + MONITOR_MARGIN;
 
     // Create miniature display for this monitor
     const miniatureView = createMiniatureDisplayView(
@@ -136,12 +154,19 @@ export function createMiniatureSpaceView(
       false, // isLastInRow
       monitor,
       monitorKey, // Pass monitorKey for selection
-      layoutHistoryRepository
+      layoutHistoryRepository,
+      0 // No CSS margin needed - spacing handled by size/position adjustment
     );
 
     // Position the miniature display
     miniatureView.miniatureDisplay.set_position(scaledX, scaledY);
     spaceContainer.add_child(miniatureView.miniatureDisplay);
+
+    // Update actual bounding box to include this display
+    actualMinX = Math.min(actualMinX, scaledX);
+    actualMinY = Math.min(actualMinY, scaledY);
+    actualMaxX = Math.max(actualMaxX, scaledX + scaledWidth);
+    actualMaxY = Math.max(actualMaxY, scaledY + scaledHeight);
 
     // Collect layout buttons and events
     for (const [button, layout] of miniatureView.layoutButtons.entries()) {
@@ -149,6 +174,15 @@ export function createMiniatureSpaceView(
     }
     allButtonEvents.push(...miniatureView.buttonEvents);
   }
+
+  // Calculate final container size based on actual bounding box of all displays
+  // actualMin should be MONITOR_MARGIN (left/top margin)
+  // actualMax includes position + size, need to add right/bottom margin
+  const containerWidth = actualMaxX + MONITOR_MARGIN;
+  const containerHeight = actualMaxY + MONITOR_MARGIN;
+
+  // Update container size (includes padding)
+  spaceContainer.set_size(containerWidth, containerHeight);
 
   return {
     spaceContainer,

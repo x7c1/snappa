@@ -30,16 +30,16 @@ export function createMiniatureDisplayView(
   isLastInRow: boolean = false,
   monitor: Monitor | null = null,
   monitorKey: string,
-  layoutHistoryRepository: LayoutHistoryRepository
+  layoutHistoryRepository: LayoutHistoryRepository,
+  monitorMargin: number = 0
 ): MiniatureDisplayView {
-  const HEADER_HEIGHT = monitor ? 20 : 0; // Reserve space for header if monitor is provided
-
   const style = `
         width: ${displayWidth}px;
-        height: ${displayHeight + HEADER_HEIGHT}px;
+        height: ${displayHeight}px;
         border-radius: 4px;
         margin-bottom: ${DISPLAY_SPACING}px;
         ${!isLastInRow ? `margin-right: ${DISPLAY_SPACING_HORIZONTAL}px;` : ''}
+        ${monitorMargin > 0 ? `margin: ${monitorMargin}px;` : ''}
         background-color: ${DISPLAY_BG_COLOR};
     `;
 
@@ -49,25 +49,6 @@ export function createMiniatureDisplayView(
     layout_manager: new Clutter.FixedLayout(),
     reactive: true,
   });
-
-  // Add monitor header if monitor information is provided
-  if (monitor) {
-    const monitorLabel = monitor.isPrimary
-      ? `Monitor ${monitor.index + 1} (Primary)`
-      : `Monitor ${monitor.index + 1}`;
-
-    const headerLabel = new St.Label({
-      text: monitorLabel,
-      style: `
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 9pt;
-        font-weight: bold;
-        padding: 2px 6px;
-      `,
-    });
-    headerLabel.set_position(6, 2);
-    miniatureDisplay.add_child(headerLabel);
-  }
 
   const layoutButtons = new Map<St.Button, Layout>();
   const buttonEvents: MiniatureDisplayView['buttonEvents'] = [];
@@ -98,6 +79,7 @@ export function createMiniatureDisplayView(
       onLayoutSelected(selectedLayout);
     };
 
+    // Create button using full display size
     const result = createLayoutButton(
       layout,
       displayWidth,
@@ -107,12 +89,6 @@ export function createMiniatureDisplayView(
     );
     layoutButtons.set(result.button, layout);
 
-    // Adjust button position to account for header
-    if (HEADER_HEIGHT > 0) {
-      const [currentX, currentY] = result.button.get_position();
-      result.button.set_position(currentX, currentY + HEADER_HEIGHT);
-    }
-
     miniatureDisplay.add_child(result.button);
     buttonEvents.push({
       button: result.button,
@@ -120,6 +96,43 @@ export function createMiniatureDisplayView(
       leaveEventId: result.leaveEventId,
       clickEventId: result.clickEventId,
     });
+  }
+
+  // Add monitor visual indicators (as overlay)
+  if (monitor) {
+    // Add menu bar for primary monitor (Ubuntu Displays style)
+    if (monitor.isPrimary) {
+      const menuBar = new St.Widget({
+        style: `
+          width: ${displayWidth}px;
+          height: 4px;
+          background-color: rgba(200, 200, 200, 0.9);
+        `,
+      });
+      menuBar.set_position(0, 0);
+      miniatureDisplay.add_child(menuBar);
+    }
+
+    // Add monitor label at bottom left (number only)
+    const monitorLabel = `${monitor.index + 1}`;
+
+    const headerLabel = new St.Label({
+      text: monitorLabel,
+      style: `
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 11pt;
+        font-weight: bold;
+        padding: 2px 6px;
+        background-color: rgba(0, 0, 0, 0.6);
+        border-radius: 3px;
+      `,
+    });
+
+    // Position at bottom left
+    // Estimated label height: ~20px (9pt font + padding)
+    const labelHeight = 20;
+    headerLabel.set_position(6, displayHeight - labelHeight - 6);
+    miniatureDisplay.add_child(headerLabel);
   }
 
   return { miniatureDisplay, layoutButtons, buttonEvents };

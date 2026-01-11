@@ -12,11 +12,12 @@ export const CATEGORY_SPACING = 10; // Vertical spacing between categories
 export const DISPLAY_SPACING_HORIZONTAL = 12; // Horizontal spacing between displays within a category
 export const MAX_DISPLAYS_PER_ROW = 3; // Maximum number of displays per row in a category
 export const BUTTON_BORDER_WIDTH = 1; // Border width for layout buttons
-export const FOOTER_MARGIN_TOP = 8; // Margin above footer
+export const FOOTER_MARGIN_TOP = 2; // Margin above footer
 
 // Colors
 export const PANEL_BG_COLOR = 'rgba(40, 40, 40, 0.9)'; // Main panel background
 export const PANEL_BORDER_COLOR = 'rgba(255, 255, 255, 0.2)'; // Main panel border
+export const MINIATURE_SPACE_BG_COLOR = 'rgba(80, 80, 80, 0.9)'; // Miniature space background
 export const DISPLAY_BG_COLOR = 'rgba(20, 20, 20, 0.9)';
 export const BUTTON_BG_COLOR = 'rgba(80, 80, 80, 0.6)';
 export const BUTTON_BG_COLOR_HOVER = 'rgba(120, 120, 120, 0.8)';
@@ -28,7 +29,8 @@ export const FOOTER_TEXT_COLOR = 'rgba(255, 255, 255, 0.5)';
 // Multi-monitor panel constants
 export const MAX_PANEL_WIDTH = 800; // Maximum width for multi-monitor panel layout
 export const MAX_PANEL_HEIGHT = 600; // Maximum height for multi-monitor panel layout
-export const DISPLAY_GROUP_SPACING = 16; // Vertical spacing between Display Group sections
+export const DISPLAY_GROUP_SPACING = 8; // Vertical spacing between Display Group sections
+export const MONITOR_MARGIN = 6; // Margin around each monitor display in miniature space
 
 // Default layout configuration (multi-monitor structure)
 // Includes a basic dual-monitor configuration
