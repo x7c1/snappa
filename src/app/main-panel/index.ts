@@ -11,15 +11,12 @@ import St from 'gi://St';
 import type { ExtensionMetadata } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import { ExtensionSettings } from '../../settings/extension-settings.js';
 import { AUTO_HIDE_DELAY_MS, DEFAULT_LAYOUT_CONFIGURATION } from '../constants.js';
-import { getDebugConfig } from '../debug-panel/config.js';
 import type { MonitorManager } from '../monitor/manager.js';
 import type { LayoutHistoryRepository } from '../repository/layout-history.js';
 import { importLayoutConfiguration, loadLayoutsAsCategories } from '../repository/layouts.js';
 import type { Layout, Position } from '../types/index.js';
 import { MainPanelAutoHide } from './auto-hide.js';
-import { MainPanelDebugIntegration } from './debug-integration.js';
 import { MainPanelKeyboardNavigator } from './keyboard-navigator.js';
 import { MainPanelLayoutSelector } from './layout-selector.js';
 import { MainPanelPositionManager } from './position-manager.js';
@@ -49,7 +46,6 @@ export class MainPanel {
   private state: MainPanelState = new MainPanelState();
   private positionManager: MainPanelPositionManager = new MainPanelPositionManager();
   private layoutSelector: MainPanelLayoutSelector = new MainPanelLayoutSelector();
-  private debugIntegration: MainPanelDebugIntegration = new MainPanelDebugIntegration();
   private autoHide: MainPanelAutoHide = new MainPanelAutoHide();
   private keyboardNavigator: MainPanelKeyboardNavigator = new MainPanelKeyboardNavigator();
 
@@ -66,25 +62,6 @@ export class MainPanel {
       this.hide();
     });
 
-    // Load extension settings for debug panel
-    const extensionSettings = new ExtensionSettings(metadata);
-
-    // Initialize debug integration
-    this.debugIntegration.initialize(
-      this.autoHide,
-      () => {
-        // Refresh panel when debug config changes
-        // Use original cursor position (not adjusted position) to avoid shifting
-        // Pass current window to preserve selection state
-        if (this.container) {
-          const cursor = this.state.getOriginalCursor();
-          const window = this.state.getCurrentWindow();
-          this.show(cursor, window);
-        }
-      },
-      extensionSettings
-    );
-
     // Initialize layouts repository
     // First launch: import default settings if repository is empty
     let layouts = loadLayoutsAsCategories();
@@ -94,9 +71,7 @@ export class MainPanel {
       layouts = loadLayoutsAsCategories();
     }
 
-    // Filter out Test Layouts from base categories (they are added dynamically in debug mode)
-    const baseCategories = layouts.filter((c) => c.name !== 'Test Layouts');
-    this.state.setCategories(baseCategories);
+    this.state.setCategories(layouts);
   }
 
   /**
@@ -150,26 +125,19 @@ export class MainPanel {
     // Reset auto-hide states
     this.autoHide.resetHoverStates();
 
-    // Get debug configuration
-    const debugConfig = this.debugIntegration.isEnabled() ? getDebugConfig() : null;
-
     // Get screen dimensions and calculate aspect ratio
     const screenWidth = global.screen_width;
     const screenHeight = global.screen_height;
     const aspectRatio = screenHeight / screenWidth;
 
-    // Determine which categories to render (merge test categories if debug enabled)
-    const baseCategories = this.state.getCategories();
+    // Get categories to render
+    const categories = this.state.getCategories();
     log(
-      `[MainPanel] Base categories count: ${baseCategories.length}, items: ${baseCategories.map((c) => c.name).join(', ')}`
-    );
-    const categories = this.debugIntegration.mergeTestCategories(baseCategories);
-    log(
-      `[MainPanel] After merge categories count: ${categories.length}, items: ${categories.map((c) => c.name).join(', ')}`
+      `[MainPanel] Categories count: ${categories.length}, items: ${categories.map((c) => c.name).join(', ')}`
     );
 
     // Calculate panel dimensions
-    const showFooter = !debugConfig || debugConfig.showFooter;
+    const showFooter = true;
     const panelDimensions = this.positionManager.calculatePanelDimensions(
       categories,
       aspectRatio,
@@ -178,12 +146,7 @@ export class MainPanel {
     this.state.setPanelDimensions(panelDimensions);
 
     // Adjust position for boundaries with center alignment
-    const adjusted = this.positionManager.adjustPosition(
-      cursor,
-      panelDimensions,
-      this.debugIntegration.isEnabled(),
-      centerVertically
-    );
+    const adjusted = this.positionManager.adjustPosition(cursor, panelDimensions, centerVertically);
 
     // Store adjusted panel position
     this.state.updatePanelPosition(adjusted);
@@ -218,7 +181,6 @@ export class MainPanel {
       const categoriesView = createCategoriesViewWithDisplayGroups(
         monitors,
         categories,
-        debugConfig,
         window,
         (layout) => {
           if (onLayoutSelected) {
@@ -245,9 +207,7 @@ export class MainPanel {
 
     // Add children to container
     container.add_child(categoriesElement);
-    if (!debugConfig || debugConfig.showFooter) {
-      container.add_child(footer);
-    }
+    container.add_child(footer);
 
     // Position panel at adjusted coordinates
     const position = this.state.getPanelPosition();
@@ -267,9 +227,6 @@ export class MainPanel {
       clickOutsideId,
       buttonEvents: buttonEvents,
     };
-
-    // Show debug panel if enabled - it will position itself relative to panel
-    this.debugIntegration.showRelativeTo(position, panelDimensions);
 
     // Enable keyboard navigation
     const onLayoutSelected = this.layoutSelector.getOnLayoutSelected();
@@ -327,9 +284,6 @@ export class MainPanel {
         this.background.destroy();
       }
 
-      // Hide debug panel
-      this.debugIntegration.hide();
-
       this.container = null;
       this.background = null;
       this.layoutButtons.clear();
@@ -360,21 +314,14 @@ export class MainPanel {
       // Store original cursor position
       this.state.updateOriginalCursor(cursor);
 
-      // Adjust position for boundaries with center alignment
-      const adjusted = this.positionManager.adjustPosition(
-        cursor,
-        panelDimensions,
-        this.debugIntegration.isEnabled()
-      );
+      // Adjust position for boundaries
+      const adjusted = this.positionManager.adjustPosition(cursor, panelDimensions);
 
       // Update stored panel position
       this.state.updatePanelPosition(adjusted);
 
       // Update container position
       this.positionManager.updatePanelPosition(this.container, adjusted);
-
-      // Update debug panel position if enabled - it will reposition itself relative to panel
-      this.debugIntegration.showRelativeTo(adjusted, panelDimensions);
     }
   }
 

@@ -9,7 +9,6 @@ import {
   PANEL_BORDER_COLOR,
   PANEL_PADDING,
 } from '../constants.js';
-import type { DebugConfig } from '../debug-panel/config.js';
 import type { LayoutHistoryRepository } from '../repository/layout-history.js';
 import type { Layout, LayoutCategory, Monitor } from '../types/index.js';
 import { createMiniatureSpaceView } from '../ui/miniature-space.js';
@@ -167,7 +166,6 @@ export function createFooter(onSettingsClick: () => void): St.BoxLayout {
 export function createCategoriesViewWithDisplayGroups(
   monitors: Map<string, Monitor>,
   categories: LayoutCategory[],
-  debugConfig: DebugConfig | null,
   window: Meta.Window | null,
   onLayoutSelected: (layout: Layout) => void,
   layoutHistoryRepository: LayoutHistoryRepository
@@ -204,7 +202,6 @@ export function createCategoriesViewWithDisplayGroups(
       const view = createMiniatureSpaceView(
         displayGroup,
         monitors,
-        debugConfig,
         window,
         onLayoutSelected,
         layoutHistoryRepository

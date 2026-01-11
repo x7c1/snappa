@@ -10,7 +10,6 @@ import Clutter from 'gi://Clutter';
 import type Meta from 'gi://Meta';
 import St from 'gi://St';
 import { DISPLAY_GROUP_SPACING, MAX_PANEL_HEIGHT, MAX_PANEL_WIDTH } from '../constants.js';
-import type { DebugConfig } from '../debug-panel/config.js';
 import type { LayoutHistoryRepository } from '../repository/layout-history.js';
 import type { DisplayGroup, Layout, Monitor } from '../types/index.js';
 import {
@@ -78,7 +77,6 @@ function calculateBoundingBoxForDisplayGroup(
 export function createMiniatureSpaceView(
   displayGroup: DisplayGroup,
   monitors: Map<string, Monitor>,
-  debugConfig: DebugConfig | null,
   window: Meta.Window | null,
   onLayoutSelected: (layout: Layout) => void,
   layoutHistoryRepository: LayoutHistoryRepository
@@ -146,7 +144,6 @@ export function createMiniatureSpaceView(
       layoutGroup,
       scaledWidth,
       scaledHeight,
-      debugConfig,
       window,
       onLayoutSelected,
       false, // isLastInRow

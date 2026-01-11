@@ -76,7 +76,6 @@ export class LayoutApplicator {
       `[LayoutApplicator] Moving window to x=${x}, y=${y}, w=${width}, h=${height} (work area: ${workArea.x},${workArea.y} ${workArea.width}x${workArea.height})`
     );
 
-
     if (window.get_maximized()) {
       log('[LayoutApplicator] Unmaximizing window');
       window.unmaximize(3); // Both horizontally and vertically

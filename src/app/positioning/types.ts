@@ -31,18 +31,4 @@ export interface MainPanelPositionOptions {
   centerHorizontally?: boolean;
   /** Whether to center the panel vertically on the cursor */
   centerVertically?: boolean;
-  /** Whether to reserve space for debug panel on the right */
-  reserveDebugPanelSpace?: boolean;
-  /** Debug panel gap (if reserving space) */
-  debugPanelGap?: number;
-  /** Debug panel width (if reserving space) */
-  debugPanelWidth?: number;
-}
-
-/**
- * Options for debug panel positioning
- */
-export interface DebugPanelPositionOptions {
-  /** Only adjust Y coordinate (keep X as-is) */
-  adjustYOnly?: boolean;
 }
