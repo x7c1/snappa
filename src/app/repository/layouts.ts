@@ -121,7 +121,6 @@ function settingToDisplayGroup(
 
   return {
     id: generateUUID(),
-    name: displayGroupSetting.name,
     displays,
   };
 }

@@ -64,14 +64,12 @@ export const DEFAULT_LAYOUT_CONFIGURATION: LayoutConfiguration = {
       name: 'Vertical Division Patterns',
       displayGroups: [
         {
-          name: 'Browsing (both monitors)',
           displays: {
             '0': 'vertical 3-split',
             '1': 'vertical 3-split',
           },
         },
         {
-          name: 'Coding (editor + terminal)',
           displays: {
             '0': 'vertical 2-split',
             '1': 'vertical 3-split',
@@ -83,7 +81,6 @@ export const DEFAULT_LAYOUT_CONFIGURATION: LayoutConfiguration = {
       name: 'Grid Patterns',
       displayGroups: [
         {
-          name: 'Both monitors 2x2',
           displays: {
             '0': 'grid 2x2',
             '1': 'grid 2x2',

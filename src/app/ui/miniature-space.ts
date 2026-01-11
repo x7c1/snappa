@@ -97,19 +97,6 @@ export function createMiniatureSpaceView(
     layout_manager: new Clutter.FixedLayout(),
   });
 
-  // Add Display Group name label
-  const nameLabel = new St.Label({
-    text: displayGroup.name,
-    style: `
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 11pt;
-      font-weight: bold;
-      padding: 4px 8px;
-      margin-bottom: 8px;
-    `,
-  });
-  spaceContainer.add_child(nameLabel);
-
   const allLayoutButtons = new Map<St.Button, Layout>();
   const allButtonEvents: MiniatureSpaceView['buttonEvents'] = [];
 
@@ -125,7 +112,7 @@ export function createMiniatureSpaceView(
 
       // Position error view (we don't know exact position, so place it sequentially)
       const errorX = parseInt(monitorKey, 10) * (scaledWidth + 20);
-      const errorY = 40; // Below the Display Group name
+      const errorY = 0;
       errorView.set_position(errorX, errorY);
       spaceContainer.add_child(errorView);
       continue;
@@ -137,7 +124,7 @@ export function createMiniatureSpaceView(
 
     // Calculate position relative to bounding box origin
     const scaledX = (monitor.geometry.x - bbox.minX) * scale;
-    const scaledY = (monitor.geometry.y - bbox.minY) * scale + 40; // +40 for Display Group name
+    const scaledY = (monitor.geometry.y - bbox.minY) * scale;
 
     // Create miniature display for this monitor
     const miniatureView = createMiniatureDisplayView(

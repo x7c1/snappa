@@ -14,7 +14,6 @@ export interface LayoutGroupSetting {
 
 // Display Group Setting - defines Layout Group assignment per monitor (for import input)
 export interface DisplayGroupSetting {
-  name: string;
   displays: {
     [monitorKey: string]: string; // "0" -> "vertical 3-split" (Layout Group name)
   };
