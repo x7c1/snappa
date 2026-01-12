@@ -4,13 +4,11 @@ import type { LayoutConfiguration } from './types/layout-setting';
 export const AUTO_HIDE_DELAY_MS = 500; // Time to wait before hiding panel when cursor leaves
 
 // Dimensions
-export const MINIATURE_DISPLAY_WIDTH = 204; // Fixed width for miniature displays
 export const PANEL_PADDING = 12; // Padding around panel content
 export const PANEL_EDGE_PADDING = 10; // Minimum distance from screen edges
 export const DISPLAY_SPACING = 4; // Spacing between miniature displays (vertical within categories, or old vertical spacing)
 export const CATEGORY_SPACING = 10; // Vertical spacing between categories
 export const DISPLAY_SPACING_HORIZONTAL = 12; // Horizontal spacing between displays within a category
-export const MAX_DISPLAYS_PER_ROW = 3; // Maximum number of displays per row in a category
 export const BUTTON_BORDER_WIDTH = 1; // Border width for layout buttons
 export const FOOTER_MARGIN_TOP = 2; // Margin above footer
 
@@ -27,10 +25,9 @@ export const BUTTON_BORDER_COLOR_HOVER = 'rgba(255, 255, 255, 0.6)';
 export const FOOTER_TEXT_COLOR = 'rgba(255, 255, 255, 0.5)';
 
 // Multi-monitor panel constants
-export const MAX_PANEL_WIDTH = 800; // Maximum width for multi-monitor panel layout
-export const MAX_PANEL_HEIGHT = 600; // Maximum height for multi-monitor panel layout
+export const MAX_MONITOR_DISPLAY_WIDTH = 240; // Maximum width for the widest monitor in miniature display
 export const DISPLAY_GROUP_SPACING = 6; // Vertical spacing between Display Group sections
-export const MONITOR_MARGIN = 8; // Margin around each monitor display in miniature space
+export const MONITOR_MARGIN = 6; // Margin around each monitor display in miniature space
 
 // Default layout configuration (multi-monitor structure)
 // Includes a basic dual-monitor configuration

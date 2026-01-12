@@ -124,7 +124,8 @@ export function createMiniatureDisplayView(
   // Position at bottom left
   // Estimated label height: ~20px (9pt font + padding)
   const labelHeight = 20;
-  headerLabel.set_position(6, displayHeight - labelHeight - 6);
+  const margin = 3;
+  headerLabel.set_position(margin, displayHeight - labelHeight - margin);
   miniatureDisplay.add_child(headerLabel);
 
   return { miniatureDisplay, layoutButtons, buttonEvents };

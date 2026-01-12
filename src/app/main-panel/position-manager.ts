@@ -8,11 +8,8 @@
 import type St from 'gi://St';
 import {
   CATEGORY_SPACING,
-  DISPLAY_SPACING,
-  DISPLAY_SPACING_HORIZONTAL,
+  DISPLAY_GROUP_SPACING,
   FOOTER_MARGIN_TOP,
-  MAX_DISPLAYS_PER_ROW,
-  MINIATURE_DISPLAY_WIDTH,
   PANEL_EDGE_PADDING,
   PANEL_PADDING,
 } from '../constants.js';
@@ -20,6 +17,7 @@ import type { MonitorManager } from '../monitor/manager.js';
 import { adjustMainPanelPosition } from '../positioning/index.js';
 import type { ScreenBoundaries } from '../positioning/types.js';
 import type { LayoutCategory, Position, Size } from '../types/index.js';
+import { calculateDisplayGroupDimensions } from '../ui/display-group-dimensions.js';
 
 export class MainPanelPositionManager {
   private monitorManager: MonitorManager;
@@ -31,11 +29,7 @@ export class MainPanelPositionManager {
    * Calculate panel dimensions based on categories to render
    * Only supports new LayoutCategory format
    */
-  calculatePanelDimensions(
-    categoriesToRender: LayoutCategory[],
-    aspectRatio: number,
-    showFooter: boolean
-  ): Size {
+  calculatePanelDimensions(categoriesToRender: LayoutCategory[], showFooter: boolean): Size {
     // Handle empty categories case
     if (categoriesToRender.length === 0) {
       const minWidth = 200; // Minimum width for "No categories" message
@@ -43,7 +37,7 @@ export class MainPanelPositionManager {
       return { width: minWidth, height: minHeight };
     }
 
-    const miniatureDisplayHeight = MINIATURE_DISPLAY_WIDTH * aspectRatio;
+    const monitors = this.monitorManager.getMonitors();
 
     // Calculate width: maximum category width
     let maxCategoryWidth = 0;
@@ -53,14 +47,20 @@ export class MainPanelPositionManager {
         continue;
       }
 
-      const numDisplays = category.displayGroups.length;
-      if (numDisplays > 0) {
-        const displaysInWidestRow = Math.min(numDisplays, MAX_DISPLAYS_PER_ROW);
-        const categoryWidth =
-          displaysInWidestRow * MINIATURE_DISPLAY_WIDTH +
-          (displaysInWidestRow - 1) * DISPLAY_SPACING_HORIZONTAL;
-        maxCategoryWidth = Math.max(maxCategoryWidth, categoryWidth);
+      // Calculate total width for all Display Groups in this category (horizontal layout)
+      let categoryWidth = 0;
+      for (let j = 0; j < category.displayGroups.length; j++) {
+        const displayGroup = category.displayGroups[j];
+        const dimensions = calculateDisplayGroupDimensions(displayGroup, monitors);
+        categoryWidth += dimensions.width;
+
+        // Add spacing between Display Groups (except for last one)
+        if (j < category.displayGroups.length - 1) {
+          categoryWidth += DISPLAY_GROUP_SPACING;
+        }
       }
+
+      maxCategoryWidth = Math.max(maxCategoryWidth, categoryWidth);
     }
     const panelWidth = maxCategoryWidth + PANEL_PADDING * 2;
 
@@ -74,12 +74,16 @@ export class MainPanelPositionManager {
         continue;
       }
 
-      const numDisplays = category.displayGroups.length;
-      if (numDisplays > 0) {
-        const numRows = Math.ceil(numDisplays / MAX_DISPLAYS_PER_ROW);
-        // Each row has display height + bottom margin (DISPLAY_SPACING)
-        const categoryHeight = numRows * (miniatureDisplayHeight + DISPLAY_SPACING);
-        totalHeight += categoryHeight;
+      // Find the tallest Display Group in this category
+      let maxDisplayGroupHeight = 0;
+      for (const displayGroup of category.displayGroups) {
+        const dimensions = calculateDisplayGroupDimensions(displayGroup, monitors);
+        maxDisplayGroupHeight = Math.max(maxDisplayGroupHeight, dimensions.height);
+      }
+
+      if (maxDisplayGroupHeight > 0) {
+        // Add the height of this category (tallest Display Group + bottom margin)
+        totalHeight += maxDisplayGroupHeight + DISPLAY_GROUP_SPACING;
 
         // Add category spacing except for last category
         if (i < categoriesToRender.length - 1) {

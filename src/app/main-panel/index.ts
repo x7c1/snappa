@@ -129,10 +129,8 @@ export class MainPanel {
       `[MainPanel] Categories count: ${categories.length}, items: ${categories.map((c) => c.name).join(', ')}`
     );
 
-    const aspectRatio = global.screen_height / global.screen_width;
     const panelDimensions = this.positionManager.calculatePanelDimensions(
       categories,
-      aspectRatio,
       true // showFooter
     );
     this.state.setPanelDimensions(panelDimensions);
