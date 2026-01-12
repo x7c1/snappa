@@ -83,11 +83,11 @@ export function createLayoutButton(
   displayWidth: number,
   displayHeight: number,
   isSelected: boolean,
-  onLayoutSelected: (layout: Layout) => void
+  onLayoutSelected: (layout: Layout) => void,
+  monitorIndex: number
 ): LayoutButtonView {
   // Get screen work area for scaling fixed pixel values
-  const monitor = global.display.get_current_monitor();
-  const workArea = Main.layoutManager.getWorkAreaForMonitor(monitor);
+  const workArea = Main.layoutManager.getWorkAreaForMonitor(monitorIndex);
 
   // Calculate button position relative to miniature display
   const buttonX = resolveLayoutValue(layout.x, displayWidth, workArea.width);

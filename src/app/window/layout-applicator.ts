@@ -6,6 +6,7 @@
  */
 
 import type Meta from 'gi://Meta';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import { evaluate, parse } from '../layout-expression/index.js';
 import type { MonitorManager } from '../monitor/manager.js';
@@ -42,7 +43,10 @@ export class LayoutApplicator {
       log(`[LayoutApplicator] Could not find monitor with key: ${layout.monitorKey}`);
       return;
     }
-    const workArea = targetMonitor.workArea;
+
+    // Get fresh workArea directly from GNOME Shell (not from cached monitor info)
+    // This ensures we always use the current workArea, especially after monitor changes
+    const workArea = Main.layoutManager.getWorkAreaForMonitor(targetMonitor.index);
 
     const windowId = window.get_id();
     const wmClass = window.get_wm_class();

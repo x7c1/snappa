@@ -80,7 +80,8 @@ export function createMiniatureDisplayView(
       displayWidth,
       displayHeight,
       isSelected,
-      wrappedCallback
+      wrappedCallback,
+      monitor.index
     );
     layoutButtons.set(result.button, layout);
 
