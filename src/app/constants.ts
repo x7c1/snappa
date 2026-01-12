@@ -60,6 +60,10 @@ export const DEFAULT_LAYOUT_CONFIGURATION: LayoutConfiguration = {
         { label: 'Bottom Right', x: '50%', y: '50%', width: '50%', height: '50%' },
       ],
     },
+    {
+      name: 'full screen',
+      layouts: [{ label: 'full', x: '0', y: '0', width: '100%', height: '100%' }],
+    },
   ],
   layoutCategories: [
     {
@@ -74,7 +78,7 @@ export const DEFAULT_LAYOUT_CONFIGURATION: LayoutConfiguration = {
         {
           displays: {
             '0': 'vertical 2-split',
-            '1': 'vertical 3-split',
+            '1': 'vertical 2-split',
           },
         },
       ],
@@ -86,6 +90,17 @@ export const DEFAULT_LAYOUT_CONFIGURATION: LayoutConfiguration = {
           displays: {
             '0': 'grid 2x2',
             '1': 'grid 2x2',
+          },
+        },
+      ],
+    },
+    {
+      name: 'Full Screen',
+      displayGroups: [
+        {
+          displays: {
+            '0': 'full screen',
+            '1': 'full screen',
           },
         },
       ],
