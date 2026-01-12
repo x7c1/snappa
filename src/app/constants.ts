@@ -49,6 +49,14 @@ export const DEFAULT_LAYOUT_CONFIGURATION: LayoutConfiguration = {
       ],
     },
     {
+      name: 'vertical 3-split wide center',
+      layouts: [
+        { label: 'Left Third', x: '0', y: '0', width: '1/4', height: '100%' },
+        { label: 'Center Third', x: '1/4', y: '0', width: '1/2', height: '100%' },
+        { label: 'Right Third', x: '3/4', y: '0', width: '1/4', height: '100%' },
+      ],
+    },
+    {
       name: 'grid 4x2',
       layouts: [
         { label: 'Top Left 1', x: '0', y: '0', width: '25%', height: '50%' },
@@ -74,6 +82,12 @@ export const DEFAULT_LAYOUT_CONFIGURATION: LayoutConfiguration = {
           displays: {
             '0': 'vertical 3-split',
             '1': 'vertical 3-split',
+          },
+        },
+        {
+          displays: {
+            '0': 'vertical 3-split wide center',
+            '1': 'vertical 3-split wide center',
           },
         },
       ],
