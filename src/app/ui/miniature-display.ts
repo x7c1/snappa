@@ -30,7 +30,8 @@ export function createMiniatureDisplayView(
   monitor: Monitor,
   layoutHistoryRepository: LayoutHistoryRepository,
   isLastInRow: boolean = false,
-  monitorMargin: number = 0
+  monitorMargin: number = 0,
+  totalMonitors: number = 1
 ): MiniatureDisplayView {
   const style = `
         width: ${displayWidth}px;
@@ -106,64 +107,29 @@ export function createMiniatureDisplayView(
     miniatureDisplay.add_child(menuBar);
   }
 
-  // Add monitor label at bottom left (number only)
-  const monitorLabel = `${monitor.index + 1}`;
+  // Add monitor label at bottom left (number only) when there are multiple monitors
+  if (totalMonitors > 1) {
+    const monitorLabel = `${monitor.index + 1}`;
 
-  const headerLabel = new St.Label({
-    text: monitorLabel,
-    style: `
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 11pt;
-      font-weight: bold;
-      padding: 2px 6px;
-      background-color: rgba(0, 0, 0, 0.6);
-      border-radius: 3px;
-    `,
-  });
+    const headerLabel = new St.Label({
+      text: monitorLabel,
+      style: `
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 11pt;
+        font-weight: bold;
+        padding: 2px 6px;
+        background-color: rgba(0, 0, 0, 0.6);
+        border-radius: 3px;
+      `,
+    });
 
-  // Position at bottom left
-  // Estimated label height: ~20px (9pt font + padding)
-  const labelHeight = 20;
-  const margin = 3;
-  headerLabel.set_position(margin, displayHeight - labelHeight - margin);
-  miniatureDisplay.add_child(headerLabel);
+    // Position at bottom left
+    // Estimated label height: ~20px (9pt font + padding)
+    const labelHeight = 20;
+    const margin = 3;
+    headerLabel.set_position(margin, displayHeight - labelHeight - margin);
+    miniatureDisplay.add_child(headerLabel);
+  }
 
   return { miniatureDisplay, layoutButtons, buttonEvents };
-}
-
-/**
- * Create error view for missing/disconnected monitor
- *
- */
-export function createMiniatureDisplayErrorView(
-  monitorKey: string,
-  displayWidth: number,
-  displayHeight: number
-): St.Widget {
-  const errorView = new St.Widget({
-    style: `
-      width: ${displayWidth}px;
-      height: ${displayHeight}px;
-      background-color: rgba(60, 20, 20, 0.8);
-      border: 2px dashed rgba(255, 100, 100, 0.5);
-      border-radius: 4px;
-      margin-bottom: ${DISPLAY_SPACING}px;
-    `,
-    layout_manager: new Clutter.FixedLayout(),
-  });
-
-  const errorLabel = new St.Label({
-    text: `⚠️ Not Connected\nMonitor ${parseInt(monitorKey, 10) + 1}`,
-    style: `
-      color: rgba(255, 150, 150, 0.9);
-      font-size: 10pt;
-      text-align: center;
-    `,
-  });
-
-  // Center the label
-  errorLabel.set_position(displayWidth / 2 - 60, displayHeight / 2 - 20);
-  errorView.add_child(errorLabel);
-
-  return errorView;
 }

@@ -13,10 +13,7 @@ import { DISPLAY_GROUP_SPACING, MINIATURE_SPACE_BG_COLOR, MONITOR_MARGIN } from 
 import type { LayoutHistoryRepository } from '../repository/layout-history.js';
 import type { DisplayGroup, Layout, Monitor } from '../types/index.js';
 import { calculateDisplayGroupDimensions } from './display-group-dimensions.js';
-import {
-  createMiniatureDisplayErrorView,
-  createMiniatureDisplayView,
-} from './miniature-display.js';
+import { createMiniatureDisplayView } from './miniature-display.js';
 
 export interface MiniatureSpaceView {
   spaceContainer: St.Widget;
@@ -103,21 +100,15 @@ export function createMiniatureSpaceView(
   const allLayoutButtons = new Map<St.Button, Layout>();
   const allButtonEvents: MiniatureSpaceView['buttonEvents'] = [];
 
+  // Get total number of connected monitors
+  const totalMonitors = monitors.size;
+
   // Create miniature display for each monitor in the Display Group
   for (const [monitorKey, layoutGroup] of Object.entries(displayGroup.displays)) {
     const monitor = monitors.get(monitorKey);
 
     if (!monitor) {
-      // Monitor not found - show error indicator
-      const scaledWidth = 200 * scale;
-      const scaledHeight = 150 * scale;
-      const errorView = createMiniatureDisplayErrorView(monitorKey, scaledWidth, scaledHeight);
-
-      // Position error view (we don't know exact position, so place it sequentially)
-      const errorX = parseInt(monitorKey, 10) * (scaledWidth + 20);
-      const errorY = 0;
-      errorView.set_position(errorX, errorY);
-      spaceContainer.add_child(errorView);
+      // Skip monitors that don't exist
       continue;
     }
 
@@ -142,7 +133,8 @@ export function createMiniatureSpaceView(
       monitor,
       layoutHistoryRepository,
       false, // isLastInRow
-      0 // No CSS margin needed - spacing handled by size/position adjustment
+      0, // No CSS margin needed - spacing handled by size/position adjustment
+      totalMonitors
     );
 
     // Position the miniature display
