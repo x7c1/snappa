@@ -3,6 +3,7 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {
+  DISPLAY_GROUP_SPACING,
   FOOTER_MARGIN_TOP,
   FOOTER_TEXT_COLOR,
   PANEL_BG_COLOR,
@@ -172,7 +173,7 @@ export function createCategoriesViewWithDisplayGroups(
 ): CategoriesView {
   const categoriesContainer = new St.BoxLayout({
     style_class: 'snap-categories-container',
-    vertical: true, // Vertical layout: stack Display Groups
+    vertical: true, // Vertical layout: stack categories
     x_expand: false,
     y_expand: false,
   });
@@ -190,6 +191,15 @@ export function createCategoriesViewWithDisplayGroups(
       continue;
     }
 
+    // Create a horizontal container for this category's display groups
+    const categoryBox = new St.BoxLayout({
+      style_class: 'snap-category-box',
+      vertical: false, // Horizontal layout: display groups side by side
+      x_expand: false,
+      y_expand: false,
+      style: `spacing: ${DISPLAY_GROUP_SPACING}px;`,
+    });
+
     for (const displayGroup of category.displayGroups) {
       // Defensive check: ensure displayGroup is valid
       if (!displayGroup || !displayGroup.displays) {
@@ -206,7 +216,7 @@ export function createCategoriesViewWithDisplayGroups(
         onLayoutSelected,
         layoutHistoryRepository
       );
-      categoriesContainer.add_child(view.spaceContainer);
+      categoryBox.add_child(view.spaceContainer);
 
       // Collect layout buttons and events
       for (const [button, layout] of view.layoutButtons) {
@@ -214,6 +224,9 @@ export function createCategoriesViewWithDisplayGroups(
       }
       buttonEvents.push(...view.buttonEvents);
     }
+
+    // Add the category box to the categories container
+    categoriesContainer.add_child(categoryBox);
   }
 
   return { categoriesContainer, layoutButtons, buttonEvents };
