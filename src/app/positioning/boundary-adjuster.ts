@@ -31,27 +31,32 @@ export function adjustMainPanelPosition(
     adjustedY = cursorPosition.y - panelDimensions.height / 2;
   }
 
-  // Calculate maximum X position
-  const maxX = boundaries.screenWidth - panelDimensions.width - boundaries.edgePadding;
+  // Calculate boundaries in global coordinate space
+  const minX = boundaries.offsetX + boundaries.edgePadding;
+  const maxX =
+    boundaries.offsetX + boundaries.screenWidth - panelDimensions.width - boundaries.edgePadding;
+  const minY = boundaries.offsetY + boundaries.edgePadding;
+  const maxY =
+    boundaries.offsetY + boundaries.screenHeight - panelDimensions.height - boundaries.edgePadding;
 
   // Check right edge: clamp to maxX
   if (adjustedX > maxX) {
     adjustedX = maxX;
   }
 
-  // Check left edge: clamp to padding
-  if (adjustedX < boundaries.edgePadding) {
-    adjustedX = boundaries.edgePadding;
+  // Check left edge: clamp to minX
+  if (adjustedX < minX) {
+    adjustedX = minX;
   }
 
-  // Check bottom edge: shift up if needed
-  if (adjustedY + panelDimensions.height > boundaries.screenHeight - boundaries.edgePadding) {
-    adjustedY = boundaries.screenHeight - panelDimensions.height - boundaries.edgePadding;
+  // Check bottom edge: clamp to maxY
+  if (adjustedY > maxY) {
+    adjustedY = maxY;
   }
 
-  // Check top edge: clamp to padding
-  if (adjustedY < boundaries.edgePadding) {
-    adjustedY = boundaries.edgePadding;
+  // Check top edge: clamp to minY
+  if (adjustedY < minY) {
+    adjustedY = minY;
   }
 
   return { x: adjustedX, y: adjustedY };

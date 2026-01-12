@@ -44,7 +44,7 @@ export class MainPanel {
 
   // Component instances
   private state: MainPanelState = new MainPanelState();
-  private positionManager: MainPanelPositionManager = new MainPanelPositionManager();
+  private positionManager: MainPanelPositionManager;
   private layoutSelector: MainPanelLayoutSelector = new MainPanelLayoutSelector();
   private autoHide: MainPanelAutoHide = new MainPanelAutoHide();
   private keyboardNavigator: MainPanelKeyboardNavigator = new MainPanelKeyboardNavigator();
@@ -57,6 +57,7 @@ export class MainPanel {
     this.metadata = metadata;
     this.monitorManager = monitorManager;
     this.layoutHistoryRepository = layoutHistoryRepository;
+    this.positionManager = new MainPanelPositionManager(monitorManager);
     // Setup auto-hide callback
     this.autoHide.setOnHide(() => {
       this.hide();
@@ -219,6 +220,22 @@ export class MainPanel {
       trackFullscreen: false,
     });
 
+    // Recalculate position with actual container size after adding to chrome
+    // GTK may adjust layout during rendering, so calculated size may differ from actual size
+    const actualWidth = container.get_width();
+    const actualHeight = container.get_height();
+    if (actualWidth !== panelDimensions.width || actualHeight !== panelDimensions.height) {
+      const actualDimensions = { width: actualWidth, height: actualHeight };
+      const reposition = this.positionManager.adjustPosition(
+        cursor,
+        actualDimensions,
+        centerVertically
+      );
+      container.set_position(reposition.x, reposition.y);
+      this.state.updatePanelPosition(reposition);
+      this.state.setPanelDimensions(actualDimensions);
+    }
+
     // Setup auto-hide
     this.autoHide.setupAutoHide(container, AUTO_HIDE_DELAY_MS);
 
@@ -309,13 +326,17 @@ export class MainPanel {
    * Update panel position (for following cursor during drag)
    */
   updatePosition(cursor: Position): void {
-    const panelDimensions = this.state.getPanelDimensions();
-    if (this.container && panelDimensions) {
+    if (this.container) {
+      // Use actual container size instead of calculated size
+      const actualWidth = this.container.get_width();
+      const actualHeight = this.container.get_height();
+      const actualDimensions = { width: actualWidth, height: actualHeight };
+
       // Store original cursor position
       this.state.updateOriginalCursor(cursor);
 
-      // Adjust position for boundaries
-      const adjusted = this.positionManager.adjustPosition(cursor, panelDimensions);
+      // Adjust position for boundaries using actual size
+      const adjusted = this.positionManager.adjustPosition(cursor, actualDimensions);
 
       // Update stored panel position
       this.state.updatePanelPosition(adjusted);

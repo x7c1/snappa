@@ -16,10 +16,17 @@ import {
   PANEL_EDGE_PADDING,
   PANEL_PADDING,
 } from '../constants.js';
+import type { MonitorManager } from '../monitor/manager.js';
 import { adjustMainPanelPosition } from '../positioning/index.js';
+import type { ScreenBoundaries } from '../positioning/types.js';
 import type { LayoutCategory, Position, Size } from '../types/index.js';
 
 export class MainPanelPositionManager {
+  private monitorManager: MonitorManager;
+
+  constructor(monitorManager: MonitorManager) {
+    this.monitorManager = monitorManager;
+  }
   /**
    * Calculate panel dimensions based on categories to render
    * Only supports new LayoutCategory format
@@ -93,24 +100,36 @@ export class MainPanelPositionManager {
 
   /**
    * Adjust panel position for screen boundaries with center alignment
+   * Constrains panel within the monitor that contains the cursor
    */
   adjustPosition(cursor: Position, panelDimensions: Size, centerVertically = false): Position {
-    const screenWidth = global.screen_width;
-    const screenHeight = global.screen_height;
+    // Get monitor at cursor position
+    const monitor = this.monitorManager.getMonitorAtPosition(cursor.x, cursor.y);
 
-    const adjusted = adjustMainPanelPosition(
-      cursor,
-      panelDimensions,
-      {
-        screenWidth,
-        screenHeight,
+    // Use monitor workArea if found, otherwise fallback to global screen
+    let boundaries: ScreenBoundaries;
+    if (monitor) {
+      boundaries = {
+        offsetX: monitor.workArea.x,
+        offsetY: monitor.workArea.y,
+        screenWidth: monitor.workArea.width,
+        screenHeight: monitor.workArea.height,
         edgePadding: PANEL_EDGE_PADDING,
-      },
-      {
-        centerHorizontally: true,
-        centerVertically,
-      }
-    );
+      };
+    } else {
+      boundaries = {
+        offsetX: 0,
+        offsetY: 0,
+        screenWidth: global.screen_width,
+        screenHeight: global.screen_height,
+        edgePadding: PANEL_EDGE_PADDING,
+      };
+    }
+
+    const adjusted = adjustMainPanelPosition(cursor, panelDimensions, boundaries, {
+      centerHorizontally: true,
+      centerVertically,
+    });
 
     return adjusted;
   }
