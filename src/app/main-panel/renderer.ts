@@ -11,7 +11,7 @@ import {
   PANEL_PADDING,
 } from '../constants.js';
 import type { LayoutHistoryRepository } from '../repository/layout-history.js';
-import type { Layout, LayoutCategory, Monitor } from '../types/index.js';
+import type { DisplayGroupsRow, Layout, Monitor } from '../types/index.js';
 import { createMiniatureSpaceView } from '../ui/miniature-space.js';
 
 declare function log(message: string): void;
@@ -31,8 +31,8 @@ export interface BackgroundView {
   clickOutsideId: number;
 }
 
-export interface CategoriesView {
-  categoriesContainer: St.BoxLayout;
+export interface DisplayGroupRowsView {
+  rowsContainer: St.BoxLayout;
   layoutButtons: Map<St.Button, Layout>;
   buttonEvents: PanelEventIds['buttonEvents'];
 }
@@ -162,18 +162,18 @@ export function createFooter(onSettingsClick: () => void): St.BoxLayout {
 }
 
 /**
- * Create categories view with Display Groups and multi-monitor support
+ * Create display group rows view with Display Groups and multi-monitor support
  */
-export function createCategoriesViewWithDisplayGroups(
+export function createDisplayGroupRowsView(
   monitors: Map<string, Monitor>,
-  categories: LayoutCategory[],
+  rows: DisplayGroupsRow[],
   window: Meta.Window | null,
   onLayoutSelected: (layout: Layout) => void,
   layoutHistoryRepository: LayoutHistoryRepository
-): CategoriesView {
-  const categoriesContainer = new St.BoxLayout({
-    style_class: 'snap-categories-container',
-    vertical: true, // Vertical layout: stack categories
+): DisplayGroupRowsView {
+  const rowsContainer = new St.BoxLayout({
+    style_class: 'snap-rows-container',
+    vertical: true, // Vertical layout: stack rows
     x_expand: false,
     y_expand: false,
   });
@@ -181,31 +181,30 @@ export function createCategoriesViewWithDisplayGroups(
   const layoutButtons = new Map<St.Button, Layout>();
   const buttonEvents: PanelEventIds['buttonEvents'] = [];
 
-  // Create Miniature Spaces for each Display Group in each category
-  for (const category of categories) {
-    // Defensive check: ensure category has displayGroups array
-    if (!category || !category.displayGroups || !Array.isArray(category.displayGroups)) {
+  // Create Miniature Spaces for each Display Group in each row
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    // Defensive check: ensure row has displayGroups array
+    if (!row || !row.displayGroups || !Array.isArray(row.displayGroups)) {
       log(
-        `[Renderer] WARNING: Invalid category data detected (missing or invalid displayGroups), skipping category: ${category?.name ?? 'unknown'}`
+        `[Renderer] WARNING: Invalid row data detected (missing or invalid displayGroups) at index ${i}`
       );
       continue;
     }
 
-    // Create a horizontal container for this category's display groups
-    const categoryBox = new St.BoxLayout({
-      style_class: 'snap-category-box',
+    // Create a horizontal container for this row's display groups
+    const rowBox = new St.BoxLayout({
+      style_class: 'snap-row-box',
       vertical: false, // Horizontal layout: display groups side by side
       x_expand: false,
       y_expand: false,
       style: `spacing: ${DISPLAY_GROUP_SPACING}px;`,
     });
 
-    for (const displayGroup of category.displayGroups) {
+    for (const displayGroup of row.displayGroups) {
       // Defensive check: ensure displayGroup is valid
       if (!displayGroup || !displayGroup.displays) {
-        log(
-          `[Renderer] WARNING: Invalid display group detected in category "${category.name}", skipping`
-        );
+        log(`[Renderer] WARNING: Invalid display group detected in row at index ${i}, skipping`);
         continue;
       }
 
@@ -216,7 +215,7 @@ export function createCategoriesViewWithDisplayGroups(
         onLayoutSelected,
         layoutHistoryRepository
       );
-      categoryBox.add_child(view.spaceContainer);
+      rowBox.add_child(view.spaceContainer);
 
       // Collect layout buttons and events
       for (const [button, layout] of view.layoutButtons) {
@@ -225,11 +224,11 @@ export function createCategoriesViewWithDisplayGroups(
       buttonEvents.push(...view.buttonEvents);
     }
 
-    // Add the category box to the categories container
-    categoriesContainer.add_child(categoryBox);
+    // Add the row box to the rows container
+    rowsContainer.add_child(rowBox);
   }
 
-  return { categoriesContainer, layoutButtons, buttonEvents };
+  return { rowsContainer, layoutButtons, buttonEvents };
 }
 
 /**

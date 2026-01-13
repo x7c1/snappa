@@ -6,12 +6,12 @@
  */
 
 import type Meta from 'gi://Meta';
-import type { LayoutCategory, Position, Size } from '../types/index.js';
+import type { DisplayGroupsRow, Position, Size } from '../types/index.js';
 
 declare function log(message: string): void;
 
 export class MainPanelState {
-  private categories: LayoutCategory[] = [];
+  private displayGroupRows: DisplayGroupsRow[] = [];
   private currentWindow: Meta.Window | null = null;
   private originalCursorX: number = 0;
   private originalCursorY: number = 0;
@@ -20,28 +20,28 @@ export class MainPanelState {
   private panelDimensions: Size | null = null;
 
   /**
-   * Get the current categories
+   * Get the current display group rows
    */
-  getCategories(): LayoutCategory[] {
-    return this.categories;
+  getDisplayGroupRows(): DisplayGroupsRow[] {
+    return this.displayGroupRows;
   }
 
   /**
-   * Set the categories
+   * Set the display group rows
    */
-  setCategories(categories: LayoutCategory[]): void {
-    // Defensive check: validate all categories have displayGroups
-    const validCategories = categories.filter((category) => {
-      if (!category.displayGroups || !Array.isArray(category.displayGroups)) {
+  setDisplayGroupRows(rows: DisplayGroupsRow[]): void {
+    // Defensive check: validate all rows have displayGroups
+    const validRows = rows.filter((row, index) => {
+      if (!row.displayGroups || !Array.isArray(row.displayGroups)) {
         log(
-          `[MainPanelState] WARNING: Invalid category detected (missing displayGroups), filtering out: ${category.name}`
+          `[MainPanelState] WARNING: Invalid row detected (missing displayGroups) at index ${index}`
         );
         return false;
       }
       return true;
     });
 
-    this.categories = validCategories;
+    this.displayGroupRows = validRows;
   }
 
   /**
@@ -111,6 +111,6 @@ export class MainPanelState {
     this.panelX = 0;
     this.panelY = 0;
     this.panelDimensions = null;
-    // Note: Keep currentWindow and categories to preserve across panel reopens
+    // Note: Keep currentWindow and displayGroupRows to preserve across panel reopens
   }
 }

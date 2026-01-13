@@ -1,9 +1,9 @@
 import Gio from 'gi://Gio';
 
-import type { DisplayGroup, Layout, LayoutCategory, LayoutGroup } from '../types/index.js';
+import type { DisplayGroup, DisplayGroupsRow, Layout, LayoutGroup } from '../types/index.js';
 import type {
   DisplayGroupSetting,
-  LayoutCategoryWithDisplayGroups,
+  DisplayGroupsRowSetting,
   LayoutConfiguration,
   LayoutGroupSetting,
   LayoutSetting,
@@ -126,27 +126,26 @@ function settingToDisplayGroup(
 }
 
 /**
- * Convert LayoutCategoryWithDisplayGroups to LayoutCategory (runtime type)
+ * Convert DisplayGroupsRowSetting to DisplayGroupsRow (runtime type)
  */
-function settingToCategoryWithDisplayGroups(
-  categorySetting: LayoutCategoryWithDisplayGroups,
+function settingToDisplayGroupsRow(
+  rowSetting: DisplayGroupsRowSetting,
   layoutGroupSettings: LayoutGroupSetting[]
-): LayoutCategory {
+): DisplayGroupsRow {
   return {
-    name: categorySetting.name,
-    displayGroups: categorySetting.displayGroups.map((dg) =>
+    displayGroups: rowSetting.displayGroups.map((dg) =>
       settingToDisplayGroup(dg, layoutGroupSettings)
     ),
   };
 }
 
 /**
- * Convert LayoutConfiguration to LayoutCategory[] (runtime type)
+ * Convert LayoutConfiguration to DisplayGroupsRow[] (runtime type)
  * Expands Layout Group references into full LayoutGroup objects with unique IDs
  */
-function configurationToCategories(config: LayoutConfiguration): LayoutCategory[] {
-  return config.layoutCategories.map((categorySetting) =>
-    settingToCategoryWithDisplayGroups(categorySetting, config.layoutGroups)
+function configurationToDisplayGroupRows(config: LayoutConfiguration): DisplayGroupsRow[] {
+  return config.rows.map((rowSetting) =>
+    settingToDisplayGroupsRow(rowSetting, config.layoutGroups)
   );
 }
 
@@ -156,8 +155,8 @@ function configurationToCategories(config: LayoutConfiguration): LayoutCategory[
  */
 export function importLayoutConfiguration(config: LayoutConfiguration): void {
   try {
-    const categories = configurationToCategories(config);
-    saveCategoriesWithDisplayGroups(categories);
+    const rows = configurationToDisplayGroupRows(config);
+    saveDisplayGroupRows(rows);
     log('[LayoutsRepository] Layout configuration imported successfully');
   } catch (e) {
     log(`[LayoutsRepository] Error importing layout configuration: ${e}`);
@@ -165,34 +164,35 @@ export function importLayoutConfiguration(config: LayoutConfiguration): void {
 }
 
 /**
- * Validate that data is in the new LayoutCategory[] format
+ * Validate that data is in the DisplayGroupsRow[] format
  * Returns true if valid, false if old format or invalid
  */
-function isValidLayoutCategoryData(data: unknown): data is LayoutCategory[] {
+function isValidDisplayGroupRowsData(data: unknown): data is DisplayGroupsRow[] {
   if (!Array.isArray(data)) {
     return false;
   }
 
-  // Check if all categories have displayGroups (new format)
-  for (const category of data) {
-    if (typeof category !== 'object' || category === null) {
+  // Check if all rows have displayGroups
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
+    if (typeof row !== 'object' || row === null) {
       return false;
     }
 
     // Check for old format (has layoutGroups instead of displayGroups)
-    if ('layoutGroups' in category && !('displayGroups' in category)) {
+    if ('layoutGroups' in row && !('displayGroups' in row)) {
       log(
-        `[LayoutsRepository] Detected old format: category "${category.name}" has layoutGroups instead of displayGroups`
+        `[LayoutsRepository] Detected old format: row at index ${i} has layoutGroups instead of displayGroups`
       );
       return false;
     }
 
-    // Check for required fields in new format
-    if (!('name' in category) || !('displayGroups' in category)) {
+    // Check for required fields
+    if (!('displayGroups' in row)) {
       return false;
     }
 
-    if (!Array.isArray(category.displayGroups)) {
+    if (!Array.isArray(row.displayGroups)) {
       return false;
     }
   }
@@ -201,10 +201,10 @@ function isValidLayoutCategoryData(data: unknown): data is LayoutCategory[] {
 }
 
 /**
- * Load layouts as categories (returns LayoutCategory[] with expanded Display Groups)
+ * Load layouts as display group rows (returns DisplayGroupsRow[] with expanded Display Groups)
  *
  */
-export function loadLayoutsAsCategories(): LayoutCategory[] {
+export function loadLayoutsAsDisplayGroupRows(): DisplayGroupsRow[] {
   const layoutsPath = getLayoutsFilePath();
   const file = Gio.File.new_for_path(layoutsPath);
 
@@ -224,7 +224,7 @@ export function loadLayoutsAsCategories(): LayoutCategory[] {
     const data: unknown = JSON.parse(contentsString);
 
     // Validate data format
-    if (!isValidLayoutCategoryData(data)) {
+    if (!isValidDisplayGroupRowsData(data)) {
       log('[LayoutsRepository] WARNING: Invalid or old format data detected in layouts file');
       log('[LayoutsRepository] Deleting old format file and returning empty array');
       // Delete the old format file
@@ -237,19 +237,19 @@ export function loadLayoutsAsCategories(): LayoutCategory[] {
       return [];
     }
 
-    log('[LayoutsRepository] Layout categories loaded successfully');
+    log('[LayoutsRepository] Display group rows loaded successfully');
     return data;
   } catch (e) {
-    log(`[LayoutsRepository] Error loading layout categories: ${e}`);
+    log(`[LayoutsRepository] Error loading display group rows: ${e}`);
     return [];
   }
 }
 
 /**
- * Save LayoutCategory[] to disk (runtime format with Display Groups)
+ * Save DisplayGroupsRow[] to disk (runtime format with Display Groups)
  *
  */
-function saveCategoriesWithDisplayGroups(categories: LayoutCategory[]): void {
+function saveDisplayGroupRows(rows: DisplayGroupsRow[]): void {
   const layoutsPath = getLayoutsFilePath();
   const file = Gio.File.new_for_path(layoutsPath);
 
@@ -261,11 +261,11 @@ function saveCategoriesWithDisplayGroups(categories: LayoutCategory[]): void {
     }
 
     // Write to file
-    const json = JSON.stringify(categories, null, 2);
+    const json = JSON.stringify(rows, null, 2);
     file.replace_contents(json, null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
 
-    log('[LayoutsRepository] Layout categories saved successfully');
+    log('[LayoutsRepository] Display group rows saved successfully');
   } catch (e) {
-    log(`[LayoutsRepository] Error saving layout categories: ${e}`);
+    log(`[LayoutsRepository] Error saving display group rows: ${e}`);
   }
 }

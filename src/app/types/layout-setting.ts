@@ -19,14 +19,13 @@ export interface DisplayGroupSetting {
   };
 }
 
-// Layout Category with Display Groups (for import input)
-export interface LayoutCategoryWithDisplayGroups {
-  name: string;
+// Display Groups Row with Display Groups (for import input)
+export interface DisplayGroupsRowSetting {
   displayGroups: DisplayGroupSetting[];
 }
 
 // Complete layout configuration structure (for import input)
 export interface LayoutConfiguration {
   layoutGroups: LayoutGroupSetting[]; // Global, reusable Layout Groups
-  layoutCategories: LayoutCategoryWithDisplayGroups[]; // Categories with Display Groups
+  rows: DisplayGroupsRowSetting[]; // Rows of Display Groups
 }
