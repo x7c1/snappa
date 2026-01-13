@@ -6,12 +6,12 @@
  */
 
 import type Meta from 'gi://Meta';
-import type { DisplayGroupsRow, Position, Size } from '../types/index.js';
+import type { Position, Size, SpacesRow } from '../types/index.js';
 
 declare function log(message: string): void;
 
 export class MainPanelState {
-  private displayGroupRows: DisplayGroupsRow[] = [];
+  private spacesRows: SpacesRow[] = [];
   private currentWindow: Meta.Window | null = null;
   private originalCursorX: number = 0;
   private originalCursorY: number = 0;
@@ -20,28 +20,26 @@ export class MainPanelState {
   private panelDimensions: Size | null = null;
 
   /**
-   * Get the current display group rows
+   * Get the current spaces rows
    */
-  getDisplayGroupRows(): DisplayGroupsRow[] {
-    return this.displayGroupRows;
+  getSpacesRows(): SpacesRow[] {
+    return this.spacesRows;
   }
 
   /**
-   * Set the display group rows
+   * Set the spaces rows
    */
-  setDisplayGroupRows(rows: DisplayGroupsRow[]): void {
-    // Defensive check: validate all rows have displayGroups
+  setSpacesRows(rows: SpacesRow[]): void {
+    // Defensive check: validate all rows have spaces
     const validRows = rows.filter((row, index) => {
-      if (!row.displayGroups || !Array.isArray(row.displayGroups)) {
-        log(
-          `[MainPanelState] WARNING: Invalid row detected (missing displayGroups) at index ${index}`
-        );
+      if (!row.spaces || !Array.isArray(row.spaces)) {
+        log(`[MainPanelState] WARNING: Invalid row detected (missing spaces) at index ${index}`);
         return false;
       }
       return true;
     });
 
-    this.displayGroupRows = validRows;
+    this.spacesRows = validRows;
   }
 
   /**
@@ -111,6 +109,6 @@ export class MainPanelState {
     this.panelX = 0;
     this.panelY = 0;
     this.panelDimensions = null;
-    // Note: Keep currentWindow and displayGroupRows to preserve across panel reopens
+    // Note: Keep currentWindow and spacesRows to preserve across panel reopens
   }
 }

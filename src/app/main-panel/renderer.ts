@@ -3,15 +3,15 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {
-  DISPLAY_GROUP_SPACING,
   FOOTER_MARGIN_TOP,
   FOOTER_TEXT_COLOR,
   PANEL_BG_COLOR,
   PANEL_BORDER_COLOR,
   PANEL_PADDING,
+  SPACE_SPACING,
 } from '../constants.js';
 import type { LayoutHistoryRepository } from '../repository/layout-history.js';
-import type { DisplayGroupsRow, Layout, Monitor } from '../types/index.js';
+import type { Layout, Monitor, SpacesRow } from '../types/index.js';
 import { createMiniatureSpaceView } from '../ui/miniature-space.js';
 
 declare function log(message: string): void;
@@ -31,7 +31,7 @@ export interface BackgroundView {
   clickOutsideId: number;
 }
 
-export interface DisplayGroupRowsView {
+export interface SpacesRowView {
   rowsContainer: St.BoxLayout;
   layoutButtons: Map<St.Button, Layout>;
   buttonEvents: PanelEventIds['buttonEvents'];
@@ -162,15 +162,15 @@ export function createFooter(onSettingsClick: () => void): St.BoxLayout {
 }
 
 /**
- * Create display group rows view with Display Groups and multi-monitor support
+ * Create spaces row view with Spaces and multi-monitor support
  */
-export function createDisplayGroupRowsView(
+export function createSpacesRowView(
   monitors: Map<string, Monitor>,
-  rows: DisplayGroupsRow[],
+  rows: SpacesRow[],
   window: Meta.Window | null,
   onLayoutSelected: (layout: Layout) => void,
   layoutHistoryRepository: LayoutHistoryRepository
-): DisplayGroupRowsView {
+): SpacesRowView {
   const rowsContainer = new St.BoxLayout({
     style_class: 'snap-rows-container',
     vertical: true, // Vertical layout: stack rows
@@ -181,35 +181,35 @@ export function createDisplayGroupRowsView(
   const layoutButtons = new Map<St.Button, Layout>();
   const buttonEvents: PanelEventIds['buttonEvents'] = [];
 
-  // Create Miniature Spaces for each Display Group in each row
+  // Create Miniature Spaces for each Space in each row
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    // Defensive check: ensure row has displayGroups array
-    if (!row || !row.displayGroups || !Array.isArray(row.displayGroups)) {
+    // Defensive check: ensure row has spaces array
+    if (!row || !row.spaces || !Array.isArray(row.spaces)) {
       log(
-        `[Renderer] WARNING: Invalid row data detected (missing or invalid displayGroups) at index ${i}`
+        `[Renderer] WARNING: Invalid row data detected (missing or invalid spaces) at index ${i}`
       );
       continue;
     }
 
-    // Create a horizontal container for this row's display groups
+    // Create a horizontal container for this row's spaces
     const rowBox = new St.BoxLayout({
       style_class: 'snap-row-box',
-      vertical: false, // Horizontal layout: display groups side by side
+      vertical: false, // Horizontal layout: spaces side by side
       x_expand: false,
       y_expand: false,
-      style: `spacing: ${DISPLAY_GROUP_SPACING}px;`,
+      style: `spacing: ${SPACE_SPACING}px;`,
     });
 
-    for (const displayGroup of row.displayGroups) {
-      // Defensive check: ensure displayGroup is valid
-      if (!displayGroup || !displayGroup.displays) {
-        log(`[Renderer] WARNING: Invalid display group detected in row at index ${i}, skipping`);
+    for (const space of row.spaces) {
+      // Defensive check: ensure space is valid
+      if (!space || !space.displays) {
+        log(`[Renderer] WARNING: Invalid space detected in row at index ${i}, skipping`);
         continue;
       }
 
       const view = createMiniatureSpaceView(
-        displayGroup,
+        space,
         monitors,
         window,
         onLayoutSelected,

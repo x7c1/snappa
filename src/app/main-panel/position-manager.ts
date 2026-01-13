@@ -7,17 +7,17 @@
 
 import type St from 'gi://St';
 import {
-  DISPLAY_GROUP_SPACING,
   FOOTER_MARGIN_TOP,
   PANEL_EDGE_PADDING,
   PANEL_PADDING,
   ROW_SPACING,
+  SPACE_SPACING,
 } from '../constants.js';
 import type { MonitorManager } from '../monitor/manager.js';
 import { adjustMainPanelPosition } from '../positioning/index.js';
 import type { ScreenBoundaries } from '../positioning/types.js';
-import type { DisplayGroupsRow, Position, Size } from '../types/index.js';
-import { calculateDisplayGroupDimensions } from '../ui/display-group-dimensions.js';
+import type { Position, Size, SpacesRow } from '../types/index.js';
+import { calculateSpaceDimensions } from '../ui/space-dimensions.js';
 
 export class MainPanelPositionManager {
   private monitorManager: MonitorManager;
@@ -27,9 +27,9 @@ export class MainPanelPositionManager {
   }
   /**
    * Calculate panel dimensions based on rows to render
-   * Only supports DisplayGroupsRow format
+   * Only supports SpacesRow format
    */
-  calculatePanelDimensions(rowsToRender: DisplayGroupsRow[], showFooter: boolean): Size {
+  calculatePanelDimensions(rowsToRender: SpacesRow[], showFooter: boolean): Size {
     // Handle empty rows case
     if (rowsToRender.length === 0) {
       const minWidth = 200; // Minimum width for "No rows" message
@@ -42,21 +42,21 @@ export class MainPanelPositionManager {
     // Calculate width: maximum row width
     let maxRowWidth = 0;
     for (const row of rowsToRender) {
-      // Defensive check: ensure row has displayGroups array
-      if (!row.displayGroups || !Array.isArray(row.displayGroups)) {
+      // Defensive check: ensure row has spaces array
+      if (!row.spaces || !Array.isArray(row.spaces)) {
         continue;
       }
 
-      // Calculate total width for all Display Groups in this row (horizontal layout)
+      // Calculate total width for all Spaces in this row (horizontal layout)
       let rowWidth = 0;
-      for (let j = 0; j < row.displayGroups.length; j++) {
-        const displayGroup = row.displayGroups[j];
-        const dimensions = calculateDisplayGroupDimensions(displayGroup, monitors);
+      for (let j = 0; j < row.spaces.length; j++) {
+        const space = row.spaces[j];
+        const dimensions = calculateSpaceDimensions(space, monitors);
         rowWidth += dimensions.width;
 
-        // Add spacing between Display Groups (except for last one)
-        if (j < row.displayGroups.length - 1) {
-          rowWidth += DISPLAY_GROUP_SPACING;
+        // Add spacing between Spaces (except for last one)
+        if (j < row.spaces.length - 1) {
+          rowWidth += SPACE_SPACING;
         }
       }
 
@@ -69,21 +69,21 @@ export class MainPanelPositionManager {
     for (let i = 0; i < rowsToRender.length; i++) {
       const row = rowsToRender[i];
 
-      // Defensive check: ensure row has displayGroups array
-      if (!row.displayGroups || !Array.isArray(row.displayGroups)) {
+      // Defensive check: ensure row has spaces array
+      if (!row.spaces || !Array.isArray(row.spaces)) {
         continue;
       }
 
-      // Find the tallest Display Group in this row
-      let maxDisplayGroupHeight = 0;
-      for (const displayGroup of row.displayGroups) {
-        const dimensions = calculateDisplayGroupDimensions(displayGroup, monitors);
-        maxDisplayGroupHeight = Math.max(maxDisplayGroupHeight, dimensions.height);
+      // Find the tallest Space in this row
+      let maxSpaceHeight = 0;
+      for (const space of row.spaces) {
+        const dimensions = calculateSpaceDimensions(space, monitors);
+        maxSpaceHeight = Math.max(maxSpaceHeight, dimensions.height);
       }
 
-      if (maxDisplayGroupHeight > 0) {
-        // Add the height of this row (tallest Display Group + bottom margin)
-        totalHeight += maxDisplayGroupHeight + DISPLAY_GROUP_SPACING;
+      if (maxSpaceHeight > 0) {
+        // Add the height of this row (tallest Space + bottom margin)
+        totalHeight += maxSpaceHeight + SPACE_SPACING;
 
         // Add row spacing except for last row
         if (i < rowsToRender.length - 1) {

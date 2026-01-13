@@ -14,8 +14,8 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { AUTO_HIDE_DELAY_MS, DEFAULT_LAYOUT_CONFIGURATION } from '../constants.js';
 import type { MonitorManager } from '../monitor/manager.js';
 import type { LayoutHistoryRepository } from '../repository/layout-history.js';
-import { importLayoutConfiguration, loadLayoutsAsDisplayGroupRows } from '../repository/layouts.js';
-import type { DisplayGroupsRow, Layout, Position, Size } from '../types/index.js';
+import { importLayoutConfiguration, loadLayoutsAsSpacesRows } from '../repository/layouts.js';
+import type { Layout, Position, Size, SpacesRow } from '../types/index.js';
 import { MainPanelAutoHide } from './auto-hide.js';
 import { MainPanelKeyboardNavigator } from './keyboard-navigator.js';
 import { MainPanelLayoutSelector } from './layout-selector.js';
@@ -23,9 +23,9 @@ import { MainPanelPositionManager } from './position-manager.js';
 import type { PanelEventIds } from './renderer.js';
 import {
   createBackground,
-  createDisplayGroupRowsView,
   createFooter,
   createPanelContainer,
+  createSpacesRowView,
 } from './renderer.js';
 import { MainPanelState } from './state.js';
 
@@ -65,14 +65,14 @@ export class MainPanel {
 
     // Initialize layouts repository
     // First launch: import default settings if repository is empty
-    let rows = loadLayoutsAsDisplayGroupRows();
+    let rows = loadLayoutsAsSpacesRows();
     if (rows.length === 0) {
       log('[MainPanel] Layouts repository is empty, importing default configuration');
       importLayoutConfiguration(DEFAULT_LAYOUT_CONFIGURATION);
-      rows = loadLayoutsAsDisplayGroupRows();
+      rows = loadLayoutsAsSpacesRows();
     }
 
-    this.state.setDisplayGroupRows(rows);
+    this.state.setSpacesRows(rows);
   }
 
   /**
@@ -124,8 +124,8 @@ export class MainPanel {
     this.autoHide.resetHoverStates();
 
     // Calculate panel dimensions and position
-    const rows = this.state.getDisplayGroupRows();
-    log(`[MainPanel] Display group rows count: ${rows.length}`);
+    const rows = this.state.getSpacesRows();
+    log(`[MainPanel] Spaces rows count: ${rows.length}`);
 
     const panelDimensions = this.positionManager.calculatePanelDimensions(
       rows,
@@ -217,7 +217,7 @@ export class MainPanel {
       this.background = null;
       this.layoutButtons.clear();
 
-      // Reset state (but keep currentWmClass and displayGroupRows)
+      // Reset state (but keep currentWmClass and spacesRows)
       this.state.reset();
 
       // Notify that panel is hidden
@@ -311,10 +311,10 @@ export class MainPanel {
   }
 
   /**
-   * Create display group rows element or empty message
+   * Create spaces rows element or empty message
    */
   private createRowsElement(
-    rows: DisplayGroupsRow[],
+    rows: SpacesRow[],
     window: Meta.Window | null
   ): {
     element: St.BoxLayout | St.Label;
@@ -322,7 +322,7 @@ export class MainPanel {
   } {
     if (rows.length === 0) {
       const element = new St.Label({
-        text: 'No display group rows available',
+        text: 'No spaces rows available',
         style: `
           font-size: 14px;
           color: rgba(255, 255, 255, 0.7);
@@ -337,7 +337,7 @@ export class MainPanel {
 
     const onLayoutSelected = this.layoutSelector.getOnLayoutSelected();
     const monitors = this.monitorManager.getMonitors();
-    const rowsView = createDisplayGroupRowsView(
+    const rowsView = createSpacesRowView(
       monitors,
       rows,
       window,

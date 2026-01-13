@@ -12,20 +12,20 @@ export interface LayoutGroupSetting {
   layouts: LayoutSetting[];
 }
 
-// Display Group Setting - defines Layout Group assignment per monitor (for import input)
-export interface DisplayGroupSetting {
+// Space Setting - defines Layout Group assignment per monitor (for import input)
+export interface SpaceSetting {
   displays: {
     [monitorKey: string]: string; // "0" -> "vertical 3-split" (Layout Group name)
   };
 }
 
-// Display Groups Row with Display Groups (for import input)
-export interface DisplayGroupsRowSetting {
-  displayGroups: DisplayGroupSetting[];
+// Spaces Row with Spaces (for import input)
+export interface SpacesRowSetting {
+  spaces: SpaceSetting[];
 }
 
 // Complete layout configuration structure (for import input)
 export interface LayoutConfiguration {
   layoutGroups: LayoutGroupSetting[]; // Global, reusable Layout Groups
-  rows: DisplayGroupsRowSetting[]; // Rows of Display Groups
+  rows: SpacesRowSetting[]; // Rows of Spaces
 }
