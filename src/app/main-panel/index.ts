@@ -13,8 +13,8 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import { AUTO_HIDE_DELAY_MS, DEFAULT_LAYOUT_CONFIGURATION } from '../constants.js';
 import type { MonitorManager } from '../monitor/manager.js';
-import type { LayoutHistoryRepository } from '../repository/layout-history.js';
-import { importLayoutConfiguration, loadLayoutsAsSpacesRows } from '../repository/layouts.js';
+import type { LayoutHistoryRepository } from '../repository/history.js';
+import { importLayoutConfiguration, loadLayoutsAsSpacesRows } from '../repository/spaces.js';
 import type { Layout, Position, Size, SpacesRow } from '../types/index.js';
 import { MainPanelAutoHide } from './auto-hide.js';
 import { MainPanelKeyboardNavigator } from './keyboard-navigator.js';
@@ -123,9 +123,11 @@ export class MainPanel {
     this.state.setCurrentWindow(window);
     this.autoHide.resetHoverStates();
 
-    // Calculate panel dimensions and position
-    const rows = this.state.getSpacesRows();
-    log(`[MainPanel] Spaces rows count: ${rows.length}`);
+    // Reload from repository and filter disabled Spaces
+    const allRows = loadLayoutsAsSpacesRows();
+    const rows = this.filterEnabledSpaces(allRows);
+    this.state.setSpacesRows(rows);
+    log(`[MainPanel] Spaces rows count: ${rows.length} (filtered from ${allRows.length})`);
 
     const panelDimensions = this.positionManager.calculatePanelDimensions(
       rows,
@@ -405,5 +407,17 @@ export class MainPanel {
       this.state.updatePanelPosition(reposition);
       this.state.setPanelDimensions(actualDimensions);
     }
+  }
+
+  /**
+   * Filter SpacesRows to include only enabled Spaces
+   * Removes rows where all Spaces are disabled
+   */
+  private filterEnabledSpaces(rows: SpacesRow[]): SpacesRow[] {
+    return rows
+      .map((row) => ({
+        spaces: row.spaces.filter((space) => space.enabled !== false),
+      }))
+      .filter((row) => row.spaces.length > 0);
   }
 }

@@ -24,7 +24,7 @@ interface LayoutHistory {
   };
 }
 
-const HISTORY_FILE_NAME = 'layout-history.json';
+const HISTORY_FILE_NAME = 'history.json';
 
 /**
  * LayoutHistoryRepository

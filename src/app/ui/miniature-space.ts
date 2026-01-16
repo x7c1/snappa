@@ -10,7 +10,7 @@ import Clutter from 'gi://Clutter';
 import type Meta from 'gi://Meta';
 import St from 'gi://St';
 import { MINIATURE_SPACE_BG_COLOR, MONITOR_MARGIN, SPACE_SPACING } from '../constants.js';
-import type { LayoutHistoryRepository } from '../repository/layout-history.js';
+import type { LayoutHistoryRepository } from '../repository/history.js';
 import type { Layout, Monitor, Space } from '../types/index.js';
 import { createMiniatureDisplayView } from './miniature-display.js';
 import { calculateSpaceDimensions } from './space-dimensions.js';

@@ -14,10 +14,10 @@ import { generateLayoutHash } from './layout-hash-generator.js';
 declare function log(message: string): void;
 
 // Storage file path
-const LAYOUTS_FILE_NAME = 'imported-layouts.json';
+const SPACES_FILE_NAME = 'spaces.json';
 
-function getLayoutsFilePath(): string {
-  return getExtensionDataPath(LAYOUTS_FILE_NAME);
+function getSpacesFilePath(): string {
+  return getExtensionDataPath(SPACES_FILE_NAME);
 }
 
 /**
@@ -104,7 +104,7 @@ function settingToSpace(
 
     if (!layoutGroupSetting) {
       log(
-        `[LayoutsRepository] Warning: Layout Group "${layoutGroupName}" not found for monitor ${monitorKey}`
+        `[SpacesRepository] Warning: Layout Group "${layoutGroupName}" not found for monitor ${monitorKey}`
       );
       continue;
     }
@@ -121,6 +121,7 @@ function settingToSpace(
 
   return {
     id: generateUUID(),
+    enabled: true,
     displays,
   };
 }
@@ -155,7 +156,7 @@ export function importLayoutConfiguration(config: LayoutConfiguration): void {
     saveSpacesRows(rows);
     log('[LayoutsRepository] Layout configuration imported successfully');
   } catch (e) {
-    log(`[LayoutsRepository] Error importing layout configuration: ${e}`);
+    log(`[SpacesRepository] Error importing layout configuration: ${e}`);
   }
 }
 
@@ -193,7 +194,7 @@ function isValidSpacesRowsData(data: unknown): data is SpacesRow[] {
  *
  */
 export function loadLayoutsAsSpacesRows(): SpacesRow[] {
-  const layoutsPath = getLayoutsFilePath();
+  const layoutsPath = getSpacesFilePath();
   const file = Gio.File.new_for_path(layoutsPath);
 
   if (!file.query_exists(null)) {
@@ -220,7 +221,7 @@ export function loadLayoutsAsSpacesRows(): SpacesRow[] {
         file.delete(null);
         log('[LayoutsRepository] Old format file deleted successfully');
       } catch (deleteError) {
-        log(`[LayoutsRepository] Failed to delete old format file: ${deleteError}`);
+        log(`[SpacesRepository] Failed to delete old format file: ${deleteError}`);
       }
       return [];
     }
@@ -228,7 +229,7 @@ export function loadLayoutsAsSpacesRows(): SpacesRow[] {
     log('[LayoutsRepository] Spaces rows loaded successfully');
     return data;
   } catch (e) {
-    log(`[LayoutsRepository] Error loading spaces rows: ${e}`);
+    log(`[SpacesRepository] Error loading spaces rows: ${e}`);
     return [];
   }
 }
@@ -238,7 +239,7 @@ export function loadLayoutsAsSpacesRows(): SpacesRow[] {
  *
  */
 function saveSpacesRows(rows: SpacesRow[]): void {
-  const layoutsPath = getLayoutsFilePath();
+  const layoutsPath = getSpacesFilePath();
   const file = Gio.File.new_for_path(layoutsPath);
 
   try {
@@ -252,8 +253,36 @@ function saveSpacesRows(rows: SpacesRow[]): void {
     const json = JSON.stringify(rows, null, 2);
     file.replace_contents(json, null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
 
-    log('[LayoutsRepository] Spaces rows saved successfully');
+    log('[SpacesRepository] Spaces rows saved successfully');
   } catch (e) {
-    log(`[LayoutsRepository] Error saving spaces rows: ${e}`);
+    log(`[SpacesRepository] Error saving spaces rows: ${e}`);
   }
+}
+
+/**
+ * Set the enabled state of a Space by its ID
+ * Loads all SpacesRows, finds the Space, updates its enabled property, and saves back
+ */
+export function setSpaceEnabled(spaceId: string, enabled: boolean): void {
+  const rows = loadLayoutsAsSpacesRows();
+
+  let found = false;
+  for (const row of rows) {
+    for (const space of row.spaces) {
+      if (space.id === spaceId) {
+        space.enabled = enabled;
+        found = true;
+        break;
+      }
+    }
+    if (found) break;
+  }
+
+  if (!found) {
+    log(`[SpacesRepository] Warning: Space with id "${spaceId}" not found`);
+    return;
+  }
+
+  saveSpacesRows(rows);
+  log(`[SpacesRepository] Space "${spaceId}" enabled state set to ${enabled}`);
 }

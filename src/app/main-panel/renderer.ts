@@ -10,7 +10,7 @@ import {
   PANEL_PADDING,
   SPACE_SPACING,
 } from '../constants.js';
-import type { LayoutHistoryRepository } from '../repository/layout-history.js';
+import type { LayoutHistoryRepository } from '../repository/history.js';
 import type { Layout, Monitor, SpacesRow } from '../types/index.js';
 import { createMiniatureSpaceView } from '../ui/miniature-space.js';
 

@@ -22,7 +22,7 @@ import { EdgeTimerManager } from './drag/edge-timer-manager.js';
 import { MotionMonitor } from './drag/motion-monitor.js';
 import { MainPanel } from './main-panel/index.js';
 import { MonitorManager } from './monitor/manager.js';
-import { LayoutHistoryRepository } from './repository/layout-history.js';
+import { LayoutHistoryRepository } from './repository/history.js';
 import { KeyboardShortcutManager } from './shortcuts/keyboard-shortcut-manager.js';
 import type { Layout, Position } from './types/index.js';
 import { LayoutApplicator } from './window/layout-applicator.js';
@@ -90,8 +90,11 @@ export class Controller {
    */
   enable(): void {
     this.monitorManager.detectMonitors();
+    this.monitorManager.saveMonitors();
 
     this.monitorManager.connectToMonitorChanges(() => {
+      // Save updated monitor configuration for preferences UI
+      this.monitorManager.saveMonitors();
       // Re-render panel when monitors change to reflect new configuration
       if (this.mainPanel.isVisible()) {
         const cursor = this.getCursorPosition();
@@ -228,6 +231,7 @@ export class Controller {
     }
 
     this.ensureHistoryLoaded();
+    this.monitorManager.saveMonitors();
 
     const cursor = this.getCursorPosition();
     const window = this.getCurrentWindow();

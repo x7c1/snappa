@@ -2,7 +2,7 @@ import Clutter from 'gi://Clutter';
 import type Meta from 'gi://Meta';
 import St from 'gi://St';
 import { DISPLAY_BG_COLOR, DISPLAY_SPACING, DISPLAY_SPACING_HORIZONTAL } from '../constants.js';
-import type { LayoutHistoryRepository } from '../repository/layout-history.js';
+import type { LayoutHistoryRepository } from '../repository/history.js';
 import type { Layout, LayoutGroup, Monitor } from '../types/index.js';
 import { createLayoutButton } from './layout-button.js';
 
