@@ -10,7 +10,8 @@ import { loadLayoutsAsSpacesRows, setSpaceEnabled } from '../app/repository/spac
 import type { Monitor, Space, SpacesRow } from '../app/types/index.js';
 import { calculateSpaceDimensions, createGtkMiniatureSpace } from './gtk-miniature-space.js';
 
-const SETTINGS_KEY_SHORTCUT = 'show-panel-shortcut';
+const SETTINGS_KEY_SHOW_PANEL = 'show-panel-shortcut';
+const SETTINGS_KEY_OPEN_PREFERENCES = 'open-preferences-shortcut';
 const MONITORS_FILE_NAME = 'monitors.json';
 
 // Window size constants
@@ -19,7 +20,7 @@ const DEFAULT_WINDOW_HEIGHT = 500;
 const WINDOW_HORIZONTAL_PADDING = 80;
 
 // Spacing between spaces in a row
-const SPACE_SPACING = 12;
+const SPACE_SPACING = 6;
 
 /**
  * Build the preferences UI
@@ -110,25 +111,57 @@ function createGeneralPage(
     title: 'Keyboard Shortcuts',
   });
 
-  const row = new Adw.ActionRow({
-    title: 'Show Main Panel',
-    subtitle: 'Keyboard shortcut to invoke main panel for focused window',
-  });
+  // Show Main Panel shortcut
+  const showPanelRow = createShortcutRow(
+    window,
+    settings,
+    SETTINGS_KEY_SHOW_PANEL,
+    'Show Main Panel',
+    'Keyboard shortcut to invoke main panel for focused window'
+  );
+  group.add(showPanelRow);
+
+  // Open Preferences shortcut
+  const openPrefsRow = createShortcutRow(
+    window,
+    settings,
+    SETTINGS_KEY_OPEN_PREFERENCES,
+    'Open Preferences',
+    'Keyboard shortcut to open preferences while main panel is visible'
+  );
+  group.add(openPrefsRow);
+
+  page.add(group);
+
+  return page;
+}
+
+/**
+ * Create a shortcut configuration row
+ */
+function createShortcutRow(
+  window: Adw.PreferencesWindow,
+  settings: Gio.Settings,
+  settingsKey: string,
+  title: string,
+  subtitle: string
+): Adw.ActionRow {
+  const row = new Adw.ActionRow({ title, subtitle });
 
   const shortcutButton = new Gtk.Button({
     valign: Gtk.Align.CENTER,
     has_frame: true,
   });
 
-  const updateShortcutLabel = () => {
-    const shortcuts = settings.get_strv(SETTINGS_KEY_SHORTCUT);
+  const updateLabel = () => {
+    const shortcuts = settings.get_strv(settingsKey);
     shortcutButton.set_label(shortcuts.length > 0 ? shortcuts[0] : 'Disabled');
   };
 
-  updateShortcutLabel();
+  updateLabel();
 
   shortcutButton.connect('clicked', () => {
-    showShortcutDialog(window, settings, updateShortcutLabel);
+    showShortcutDialog(window, settings, settingsKey, updateLabel);
   });
 
   const clearButton = new Gtk.Button({
@@ -139,8 +172,8 @@ function createGeneralPage(
   });
 
   clearButton.connect('clicked', () => {
-    settings.set_strv(SETTINGS_KEY_SHORTCUT, []);
-    updateShortcutLabel();
+    settings.set_strv(settingsKey, []);
+    updateLabel();
   });
 
   const box = new Gtk.Box({
@@ -151,10 +184,7 @@ function createGeneralPage(
   box.append(clearButton);
 
   row.add_suffix(box);
-  group.add(row);
-  page.add(group);
-
-  return page;
+  return row;
 }
 
 // Opacity values for space visibility
@@ -211,8 +241,8 @@ function createSpacesRowWidget(row: SpacesRow, monitors: Map<string, Monitor>): 
     orientation: Gtk.Orientation.HORIZONTAL,
     spacing: SPACE_SPACING,
     halign: Gtk.Align.START,
-    margin_top: 8,
-    margin_bottom: 8,
+    margin_top: 2,
+    margin_bottom: 2,
   });
 
   // Add each space in this row
@@ -357,6 +387,7 @@ function createClickableSpace(space: Space, monitors: Map<string, Monitor>): Gtk
 function showShortcutDialog(
   window: Adw.PreferencesWindow,
   settings: Gio.Settings,
+  settingsKey: string,
   updateCallback: () => void
 ): void {
   const dialog = new Gtk.Window({
@@ -393,7 +424,7 @@ function showShortcutDialog(
       }
 
       if (keyval === Gdk.KEY_BackSpace) {
-        settings.set_strv(SETTINGS_KEY_SHORTCUT, []);
+        settings.set_strv(settingsKey, []);
         updateCallback();
         dialog.close();
         return true;
@@ -408,7 +439,7 @@ function showShortcutDialog(
       }
 
       const accelerator = Gtk.accelerator_name(keyval, mask);
-      settings.set_strv(SETTINGS_KEY_SHORTCUT, [accelerator]);
+      settings.set_strv(settingsKey, [accelerator]);
       updateCallback();
       dialog.close();
       return true;

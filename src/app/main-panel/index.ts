@@ -41,6 +41,7 @@ export class MainPanel {
   private onPanelHiddenCallback: (() => void) | null = null;
   private monitorManager: MonitorManager; // Always required
   private layoutHistoryRepository: LayoutHistoryRepository;
+  private getOpenPreferencesShortcuts: () => string[] = () => [];
 
   // Component instances
   private state: MainPanelState = new MainPanelState();
@@ -80,6 +81,14 @@ export class MainPanel {
    */
   setOnLayoutSelected(callback: (layout: Layout) => void): void {
     this.layoutSelector.setOnLayoutSelected(callback);
+  }
+
+  /**
+   * Set getter function for keyboard shortcuts for opening preferences
+   * Using a getter ensures fresh values are read from settings each time
+   */
+  setOpenPreferencesShortcutsGetter(getter: () => string[]): void {
+    this.getOpenPreferencesShortcuts = getter;
   }
 
   /**
@@ -378,8 +387,17 @@ export class MainPanel {
     // Enable keyboard navigation
     const onLayoutSelected = this.layoutSelector.getOnLayoutSelected();
     if (onLayoutSelected) {
-      this.keyboardNavigator.enable(container, this.layoutButtons, (layout) => {
-        onLayoutSelected(layout);
+      this.keyboardNavigator.enable({
+        container,
+        layoutButtons: this.layoutButtons,
+        onLayoutSelected: (layout) => {
+          onLayoutSelected(layout);
+        },
+        onOpenPreferences: () => {
+          this.openPreferences();
+          this.hide();
+        },
+        openPreferencesShortcuts: this.getOpenPreferencesShortcuts(),
       });
     }
   }

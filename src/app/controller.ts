@@ -76,6 +76,8 @@ export class Controller {
     this.mainPanel.setOnLayoutSelected((layout) => {
       this.applyLayoutToCurrentWindow(layout);
     });
+    // Pass getter function so shortcuts are read fresh from settings each time panel is shown
+    this.mainPanel.setOpenPreferencesShortcutsGetter(() => settings.getOpenPreferencesShortcut());
     // Dynamic registration prevents shortcut conflicts when panel is hidden
     this.mainPanel.setOnPanelShown(() => {
       this.keyboardShortcutManager.registerHidePanelShortcut(() => this.onHidePanelShortcut());
