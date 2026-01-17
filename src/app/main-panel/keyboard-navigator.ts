@@ -1,5 +1,5 @@
 import Clutter from 'gi://Clutter';
-import St from 'gi://St';
+import type St from 'gi://St';
 
 import type { LayoutButtonWithMetadata } from '../types/button.js';
 import type { Layout } from '../types/layout.js';
@@ -162,43 +162,45 @@ export class MainPanelKeyboardNavigator {
   }
 
   /**
-   * Initialize focus to selected layout if exists, otherwise top-left layout
+   * Initialize focus to selected layout if exists
+   * Does not apply focus if no layout is selected (focus starts on first key press)
    */
   private initializeFocus(): St.Button | null {
-    let initialButton: St.Button | null = null;
-
     // Find selected button if exists
-    for (const [button, layout] of this.layoutButtons.entries()) {
-      St; // Prevent unused variable warning
-      layout; // Prevent unused variable warning
+    for (const [button] of this.layoutButtons.entries()) {
       const buttonWithMeta = button as LayoutButtonWithMetadata;
       if (buttonWithMeta._isSelected) {
-        initialButton = button;
-        break;
+        this.applyFocusStyle(button);
+        return button;
       }
     }
 
-    // If no selected button, find top-left button
-    if (!initialButton) {
-      let minY = Infinity;
-      let minX = Infinity;
-      for (const button of this.layoutButtons.keys()) {
-        const allocation = button.get_allocation_box();
-        const x = allocation.x1;
-        const y = allocation.y1;
+    // No selected button - don't apply initial focus
+    // Focus will be applied when user starts keyboard navigation
+    return null;
+  }
 
-        if (y < minY || (y === minY && x < minX)) {
-          minY = y;
-          minX = x;
-          initialButton = button;
-        }
+  /**
+   * Find the top-left button for initial focus when no button is selected
+   */
+  private findTopLeftButton(): St.Button | null {
+    let topLeftButton: St.Button | null = null;
+    let minY = Infinity;
+    let minX = Infinity;
+
+    for (const button of this.layoutButtons.keys()) {
+      const allocation = button.get_allocation_box();
+      const x = allocation.x1;
+      const y = allocation.y1;
+
+      if (y < minY || (y === minY && x < minX)) {
+        minY = y;
+        minX = x;
+        topLeftButton = button;
       }
     }
 
-    if (initialButton) {
-      this.applyFocusStyle(initialButton);
-    }
-    return initialButton;
+    return topLeftButton;
   }
 
   /**
@@ -272,7 +274,13 @@ export class MainPanelKeyboardNavigator {
    * Move focus in the specified direction using midpoint-based distance calculation
    */
   private moveFocus(direction: string): void {
+    // If no focus yet, initialize to top-left button on first key press
     if (!this.focusedButton) {
+      const topLeft = this.findTopLeftButton();
+      if (topLeft) {
+        this.focusedButton = topLeft;
+        this.applyFocusStyle(topLeft);
+      }
       return;
     }
 
