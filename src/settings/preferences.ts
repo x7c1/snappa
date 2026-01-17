@@ -20,7 +20,7 @@ const DEFAULT_WINDOW_HEIGHT = 500;
 const WINDOW_HORIZONTAL_PADDING = 80;
 
 // Spacing between spaces in a row
-const SPACE_SPACING = 6;
+const SPACE_SPACING = 4;
 
 /**
  * Build the preferences UI

@@ -135,10 +135,11 @@ export function createGtkMiniatureDisplay(options: GtkMiniatureDisplayOptions): 
       const paddingH = 6;
       const paddingV = 5;
       const fontSize = 10;
+      const minLabelWidth = 20;
 
       ctx.setFontSize(fontSize);
       const extents = ctx.textExtents(labelText);
-      const labelWidth = extents.width + paddingH * 2;
+      const labelWidth = Math.max(extents.width + paddingH * 2, minLabelWidth);
       const labelHeight = extents.height + paddingV * 2;
       const labelX = margin;
       const labelY = height - labelHeight - margin;
