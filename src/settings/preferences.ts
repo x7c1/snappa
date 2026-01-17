@@ -330,6 +330,9 @@ function loadMonitors(rows: SpacesRow[]): Map<string, Monitor> {
   return monitors;
 }
 
+// Opacity change amount when hovering
+const HOVER_OPACITY_CHANGE = 0.15;
+
 /**
  * Create a clickable space widget with opacity-based enabled/disabled feedback
  */
@@ -343,8 +346,15 @@ function createClickableSpace(space: Space, monitors: Map<string, Monitor>): Gtk
     monitors,
   });
 
+  // Helper to get current base opacity
+  const getBaseOpacity = () => (enabled ? ENABLED_OPACITY : DISABLED_OPACITY);
+
+  // Helper to get hover opacity (enabled: lighter, disabled: darker)
+  const getHoverOpacity = () =>
+    enabled ? ENABLED_OPACITY - HOVER_OPACITY_CHANGE : DISABLED_OPACITY + HOVER_OPACITY_CHANGE;
+
   // Set initial opacity based on enabled state
-  miniatureWidget.set_opacity(enabled ? ENABLED_OPACITY : DISABLED_OPACITY);
+  miniatureWidget.set_opacity(getBaseOpacity());
 
   // Create button wrapper with flat style (no button appearance)
   const button = new Gtk.Button({
@@ -361,21 +371,27 @@ function createClickableSpace(space: Space, monitors: Map<string, Monitor>): Gtk
       min-height: 0;
       background: transparent;
     }
-    button:hover {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 6px;
-    }
-    button:active {
-      background: rgba(255, 255, 255, 0.1);
-    }
   `);
   button.get_style_context().add_provider(cssProvider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+
+  // Set pointer cursor on hover
+  button.set_cursor_from_name('pointer');
+
+  // Add hover effect using EventControllerMotion
+  const motionController = new Gtk.EventControllerMotion();
+  motionController.connect('enter', () => {
+    miniatureWidget.set_opacity(getHoverOpacity());
+  });
+  motionController.connect('leave', () => {
+    miniatureWidget.set_opacity(getBaseOpacity());
+  });
+  button.add_controller(motionController);
 
   // Handle click to toggle enabled state
   button.connect('clicked', () => {
     enabled = !enabled;
     setSpaceEnabled(space.id, enabled);
-    miniatureWidget.set_opacity(enabled ? ENABLED_OPACITY : DISABLED_OPACITY);
+    miniatureWidget.set_opacity(getBaseOpacity());
   });
 
   return button;
