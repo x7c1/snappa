@@ -1,6 +1,7 @@
 /// <reference path="./types/build-mode.d.ts" />
 
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
+import { EXTENSION_UUID } from './app/constants.js';
 import { Controller } from './app/controller.js';
 import { DBusReloader } from './reloader/dbus-reloader.js';
 import { ExtensionSettings } from './settings/extension-settings.js';
@@ -36,7 +37,7 @@ export default class SnappaExtension extends Extension {
       return null;
     }
     try {
-      return new DBusReloader('snappa@x7c1.github.io', this.metadata.uuid);
+      return new DBusReloader(EXTENSION_UUID, this.metadata.uuid);
     } catch (e) {
       console.log(`[Snappa] ERROR: Failed to initialize DBusReloader: ${e}`);
       return null;

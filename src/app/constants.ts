@@ -1,5 +1,8 @@
 import type { LayoutConfiguration } from './types/layout-setting';
 
+// Extension
+export const EXTENSION_UUID = 'snappa@x7c1.github.io';
+
 // Timing
 export const AUTO_HIDE_DELAY_MS = 500; // Time to wait before hiding panel when cursor leaves
 

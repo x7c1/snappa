@@ -1,6 +1,7 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
+import { EXTENSION_UUID } from '../app/constants.js';
 import type { Monitor, SpacesRow } from '../app/types/index.js';
 
 const MONITORS_FILE_NAME = 'monitors.json';
@@ -10,13 +11,7 @@ const MONITORS_FILE_NAME = 'monitors.json';
  */
 function getExtensionDataPath(filename: string): string {
   const dataDir = GLib.get_user_data_dir();
-  return GLib.build_filenamev([
-    dataDir,
-    'gnome-shell',
-    'extensions',
-    'snappa@x7c1.github.io',
-    filename,
-  ]);
+  return GLib.build_filenamev([dataDir, 'gnome-shell', 'extensions', EXTENSION_UUID, filename]);
 }
 
 /**
