@@ -1,11 +1,86 @@
 import Clutter from 'gi://Clutter';
-import St from 'gi://St';
+import type St from 'gi://St';
 
 import type { LayoutButtonWithMetadata } from '../types/button.js';
 import type { Layout } from '../types/layout.js';
 import { getButtonStyle } from '../ui/layout-button.js';
 
 declare function log(message: string): void;
+
+interface ParsedShortcut {
+  keyval: number;
+  modifiers: Clutter.ModifierType;
+}
+
+/**
+ * Parse accelerator string (e.g., '<Control>comma') into keyval and modifiers
+ */
+function parseAccelerator(accelerator: string): ParsedShortcut | null {
+  let remaining = accelerator;
+  let modifiers: Clutter.ModifierType = 0;
+
+  // Extract modifiers
+  const modifierPattern = /<(\w+)>/g;
+  let match: RegExpExecArray | null = modifierPattern.exec(accelerator);
+  while (match !== null) {
+    const mod = match[1].toLowerCase();
+    if (mod === 'control' || mod === 'ctrl') {
+      modifiers |= Clutter.ModifierType.CONTROL_MASK;
+    } else if (mod === 'shift') {
+      modifiers |= Clutter.ModifierType.SHIFT_MASK;
+    } else if (mod === 'alt') {
+      modifiers |= Clutter.ModifierType.MOD1_MASK;
+    } else if (mod === 'super') {
+      modifiers |= Clutter.ModifierType.SUPER_MASK;
+    }
+    remaining = remaining.replace(match[0], '');
+    match = modifierPattern.exec(accelerator);
+  }
+
+  // Remaining string is the key name
+  const keyName = remaining.trim().toLowerCase();
+  if (!keyName) return null;
+
+  // Map key name to Clutter keyval
+  const keyMap: { [key: string]: number } = {
+    comma: Clutter.KEY_comma,
+    period: Clutter.KEY_period,
+    slash: Clutter.KEY_slash,
+    semicolon: Clutter.KEY_semicolon,
+    apostrophe: Clutter.KEY_apostrophe,
+    bracketleft: Clutter.KEY_bracketleft,
+    bracketright: Clutter.KEY_bracketright,
+    backslash: Clutter.KEY_backslash,
+    minus: Clutter.KEY_minus,
+    equal: Clutter.KEY_equal,
+    grave: Clutter.KEY_grave,
+    space: Clutter.KEY_space,
+    return: Clutter.KEY_Return,
+    escape: Clutter.KEY_Escape,
+    tab: Clutter.KEY_Tab,
+    backspace: Clutter.KEY_BackSpace,
+  };
+
+  // Check special key names first
+  if (keyMap[keyName]) {
+    return { keyval: keyMap[keyName], modifiers };
+  }
+
+  // Single character keys (a-z, 0-9)
+  if (keyName.length === 1) {
+    const char = keyName.charCodeAt(0);
+    if (char >= 97 && char <= 122) {
+      // a-z
+      return { keyval: Clutter.KEY_a + (char - 97), modifiers };
+    }
+    if (char >= 48 && char <= 57) {
+      // 0-9
+      return { keyval: Clutter.KEY_0 + (char - 48), modifiers };
+    }
+  }
+
+  return null;
+}
 
 interface Point {
   x: number;
@@ -26,27 +101,43 @@ interface ButtonPosition {
   height: number;
 }
 
+export interface KeyboardNavigatorOptions {
+  container: St.BoxLayout;
+  layoutButtons: Map<St.Button, Layout>;
+  onLayoutSelected: (layout: Layout) => void;
+  onOpenPreferences: () => void;
+  openPreferencesShortcuts: string[];
+}
+
 export class MainPanelKeyboardNavigator {
   private container: St.BoxLayout | null = null;
   private focusedButton: St.Button | null = null;
   private layoutButtons: Map<St.Button, Layout> = new Map();
   private keyEventId: number | null = null;
   private onLayoutSelected: ((layout: Layout) => void) | null = null;
+  private onOpenPreferences: (() => void) | null = null;
+  private parsedShortcuts: ParsedShortcut[] = [];
 
-  enable(
-    container: St.BoxLayout,
-    layoutButtons: Map<St.Button, Layout>,
-    onLayoutSelected: (layout: Layout) => void
-  ): void {
-    this.container = container;
-    this.layoutButtons = layoutButtons;
-    this.onLayoutSelected = onLayoutSelected;
+  enable(options: KeyboardNavigatorOptions): void {
+    this.container = options.container;
+    this.layoutButtons = options.layoutButtons;
+    this.onLayoutSelected = options.onLayoutSelected;
+    this.onOpenPreferences = options.onOpenPreferences;
+
+    // Parse shortcuts
+    this.parsedShortcuts = [];
+    for (const shortcut of options.openPreferencesShortcuts) {
+      const parsed = parseAccelerator(shortcut);
+      if (parsed) {
+        this.parsedShortcuts.push(parsed);
+      }
+    }
 
     // Set keyboard focus
-    container.grab_key_focus();
+    this.container.grab_key_focus();
 
     // Register key event handler
-    this.keyEventId = container.connect(
+    this.keyEventId = this.container.connect(
       'key-press-event',
       (_actor: St.BoxLayout, event: Clutter.Event) => {
         return this.handleKeyPress(event);
@@ -71,43 +162,43 @@ export class MainPanelKeyboardNavigator {
   }
 
   /**
-   * Initialize focus to selected layout if exists, otherwise top-left layout
+   * Initialize focus to selected layout if exists
+   * Does not apply focus if no layout is selected (focus starts on first key press)
    */
   private initializeFocus(): St.Button | null {
-    let initialButton: St.Button | null = null;
-
     // Find selected button if exists
-    for (const [button, layout] of this.layoutButtons.entries()) {
-      St; // Prevent unused variable warning
-      layout; // Prevent unused variable warning
+    for (const [button] of this.layoutButtons.entries()) {
       const buttonWithMeta = button as LayoutButtonWithMetadata;
       if (buttonWithMeta._isSelected) {
-        initialButton = button;
-        break;
+        this.applyFocusStyle(button);
+        return button;
       }
     }
 
-    // If no selected button, find top-left button
-    if (!initialButton) {
-      let minY = Infinity;
-      let minX = Infinity;
-      for (const button of this.layoutButtons.keys()) {
-        const allocation = button.get_allocation_box();
-        const x = allocation.x1;
-        const y = allocation.y1;
+    // No selected button - don't apply initial focus
+    // Focus will be applied when user starts keyboard navigation
+    return null;
+  }
 
-        if (y < minY || (y === minY && x < minX)) {
-          minY = y;
-          minX = x;
-          initialButton = button;
-        }
+  /**
+   * Find the top-left button for initial focus when no button is selected
+   */
+  private findTopLeftButton(): St.Button | null {
+    let topLeftButton: St.Button | null = null;
+    let minY = Infinity;
+    let minX = Infinity;
+
+    for (const button of this.layoutButtons.keys()) {
+      const [x, y] = button.get_transformed_position();
+
+      if (y < minY || (y === minY && x < minX)) {
+        minY = y;
+        minX = x;
+        topLeftButton = button;
       }
     }
 
-    if (initialButton) {
-      this.applyFocusStyle(initialButton);
-    }
-    return initialButton;
+    return topLeftButton;
   }
 
   /**
@@ -140,21 +231,32 @@ export class MainPanelKeyboardNavigator {
 
   private handleKeyPress(event: Clutter.Event): boolean {
     const symbol = event.get_key_symbol();
+    const state = event.get_state();
+
+    // Check if event matches any configured open-preferences shortcut
+    if (this.matchesShortcut(symbol, state)) {
+      this.onOpenPreferences?.();
+      return true;
+    }
 
     const keyMap: { [key: number]: string } = {
       [Clutter.KEY_Up]: 'up',
       [Clutter.KEY_Down]: 'down',
       [Clutter.KEY_Left]: 'left',
       [Clutter.KEY_Right]: 'right',
-      [Clutter.KEY_k]: 'up',
-      [Clutter.KEY_j]: 'down',
-      [Clutter.KEY_h]: 'left',
-      [Clutter.KEY_l]: 'right',
       [Clutter.KEY_Return]: 'select',
       [Clutter.KEY_KP_Enter]: 'select',
     };
 
-    const direction = keyMap[symbol];
+    const ctrlKeyMap: { [key: number]: string } = {
+      [Clutter.KEY_p]: 'up',
+      [Clutter.KEY_n]: 'down',
+      [Clutter.KEY_b]: 'left',
+      [Clutter.KEY_f]: 'right',
+    };
+
+    const hasCtrl = (state & Clutter.ModifierType.CONTROL_MASK) !== 0;
+    const direction = hasCtrl ? ctrlKeyMap[symbol] : keyMap[symbol];
     if (!direction) return false; // Propagate event
 
     if (direction === 'select') {
@@ -170,7 +272,13 @@ export class MainPanelKeyboardNavigator {
    * Move focus in the specified direction using midpoint-based distance calculation
    */
   private moveFocus(direction: string): void {
+    // If no focus yet, initialize to top-left button on first key press
     if (!this.focusedButton) {
+      const topLeft = this.findTopLeftButton();
+      if (topLeft) {
+        this.focusedButton = topLeft;
+        this.applyFocusStyle(topLeft);
+      }
       return;
     }
 
@@ -184,6 +292,26 @@ export class MainPanelKeyboardNavigator {
       this.applyFocusStyle(nextButton);
     }
     // If no candidate found, focus remains on current layout (no wrap-around)
+  }
+
+  /**
+   * Check if the key event matches any of the configured shortcuts
+   */
+  private matchesShortcut(keyval: number, state: Clutter.ModifierType): boolean {
+    // Mask to only include relevant modifiers
+    const relevantMask =
+      Clutter.ModifierType.CONTROL_MASK |
+      Clutter.ModifierType.SHIFT_MASK |
+      Clutter.ModifierType.MOD1_MASK |
+      Clutter.ModifierType.SUPER_MASK;
+    const eventModifiers = state & relevantMask;
+
+    for (const shortcut of this.parsedShortcuts) {
+      if (keyval === shortcut.keyval && eventModifiers === shortcut.modifiers) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

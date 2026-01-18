@@ -1,12 +1,14 @@
 import GLib from 'gi://GLib';
 
+import { EXTENSION_UUID } from '../constants.js';
+
 /**
  * Get the extension's data directory path
- * Returns: ~/.local/share/gnome-shell/extensions/snappa@x7c1.github.io/
+ * Returns: ~/.local/share/gnome-shell/extensions/{$EXTENSION_UUID}/
  */
 export function getExtensionDataDir(): string {
   const dataDir = GLib.get_user_data_dir();
-  return GLib.build_filenamev([dataDir, 'gnome-shell', 'extensions', 'snappa@x7c1.github.io']);
+  return GLib.build_filenamev([dataDir, 'gnome-shell', 'extensions', EXTENSION_UUID]);
 }
 
 /**

@@ -1,158 +1,66 @@
 /// <reference path="../types/build-mode.d.ts" />
 
-import Adw from 'gi://Adw';
+import type Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
 import type Gio from 'gi://Gio';
-import Gtk from 'gi://Gtk';
 
-const SETTINGS_KEY_SHORTCUT = 'show-panel-shortcut';
+import { loadLayoutsAsSpacesRows } from '../app/repository/spaces.js';
+import { createGeneralPage } from './keyboard-shortcuts.js';
+import { loadMonitors } from './monitors.js';
+import { calculateRequiredWidth, createSpacesPage } from './spaces-page.js';
+
+// Window size constants
+const MIN_WINDOW_WIDTH = 400;
+const DEFAULT_WINDOW_HEIGHT = 500;
+const DEFAULT_SCREEN_WIDTH = 1920;
+const WINDOW_HORIZONTAL_PADDING = 80;
 
 /**
  * Build the preferences UI
  */
 export function buildPreferencesUI(window: Adw.PreferencesWindow, settings: Gio.Settings): void {
-  const page = new Adw.PreferencesPage();
-  const group = new Adw.PreferencesGroup({
-    title: 'Keyboard Shortcuts',
-  });
+  // Load spaces and monitors for width calculation
+  const rows = loadLayoutsAsSpacesRows();
+  const monitors = loadMonitors(rows);
 
-  const row = new Adw.ActionRow({
-    title: 'Show Main Panel',
-    subtitle: 'Keyboard shortcut to invoke main panel for focused window',
-  });
+  // Calculate required width and set window size
+  const contentWidth = calculateRequiredWidth(rows, monitors);
+  const screenWidth = getScreenWidth();
+  const windowWidth = Math.min(contentWidth + WINDOW_HORIZONTAL_PADDING, screenWidth);
+  window.set_default_size(Math.max(windowWidth, MIN_WINDOW_WIDTH), DEFAULT_WINDOW_HEIGHT);
 
-  const shortcutButton = new Gtk.Button({
-    valign: Gtk.Align.CENTER,
-    has_frame: true,
-  });
+  // Create General page (existing keyboard shortcut settings)
+  const generalPage = createGeneralPage(window, settings);
+  window.add(generalPage);
 
-  // Update shortcut button label from settings
-  const updateShortcutLabel = () => {
-    const shortcuts = settings.get_strv(SETTINGS_KEY_SHORTCUT);
-    shortcutButton.set_label(shortcuts.length > 0 ? shortcuts[0] : 'Disabled');
-  };
+  // Create Spaces page (reuse already loaded data)
+  const spacesPage = createSpacesPage(rows, monitors);
+  window.add(spacesPage);
 
-  updateShortcutLabel();
-
-  // Show shortcut capture dialog on button click
-  shortcutButton.connect('clicked', () => {
-    showShortcutDialog(window, settings, updateShortcutLabel);
-  });
-
-  // Clear button
-  const clearButton = new Gtk.Button({
-    icon_name: 'edit-clear-symbolic',
-    valign: Gtk.Align.CENTER,
-    has_frame: false,
-    tooltip_text: 'Clear shortcut',
-  });
-
-  clearButton.connect('clicked', () => {
-    settings.set_strv(SETTINGS_KEY_SHORTCUT, []);
-    updateShortcutLabel();
-  });
-
-  const box = new Gtk.Box({
-    spacing: 6,
-    valign: Gtk.Align.CENTER,
-  });
-  box.append(shortcutButton);
-  box.append(clearButton);
-
-  row.add_suffix(box);
-  group.add(row);
-  page.add(group);
-
-  window.add(page);
+  // Set Spaces page as the default visible page
+  window.set_visible_page(spacesPage);
 }
 
 /**
- * Create and show shortcut capture dialog
+ * Get the width of the primary screen/monitor
  */
-function showShortcutDialog(
-  window: Adw.PreferencesWindow,
-  settings: Gio.Settings,
-  updateCallback: () => void
-): void {
-  const dialog = new Gtk.Window({
-    transient_for: window,
-    modal: true,
-    title: 'Press shortcut keys',
-  });
+function getScreenWidth(): number {
+  const display = Gdk.Display.get_default();
+  if (!display) {
+    return DEFAULT_SCREEN_WIDTH;
+  }
 
-  const box = new Gtk.Box({
-    orientation: Gtk.Orientation.VERTICAL,
-    spacing: 12,
-  });
+  const monitorList = display.get_monitors();
+  if (!monitorList || monitorList.get_n_items() === 0) {
+    return DEFAULT_SCREEN_WIDTH;
+  }
 
-  const label = new Gtk.Label({
-    label: 'Press Escape to cancel or BackSpace to clear',
-    margin_top: 12,
-    margin_bottom: 12,
-    margin_start: 12,
-    margin_end: 12,
-  });
+  // Get the first monitor (primary)
+  const monitor = monitorList.get_item(0) as Gdk.Monitor | null;
+  if (!monitor) {
+    return DEFAULT_SCREEN_WIDTH;
+  }
 
-  box.append(label);
-  dialog.set_child(box);
-
-  const controller = new Gtk.EventControllerKey();
-  controller.connect(
-    'key-pressed',
-    (_controller: unknown, keyval: number, _keycode: number, state: number) => {
-      const mask = state & Gtk.accelerator_get_default_mod_mask();
-
-      // Cancel on Escape
-      if (keyval === Gdk.KEY_Escape) {
-        dialog.close();
-        return true;
-      }
-
-      // Clear on BackSpace
-      if (keyval === Gdk.KEY_BackSpace) {
-        settings.set_strv(SETTINGS_KEY_SHORTCUT, []);
-        updateCallback();
-        dialog.close();
-        return true;
-      }
-
-      // Ignore standalone modifier keys
-      if (isModifierKey(keyval)) {
-        return false;
-      }
-
-      // Require at least one modifier key
-      if (mask === 0) {
-        return false;
-      }
-
-      // Save valid shortcut
-      const accelerator = Gtk.accelerator_name(keyval, mask);
-      settings.set_strv(SETTINGS_KEY_SHORTCUT, [accelerator]);
-      updateCallback();
-      dialog.close();
-      return true;
-    }
-  );
-
-  dialog.add_controller(controller);
-  dialog.present();
-}
-
-/**
- * Check if a keyval represents a modifier key
- */
-function isModifierKey(keyval: number): boolean {
-  return (
-    keyval === Gdk.KEY_Control_L ||
-    keyval === Gdk.KEY_Control_R ||
-    keyval === Gdk.KEY_Alt_L ||
-    keyval === Gdk.KEY_Alt_R ||
-    keyval === Gdk.KEY_Shift_L ||
-    keyval === Gdk.KEY_Shift_R ||
-    keyval === Gdk.KEY_Super_L ||
-    keyval === Gdk.KEY_Super_R ||
-    keyval === Gdk.KEY_Meta_L ||
-    keyval === Gdk.KEY_Meta_R
-  );
+  const geometry = monitor.get_geometry();
+  return geometry.width;
 }

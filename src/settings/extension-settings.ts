@@ -48,6 +48,14 @@ export class ExtensionSettings {
   }
 
   /**
+   * Get the keyboard shortcut for opening preferences while main panel is visible
+   * @returns Array of shortcut strings (typically ['<Control>comma'])
+   */
+  getOpenPreferencesShortcut(): string[] {
+    return this.settings.get_strv('open-preferences-shortcut');
+  }
+
+  /**
    * Get the raw GSettings object (needed for keybinding registration)
    * @returns Gio.Settings object
    */

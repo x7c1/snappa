@@ -5,9 +5,12 @@
  * Tracks connected monitors and provides lookup methods.
  */
 
+import Gio from 'gi://Gio';
 import type Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
+import { MONITORS_FILE_NAME } from '../constants.js';
+import { getExtensionDataPath } from '../repository/extension-path.js';
 import type { BoundingBox, Monitor } from '../types/monitor-config.js';
 
 declare function log(message: string): void;
@@ -166,5 +169,30 @@ export class MonitorManager {
    */
   getMonitors(): Map<string, Monitor> {
     return this.monitors;
+  }
+
+  /**
+   * Save current monitor configuration to file
+   * Used by preferences UI to display correct monitor layout
+   */
+  saveMonitors(): void {
+    const filePath = getExtensionDataPath(MONITORS_FILE_NAME);
+    const file = Gio.File.new_for_path(filePath);
+
+    try {
+      const parent = file.get_parent();
+      if (parent && !parent.query_exists(null)) {
+        parent.make_directory_with_parents(null);
+      }
+
+      // Convert Map to array for JSON serialization
+      const monitorsArray: Monitor[] = Array.from(this.monitors.values());
+      const json = JSON.stringify(monitorsArray, null, 2);
+      file.replace_contents(json, null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
+
+      log('[MonitorManager] Monitors saved successfully');
+    } catch (e) {
+      log(`[MonitorManager] Error saving monitors: ${e}`);
+    }
   }
 }

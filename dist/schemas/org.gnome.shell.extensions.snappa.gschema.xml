@@ -11,5 +11,10 @@
       <summary>Hide main panel shortcut</summary>
       <description>Keyboard shortcut to hide the main panel. Default is Escape key.</description>
     </key>
+    <key name="open-preferences-shortcut" type="as">
+      <default>['&lt;Control&gt;comma']</default>
+      <summary>Open preferences shortcut</summary>
+      <description>Keyboard shortcut to open preferences while main panel is visible. Default is Ctrl+Comma.</description>
+    </key>
   </schema>
 </schemalist>

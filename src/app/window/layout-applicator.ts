@@ -10,7 +10,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import { evaluate, parse } from '../layout-expression/index.js';
 import type { MonitorManager } from '../monitor/manager.js';
-import type { LayoutHistoryRepository } from '../repository/layout-history.js';
+import type { LayoutHistoryRepository } from '../repository/history.js';
 import type { Layout } from '../types/index.js';
 
 declare function log(message: string): void;
