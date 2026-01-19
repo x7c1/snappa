@@ -48,8 +48,10 @@ export class Controller {
   private dragSignalHandler: DragSignalHandler;
   private layoutHistoryRepository: LayoutHistoryRepository;
   private historyLoaded: boolean = false;
+  private settings: ExtensionSettings;
 
   constructor(settings: ExtensionSettings, metadata: ExtensionMetadata) {
+    this.settings = settings;
     this.monitorManager = new MonitorManager();
 
     // Lazy load to avoid I/O until panel is actually displayed
@@ -94,11 +96,22 @@ export class Controller {
    */
   enable(): void {
     this.monitorManager.detectMonitors();
-    this.monitorManager.saveMonitors();
+
+    // Sync current active collection from settings to MonitorManager
+    const currentCollectionId = this.settings.getActiveSpaceCollectionId();
+    if (currentCollectionId) {
+      this.monitorManager.setActiveCollectionId(currentCollectionId);
+    }
+
+    // Save monitors and handle any environment-triggered collection change
+    this.handleMonitorsSaveResult(this.monitorManager.saveMonitors());
 
     this.monitorManager.connectToMonitorChanges(() => {
-      // Save updated monitor configuration for preferences UI
-      this.monitorManager.saveMonitors();
+      this.monitorManager.detectMonitors();
+      // Save and handle environment change
+      const collectionToActivate = this.monitorManager.saveMonitors();
+      this.handleMonitorsSaveResult(collectionToActivate);
+
       // Re-render panel when monitors change to reflect new configuration
       if (this.mainPanel.isVisible()) {
         const cursor = this.getCursorPosition();
@@ -134,6 +147,17 @@ export class Controller {
     this.currentWindow = null;
     this.isDragging = false;
     this.isAtEdge = false;
+  }
+
+  /**
+   * Handle result from saveMonitors - activate collection if environment changed
+   */
+  private handleMonitorsSaveResult(collectionToActivate: string | null): void {
+    if (collectionToActivate) {
+      log(`[Controller] Environment changed, activating collection: ${collectionToActivate}`);
+      this.settings.setActiveSpaceCollectionId(collectionToActivate);
+      this.monitorManager.setActiveCollectionId(collectionToActivate);
+    }
   }
 
   /**
@@ -235,7 +259,7 @@ export class Controller {
     }
 
     this.ensureHistoryLoaded();
-    this.monitorManager.saveMonitors();
+    this.handleMonitorsSaveResult(this.monitorManager.saveMonitors());
 
     const cursor = this.getCursorPosition();
     const window = this.getCurrentWindow();

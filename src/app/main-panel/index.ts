@@ -353,7 +353,20 @@ export class MainPanel {
     }
 
     const onLayoutSelected = this.layoutSelector.getOnLayoutSelected();
-    const monitors = this.monitorManager.getMonitors();
+
+    // Get the max display count from rows to find appropriate monitors
+    let maxDisplayCount = 0;
+    for (const row of rows) {
+      for (const space of row.spaces) {
+        const displayCount = Object.keys(space.displays).length;
+        maxDisplayCount = Math.max(maxDisplayCount, displayCount);
+      }
+    }
+
+    // Get monitors for rendering (may include data from different environment)
+    const { monitors, inactiveMonitorKeys } =
+      this.monitorManager.getMonitorsForRendering(maxDisplayCount);
+
     const rowsView = createSpacesRowView(
       monitors,
       rows,
@@ -363,7 +376,8 @@ export class MainPanel {
           onLayoutSelected(layout);
         }
       },
-      this.layoutHistoryRepository
+      this.layoutHistoryRepository,
+      inactiveMonitorKeys
     );
 
     this.layoutButtons = rowsView.layoutButtons;

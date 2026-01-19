@@ -14,11 +14,93 @@ import {
   importLayoutConfigurationFromJson,
 } from '../app/service/custom-import.js';
 import { ensurePresetForCurrentMonitors } from '../app/service/preset-generator.js';
-import type { Monitor, Space, SpaceCollection, SpacesRow } from '../app/types/index.js';
+import type {
+  Monitor,
+  MonitorEnvironmentStorage,
+  Space,
+  SpaceCollection,
+  SpacesRow,
+} from '../app/types/index.js';
 import { calculateSpaceDimensions, createGtkMiniatureSpace } from './gtk-miniature-space.js';
+import {
+  createDefaultMonitors,
+  environmentToMonitorMap,
+  findEnvironmentForDisplayCount,
+  loadMonitorStorage,
+} from './monitors.js';
 
 // Spacing between spaces in a row
 const SPACE_SPACING = 4;
+
+/**
+ * Get the display count for a collection (max monitor count across all spaces)
+ */
+function getCollectionDisplayCount(collection: SpaceCollection): number {
+  let maxDisplays = 0;
+  for (const row of collection.rows) {
+    for (const space of row.spaces) {
+      const displayCount = Object.keys(space.displays).length;
+      maxDisplays = Math.max(maxDisplays, displayCount);
+    }
+  }
+  return maxDisplays;
+}
+
+/**
+ * Get the display count for a space
+ */
+function getSpaceDisplayCount(space: Space): number {
+  return Object.keys(space.displays).length;
+}
+
+/**
+ * Get the appropriate monitors for rendering a collection
+ * Uses environment matching to find monitors with the right count
+ */
+function getMonitorsForCollection(
+  collection: SpaceCollection,
+  storage: MonitorEnvironmentStorage | null,
+  fallbackMonitors: Map<string, Monitor>
+): Map<string, Monitor> {
+  const displayCount = getCollectionDisplayCount(collection);
+  return getMonitorsForDisplayCount(displayCount, storage, fallbackMonitors);
+}
+
+/**
+ * Get the appropriate monitors for rendering a space
+ * Uses environment matching to find monitors with the right count
+ */
+function getMonitorsForSpace(
+  space: Space,
+  storage: MonitorEnvironmentStorage | null,
+  fallbackMonitors: Map<string, Monitor>
+): Map<string, Monitor> {
+  const displayCount = getSpaceDisplayCount(space);
+  return getMonitorsForDisplayCount(displayCount, storage, fallbackMonitors);
+}
+
+/**
+ * Get monitors for a given display count
+ */
+function getMonitorsForDisplayCount(
+  displayCount: number,
+  storage: MonitorEnvironmentStorage | null,
+  fallbackMonitors: Map<string, Monitor>
+): Map<string, Monitor> {
+  // Try to find matching environment
+  const environment = findEnvironmentForDisplayCount(storage, displayCount);
+  if (environment) {
+    return environmentToMonitorMap(environment);
+  }
+
+  // Check if fallback monitors have the right count
+  if (fallbackMonitors.size === displayCount) {
+    return fallbackMonitors;
+  }
+
+  // Create default monitors for this display count
+  return createDefaultMonitors(displayCount);
+}
 
 // Opacity values for space visibility
 const ENABLED_OPACITY = 1.0;
@@ -90,7 +172,8 @@ interface SpacesPageState {
   activeCollectionId: string;
   selectedCollectionId: string;
   previewContainer: Gtk.Box;
-  monitors: Map<string, Monitor>;
+  monitors: Map<string, Monitor>; // Current environment monitors (for window sizing)
+  monitorStorage: MonitorEnvironmentStorage | null; // Multi-environment storage
   checkButtons: Map<string, Gtk.CheckButton>;
   selectionIndicators: Map<string, Gtk.Image>;
   firstRadioButton: Gtk.CheckButton | null;
@@ -108,6 +191,9 @@ export function createSpacesPage(
 ): Adw.PreferencesPage {
   // Ensure presets exist for current monitor count
   ensurePresetForCurrentMonitors();
+
+  // Load monitor storage for multi-environment support
+  const monitorStorage = loadMonitorStorage();
 
   const page = new Adw.PreferencesPage({
     title: 'Spaces',
@@ -151,7 +237,9 @@ export function createSpacesPage(
   // Calculate max preview width across all collections to fix the preview pane width
   let maxPreviewWidth = 0;
   for (const collection of allCollections) {
-    const width = calculatePreviewWidth(collection.rows, monitors);
+    // Use appropriate monitors for each collection's display count
+    const collectionMonitors = getMonitorsForCollection(collection, monitorStorage, monitors);
+    const width = calculatePreviewWidth(collection.rows, collectionMonitors);
     maxPreviewWidth = Math.max(maxPreviewWidth, width);
   }
   // Set fixed width on preview scrolled window to prevent left pane shifting
@@ -165,6 +253,7 @@ export function createSpacesPage(
     selectedCollectionId: resolvedActiveId,
     previewContainer,
     monitors,
+    monitorStorage,
     checkButtons: new Map(),
     selectionIndicators: new Map(),
     firstRadioButton: null,
@@ -468,9 +557,12 @@ function createClickableSpace(
 ): Gtk.Widget {
   let enabled = space.enabled !== false;
 
+  // Get the appropriate monitors for this space's display count
+  const spaceMonitors = getMonitorsForSpace(space, state.monitorStorage, state.monitors);
+
   const miniatureWidget = createGtkMiniatureSpace({
     space,
-    monitors: state.monitors,
+    monitors: spaceMonitors,
   });
 
   const getBaseOpacity = () => (enabled ? ENABLED_OPACITY : DISABLED_OPACITY);
