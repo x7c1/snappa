@@ -1,0 +1,15 @@
+# VM images and Packer output
+packer/output-*/
+packer/packer_cache/
+*.qcow2
+*.iso
+
+# Generated recordings and GIFs
+output/
+*.webm
+*.gif
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
