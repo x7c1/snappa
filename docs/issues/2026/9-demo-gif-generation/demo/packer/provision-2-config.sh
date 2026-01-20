@@ -1,0 +1,88 @@
+#!/bin/bash
+set -euo pipefail
+
+DEMO_USER="demo"
+
+echo "=== Installing required packages ==="
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-gi \
+    python3-dogtail \
+    python3-evdev \
+    gnome-shell-extension-prefs \
+    xdotool \
+    ydotool \
+    ffmpeg \
+    gifsicle \
+    spice-vdagent \
+    at-spi2-core \
+    libatspi2.0-0
+
+echo "=== Installing gnome-ponytail-daemon for Wayland AT-SPI support ==="
+pip3 install gnome-ponytail-daemon --break-system-packages || true
+
+echo "=== Configuring GDM auto-login and X11 session ==="
+mkdir -p /etc/gdm3
+cat > /etc/gdm3/custom.conf << 'EOF'
+[daemon]
+AutomaticLoginEnable=true
+AutomaticLogin=demo
+WaylandEnable=false
+
+[security]
+
+[xdmcp]
+
+[chooser]
+
+[debug]
+EOF
+
+echo "=== Disabling network wait service ==="
+systemctl disable systemd-networkd-wait-online.service
+systemctl mask systemd-networkd-wait-online.service
+
+echo "=== Enabling accessibility for AT-SPI ==="
+sudo -u "$DEMO_USER" dbus-launch gsettings set org.gnome.desktop.interface toolkit-accessibility true || true
+
+cat > /home/$DEMO_USER/.bash_profile << 'EOF'
+export GTK_MODULES=gail:atk-bridge
+export QT_ACCESSIBILITY=1
+export ACCESSIBILITY_ENABLED=1
+EOF
+chown "$DEMO_USER:$DEMO_USER" /home/$DEMO_USER/.bash_profile
+
+echo "=== Configuring ydotool for Wayland ==="
+systemctl enable ydotool || true
+
+echo "=== Configuring uinput access for demo user ==="
+usermod -aG input "$DEMO_USER"
+# Create udev rule to allow input group access to uinput
+cat > /etc/udev/rules.d/99-uinput.rules << 'EOF'
+KERNEL=="uinput", GROUP="input", MODE="0660"
+EOF
+
+echo "=== Creating demo scripts directory ==="
+mkdir -p /home/$DEMO_USER/demo
+chown -R "$DEMO_USER:$DEMO_USER" /home/$DEMO_USER/demo
+
+echo "=== Installing snappa extension ==="
+EXTENSION_DIR="/home/$DEMO_USER/.local/share/gnome-shell/extensions/snappa@example.com"
+mkdir -p "$EXTENSION_DIR"
+chown -R "$DEMO_USER:$DEMO_USER" /home/$DEMO_USER/.local
+
+echo "=== Configuring SSH for script control ==="
+sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+systemctl restart ssh
+
+echo "=== Setting default session type marker ==="
+mkdir -p /home/$DEMO_USER/.config
+cat > /home/$DEMO_USER/.config/session-type << 'EOF'
+x11
+EOF
+chown -R "$DEMO_USER:$DEMO_USER" /home/$DEMO_USER/.config
+
+echo "=== Provisioning complete ==="

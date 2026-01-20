@@ -1,0 +1,18 @@
+#cloud-config
+autoinstall:
+  version: 1
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+  identity:
+    hostname: snappa-demo
+    username: demo
+    password: "$6$HuyHsHovkoIOMjU5$6xB.9swYMhRf.VWZxe7SDf1eeW1Q5cGXtq1dNQ98URnnmjBmf/OaiTfwKn8WcTa83c8fmRUhWC/zv5FhXKJYk0"
+  ssh:
+    install-server: true
+    allow-pw: true
+  storage:
+    layout:
+      name: lvm
+  late-commands:
+    - curtin in-target --target=/target -- systemctl enable ssh
