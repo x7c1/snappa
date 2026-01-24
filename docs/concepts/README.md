@@ -53,6 +53,20 @@ docs/concepts/
     └── README.md
 ```
 
+A Domain Model can be nested under another Domain Model's directory when it has a **semantic dependency** on the parent—that is, when the child model cannot be defined without understanding the parent model.
+
+```
+docs/concepts/
+└── layout/
+    ├── README.md              # Layout
+    ├── layout-position/
+    │   └── README.md          # Layout Position (semantically depends on Layout)
+    └── layout-size/
+        └── README.md          # Layout Size (semantically depends on Layout)
+```
+
+See [Semantic vs Structural Dependency](./semantic-vs-structural-dependency.md) for details on this distinction.
+
 ## Document Format
 
 Each Concept Doc should follow this structure:
