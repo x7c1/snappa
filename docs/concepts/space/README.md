@@ -2,16 +2,16 @@
 
 ## Definition
 
-**Space** is a concept that contains multiple displays (monitors).
+**Space** is a container that holds multiple [Displays](../display/).
 
-A space represents a virtual desktop or workspace that spans across multiple physical monitors. Each space maintains its own layout configuration for each monitor.
+A Space represents a virtual desktop or workspace that spans across multiple physical monitors. Each Space maintains its own [Layout Group](../layout-group/) configuration for each [Display](../display/).
 
 ## Examples
 
 - **Space 1**: Monitor 0 uses "vertical 3-split", Monitor 1 uses "horizontal 2-split"
 - **Space 2**: Monitor 0 uses "horizontal 2-split", Monitor 1 uses "full screen"
 
-Each space can have different layout configurations for the same set of physical monitors.
+Each Space can have different [Layout Group](../layout-group/) configurations for the same set of physical monitors.
 
 ## Collocations
 
@@ -21,8 +21,10 @@ Each space can have different layout configurations for the same set of physical
 
 ## Related Features
 
-This concept is used in the **miniature space** feature.
+This concept is used in the miniature space feature (a UI component for Space visualization).
 
 ## Related Concepts
 
+- See [Display](../display/) for the elements contained in a Space
+- See [Layout Group](../layout-group/) for the layouts applied to each Display
 - See [Monitor vs Display](../display/monitor-vs-display.md) for the distinction between monitors and displays

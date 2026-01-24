@@ -32,6 +32,7 @@ When writing a Concept Doc, consider the following:
 - **One word per concept**: Do not use the same word for different concepts
 - **One concept per word**: Do not use different words for the same concept
 - **Collocations**: Define which verbs are used with the concept
+- **No undefined terms**: If unavoidable, add an annotation (e.g., "Layout Group (explained below)")
 
 ## Terminology
 
