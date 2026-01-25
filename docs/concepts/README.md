@@ -53,6 +53,25 @@ docs/concepts/
     └── README.md
 ```
 
+A Domain Model B can be nested under Domain Model A's directory **only when both conditions are met**:
+
+1. **Semantic dependency: B → A** (B cannot be defined without understanding A)
+2. **Structural dependency: A → B** (A contains B as a component)
+
+```
+docs/concepts/
+└── layout/
+    ├── README.md              # Layout
+    ├── layout-position/
+    │   └── README.md          # Layout Position (nested: Layout contains Layout Position)
+    └── layout-size/
+        └── README.md          # Layout Size (nested: Layout contains Layout Size)
+```
+
+When the dependency directions are the same (e.g., Space Collection → Space for both), the child should **not** be nested—it belongs at the top level.
+
+See [Semantic vs Structural Dependency](./semantic-vs-structural-dependency.md) for details on this distinction.
+
 ## Document Format
 
 Each Concept Doc should follow this structure:
