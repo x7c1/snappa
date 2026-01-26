@@ -177,8 +177,9 @@ interface SpacesPageState {
   checkButtons: Map<string, Gtk.CheckButton>;
   selectionIndicators: Map<string, Gtk.Image>;
   firstRadioButton: Gtk.CheckButton | null;
-  totalCollectionCount: number;
   onActiveChanged: (collectionId: string) => void;
+  listInnerBox: Gtk.Box | null; // Reference to the inner box for adding new collections
+  customSectionBox: Gtk.Box | null; // Container for custom collection rows
 }
 
 /**
@@ -257,8 +258,9 @@ export function createSpacesPage(
     checkButtons: new Map(),
     selectionIndicators: new Map(),
     firstRadioButton: null,
-    totalCollectionCount: allCollections.length,
     onActiveChanged,
+    listInnerBox: null,
+    customSectionBox: null,
   };
 
   // Create list pane (left)
@@ -290,6 +292,38 @@ export function createSpacesPage(
 }
 
 /**
+ * Render the custom section contents (collection rows or empty label)
+ */
+function renderCustomSection(state: SpacesPageState): void {
+  const box = state.customSectionBox;
+  if (!box) return;
+
+  // Clear existing children
+  let child = box.get_first_child();
+  while (child) {
+    const next = child.get_next_sibling();
+    box.remove(child);
+    child = next;
+  }
+
+  // Render custom collections or empty label
+  const customs = loadCustomCollections();
+  if (customs.length === 0) {
+    const emptyLabel = new Gtk.Label({
+      label: 'No custom collections',
+      css_classes: ['dim-label'],
+      xalign: 0,
+    });
+    box.append(emptyLabel);
+  } else {
+    for (const collection of customs) {
+      const row = createCollectionRow(state, collection, true, null);
+      box.append(row);
+    }
+  }
+}
+
+/**
  * Create the list pane with preset and custom sections
  */
 function createListPane(state: SpacesPageState): Gtk.Widget {
@@ -310,6 +344,9 @@ function createListPane(state: SpacesPageState): Gtk.Widget {
     orientation: Gtk.Orientation.VERTICAL,
     spacing: 4,
   });
+
+  // Store reference for later use (e.g., adding imported collections)
+  state.listInnerBox = innerBox;
 
   // Preset section
   const presetLabel = new Gtk.Label({
@@ -338,20 +375,14 @@ function createListPane(state: SpacesPageState): Gtk.Widget {
   });
   innerBox.append(customLabel);
 
-  const customs = loadCustomCollections();
-  for (const collection of customs) {
-    const row = createCollectionRow(state, collection, true, radioGroup);
-    innerBox.append(row);
-  }
+  const customSectionBox = new Gtk.Box({
+    orientation: Gtk.Orientation.VERTICAL,
+    spacing: 4,
+  });
+  state.customSectionBox = customSectionBox;
+  innerBox.append(customSectionBox);
 
-  if (customs.length === 0) {
-    const emptyLabel = new Gtk.Label({
-      label: 'No custom collections',
-      css_classes: ['dim-label'],
-      xalign: 0,
-    });
-    innerBox.append(emptyLabel);
-  }
+  renderCustomSection(state);
 
   scrolled.set_child(innerBox);
   listBox.append(scrolled);
@@ -362,7 +393,7 @@ function createListPane(state: SpacesPageState): Gtk.Widget {
     margin_top: 8,
   });
   importButton.connect('clicked', () => {
-    showImportDialog(state, listBox);
+    showImportDialog(state);
   });
   listBox.append(importButton);
 
@@ -383,36 +414,34 @@ function createCollectionRow(
     spacing: 8,
   });
 
-  // Only show radio button when there are multiple collections to choose from
-  if (state.totalCollectionCount > 1) {
-    const radio = new Gtk.CheckButton();
-    if (state.firstRadioButton) {
-      radio.set_group(state.firstRadioButton);
-    } else {
-      state.firstRadioButton = radio;
-    }
-    if (collection.id === state.activeCollectionId) {
-      radio.set_active(true);
-    }
-    state.checkButtons.set(collection.id, radio);
-
-    radio.connect('toggled', () => {
-      // Only act when this radio becomes active (ignore deactivation events)
-      if (radio.get_active()) {
-        state.activeCollectionId = collection.id;
-        state.selectedCollectionId = collection.id;
-        state.onActiveChanged(collection.id);
-        updateSelectionIndicators(state);
-        // Reload collection from file to get latest enabled states
-        const freshCollection = findCollectionById(collection.id);
-        if (freshCollection) {
-          updatePreview(state, freshCollection);
-        }
-      }
-    });
-
-    rowBox.append(radio);
+  // Always show radio button for collection selection
+  const radio = new Gtk.CheckButton();
+  if (state.firstRadioButton) {
+    radio.set_group(state.firstRadioButton);
+  } else {
+    state.firstRadioButton = radio;
   }
+  if (collection.id === state.activeCollectionId) {
+    radio.set_active(true);
+  }
+  state.checkButtons.set(collection.id, radio);
+
+  radio.connect('toggled', () => {
+    // Only act when this radio becomes active (ignore deactivation events)
+    if (radio.get_active()) {
+      state.activeCollectionId = collection.id;
+      state.selectedCollectionId = collection.id;
+      state.onActiveChanged(collection.id);
+      updateSelectionIndicators(state);
+      // Reload collection from file to get latest enabled states
+      const freshCollection = findCollectionById(collection.id);
+      if (freshCollection) {
+        updatePreview(state, freshCollection);
+      }
+    }
+  });
+
+  rowBox.append(radio);
 
   // Collection name label (clickable)
   const nameButton = new Gtk.Button({
@@ -459,11 +488,6 @@ function createCollectionRow(
     deleteButton.connect('clicked', () => {
       const deleted = deleteCustomCollection(collection.id);
       if (deleted) {
-        // Remove from UI
-        const parent = rowBox.get_parent() as Gtk.Box | null;
-        if (parent) {
-          parent.remove(rowBox);
-        }
         // If this was the active collection, select first preset
         if (state.activeCollectionId === collection.id) {
           const presets = loadPresetCollections();
@@ -476,6 +500,8 @@ function createCollectionRow(
             }
           }
         }
+        // Re-render the custom section
+        renderCustomSection(state);
       }
     });
     rowBox.append(deleteButton);
@@ -610,7 +636,7 @@ function createClickableSpace(
 /**
  * Show the import dialog
  */
-function showImportDialog(state: SpacesPageState, listPane: Gtk.Widget): void {
+function showImportDialog(state: SpacesPageState): void {
   const dialog = new Gtk.FileDialog({
     title: 'Import Layout Configuration',
     modal: true,
@@ -628,7 +654,7 @@ function showImportDialog(state: SpacesPageState, listPane: Gtk.Widget): void {
   dialog.set_default_filter(filter);
 
   // Get the window from the widget hierarchy
-  const toplevel = listPane.get_root();
+  const toplevel = state.previewContainer.get_root();
   const window = toplevel instanceof Gtk.Window ? toplevel : null;
 
   // Use async/await pattern with promise wrapper
@@ -637,7 +663,7 @@ function showImportDialog(state: SpacesPageState, listPane: Gtk.Widget): void {
     try {
       const file = dialog.open_finish(result);
       if (file) {
-        importFile(state, file, listPane);
+        importFile(state, file);
       }
     } catch (e) {
       // User cancelled or error
@@ -649,7 +675,7 @@ function showImportDialog(state: SpacesPageState, listPane: Gtk.Widget): void {
 /**
  * Import a file and add it to the custom collections
  */
-function importFile(state: SpacesPageState, file: Gio.File, listPane: Gtk.Widget): void {
+function importFile(state: SpacesPageState, file: Gio.File): void {
   try {
     const [success, contents] = file.load_contents(null);
     if (!success) {
@@ -661,21 +687,8 @@ function importFile(state: SpacesPageState, file: Gio.File, listPane: Gtk.Widget
     const collection = importLayoutConfigurationFromJson(jsonString);
 
     if (collection) {
-      // Refresh the entire page to show the new collection
-      // For now, just log success - a full refresh would require recreating the page
       console.log(`Successfully imported: ${collection.name}`);
-
-      // Find the custom section and add the new row
-      // This is a simplified approach - ideally we'd refresh the whole list
-      const scrolled = listPane.get_first_child() as Gtk.ScrolledWindow | null;
-      if (scrolled) {
-        const innerBox = scrolled.get_child() as Gtk.Box | null;
-        if (innerBox) {
-          const row = createCollectionRow(state, collection, true, null);
-          // Insert before the import button (which is at the end)
-          innerBox.append(row);
-        }
-      }
+      renderCustomSection(state);
     }
   } catch (e) {
     console.log(`Error importing file: ${e}`);
