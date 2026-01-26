@@ -1,4 +1,5 @@
 import Adw from 'gi://Adw';
+import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 
@@ -112,6 +113,10 @@ const HOVER_OPACITY_CHANGE = 0.15;
 // List pane width
 const LIST_PANE_WIDTH = 200;
 
+// Window padding (must match preferences.ts)
+const WINDOW_HORIZONTAL_PADDING = 80;
+const WINDOW_VERTICAL_PADDING = 100;
+
 /**
  * Calculate the preview content width for a set of rows (without list pane)
  */
@@ -142,6 +147,21 @@ export function calculateRequiredWidth(rows: SpacesRow[], monitors: Map<string, 
 }
 
 /**
+ * Calculate required window dimensions for a single collection
+ * Uses appropriate monitors for the collection's display count
+ */
+export function calculateWindowDimensionsForCollection(
+  collection: SpaceCollection,
+  fallbackMonitors: Map<string, Monitor>
+): { width: number; height: number } {
+  const monitorStorage = loadMonitorStorage();
+  const collectionMonitors = getMonitorsForCollection(collection, monitorStorage, fallbackMonitors);
+  const width = calculateRequiredWidth(collection.rows, collectionMonitors);
+  const height = calculateRequiredHeight(collection.rows, collectionMonitors);
+  return { width, height };
+}
+
+/**
  * Calculate the required height to display all space rows
  */
 export function calculateRequiredHeight(rows: SpacesRow[], monitors: Map<string, Monitor>): number {
@@ -162,16 +182,16 @@ export function calculateRequiredHeight(rows: SpacesRow[], monitors: Map<string,
   // Add padding for UI chrome:
   // - Adw.PreferencesPage title bar: ~50
   // - Adw.PreferencesGroup header + description: ~100
-  // - Collection name label in preview: ~40
-  // - Margins and spacing: ~60
-  // - Extra buffer for GTK decorations: ~50
-  return totalHeight + 300;
+  return totalHeight + 150;
 }
 
 interface SpacesPageState {
   activeCollectionId: string;
   selectedCollectionId: string;
   previewContainer: Gtk.Box;
+  previewScrolled: Gtk.ScrolledWindow | null; // Reference for updating preview width
+  currentMaxPreviewWidth: number; // Track current max width to expand if needed
+  currentMaxPreviewHeight: number; // Track current max height to expand if needed
   monitors: Map<string, Monitor>; // Current environment monitors (for window sizing)
   monitorStorage: MonitorEnvironmentStorage | null; // Multi-environment storage
   checkButtons: Map<string, Gtk.CheckButton>;
@@ -218,6 +238,7 @@ export function createSpacesPage(
     orientation: Gtk.Orientation.VERTICAL,
     halign: Gtk.Align.CENTER,
     valign: Gtk.Align.START,
+    margin_top: 12,
   });
 
   // Wrap preview in scrolled window to handle many rows
@@ -235,17 +256,22 @@ export function createSpacesPage(
     allCollections.find((c) => c.id === activeCollectionId) || allCollections[0];
   const resolvedActiveId = initialCollection?.id ?? '';
 
-  // Calculate max preview width across all collections to fix the preview pane width
-  let maxPreviewWidth = 0;
-  for (const collection of allCollections) {
-    // Use appropriate monitors for each collection's display count
-    const collectionMonitors = getMonitorsForCollection(collection, monitorStorage, monitors);
-    const width = calculatePreviewWidth(collection.rows, collectionMonitors);
-    maxPreviewWidth = Math.max(maxPreviewWidth, width);
+  // Calculate preview dimensions based on the ACTIVE collection (not max of all)
+  // Dimensions will expand when selecting larger collections via expandSizeIfNeeded
+  let initialPreviewWidth = 0;
+  let initialPreviewHeight = 0;
+  if (initialCollection) {
+    const collectionMonitors = getMonitorsForCollection(
+      initialCollection,
+      monitorStorage,
+      monitors
+    );
+    initialPreviewWidth = calculatePreviewWidth(initialCollection.rows, collectionMonitors);
+    initialPreviewHeight = calculateRequiredHeight(initialCollection.rows, collectionMonitors);
   }
-  // Set fixed width on preview scrolled window to prevent left pane shifting
-  if (maxPreviewWidth > 0) {
-    previewScrolled.set_size_request(maxPreviewWidth + 20, -1); // Add padding
+  // Set initial width on preview scrolled window
+  if (initialPreviewWidth > 0) {
+    previewScrolled.set_size_request(initialPreviewWidth + 20, -1); // Add padding
   }
 
   // Create state object for managing selections
@@ -253,6 +279,9 @@ export function createSpacesPage(
     activeCollectionId: resolvedActiveId,
     selectedCollectionId: resolvedActiveId,
     previewContainer,
+    previewScrolled,
+    currentMaxPreviewWidth: initialPreviewWidth,
+    currentMaxPreviewHeight: initialPreviewHeight,
     monitors,
     monitorStorage,
     checkButtons: new Map(),
@@ -444,18 +473,17 @@ function createCollectionRow(
   rowBox.append(radio);
 
   // Collection name label (clickable)
-  const nameButton = new Gtk.Button({
+  const nameLabel = new Gtk.Label({
     label: collection.name,
-    has_frame: false,
-    hexpand: true,
-    halign: Gtk.Align.START,
+    xalign: 0,
   });
-  nameButton.connect('clicked', () => {
+  const clickGesture = new Gtk.GestureClick();
+  clickGesture.connect('released', () => {
     // When there's a radio button, activate it (which triggers the selection logic)
     // Otherwise, just select this collection directly
-    const radio = state.checkButtons.get(collection.id);
-    if (radio) {
-      radio.set_active(true);
+    const existingRadio = state.checkButtons.get(collection.id);
+    if (existingRadio) {
+      existingRadio.set_active(true);
     } else {
       state.activeCollectionId = collection.id;
       state.selectedCollectionId = collection.id;
@@ -468,24 +496,36 @@ function createCollectionRow(
       }
     }
   });
-  rowBox.append(nameButton);
+  nameLabel.add_controller(clickGesture);
+  rowBox.append(nameLabel);
+
+  // Spacer to push delete button and indicator to the right
+  const spacer = new Gtk.Box({ hexpand: true });
+  rowBox.append(spacer);
 
   // Selection indicator (">") shown for the active collection
+  // Use opacity instead of visibility to reserve space and prevent layout shifts
   const indicator = new Gtk.Image({
     icon_name: 'go-next-symbolic',
-    visible: collection.id === state.activeCollectionId,
+    opacity: collection.id === state.activeCollectionId ? 1 : 0,
   });
   state.selectionIndicators.set(collection.id, indicator);
   rowBox.append(indicator);
 
-  // Delete button for custom collections
+  // Right-click context menu for custom collections
   if (isCustom) {
-    const deleteButton = new Gtk.Button({
-      icon_name: 'edit-delete-symbolic',
-      has_frame: false,
-      css_classes: ['flat'],
+    const menu = new Gio.Menu();
+    menu.append('Delete', 'collection.delete');
+
+    const popover = new Gtk.PopoverMenu({
+      menu_model: menu,
+      has_arrow: false,
     });
-    deleteButton.connect('clicked', () => {
+    popover.set_parent(rowBox);
+
+    const actionGroup = new Gio.SimpleActionGroup();
+    const deleteAction = new Gio.SimpleAction({ name: 'delete' });
+    deleteAction.connect('activate', () => {
       const deleted = deleteCustomCollection(collection.id);
       if (deleted) {
         // If this was the active collection, select first preset
@@ -504,7 +544,20 @@ function createCollectionRow(
         renderCustomSection(state);
       }
     });
-    rowBox.append(deleteButton);
+    actionGroup.add_action(deleteAction);
+    rowBox.insert_action_group('collection', actionGroup);
+
+    const rightClickGesture = new Gtk.GestureClick({ button: 3 });
+    rightClickGesture.connect(
+      'released',
+      (_gesture: Gtk.GestureClick, _n: number, x: number, y: number) => {
+        popover.set_pointing_to(
+          new Gdk.Rectangle({ x: Math.floor(x), y: Math.floor(y), width: 1, height: 1 })
+        );
+        popover.popup();
+      }
+    );
+    rowBox.add_controller(rightClickGesture);
   }
 
   return rowBox;
@@ -515,7 +568,55 @@ function createCollectionRow(
  */
 function updateSelectionIndicators(state: SpacesPageState): void {
   for (const [collectionId, indicator] of state.selectionIndicators) {
-    indicator.set_visible(collectionId === state.activeCollectionId);
+    indicator.set_opacity(collectionId === state.activeCollectionId ? 1 : 0);
+  }
+}
+
+/**
+ * Expand preview and window size if the collection requires more space
+ */
+function expandSizeIfNeeded(state: SpacesPageState, collection: SpaceCollection): void {
+  const collectionMonitors = getMonitorsForCollection(
+    collection,
+    state.monitorStorage,
+    state.monitors
+  );
+  const newWidth = calculatePreviewWidth(collection.rows, collectionMonitors);
+  const newHeight = calculateRequiredHeight(collection.rows, collectionMonitors);
+
+  const widthExpanded = newWidth > state.currentMaxPreviewWidth;
+  const heightExpanded = newHeight > state.currentMaxPreviewHeight;
+
+  if (widthExpanded) {
+    state.currentMaxPreviewWidth = newWidth;
+    // Expand preview pane width
+    if (state.previewScrolled) {
+      state.previewScrolled.set_size_request(newWidth + 20, -1);
+    }
+  }
+
+  if (heightExpanded) {
+    state.currentMaxPreviewHeight = newHeight;
+  }
+
+  // Expand window if needed
+  if (widthExpanded || heightExpanded) {
+    const window = state.previewContainer.get_root() as Gtk.Window | null;
+    if (window) {
+      const currentWidth = window.get_width();
+      const currentHeight = window.get_height();
+
+      const requiredWindowWidth =
+        state.currentMaxPreviewWidth + LIST_PANE_WIDTH + WINDOW_HORIZONTAL_PADDING + 50;
+      const requiredWindowHeight = state.currentMaxPreviewHeight + WINDOW_VERTICAL_PADDING;
+
+      const newWindowWidth = Math.max(currentWidth, requiredWindowWidth);
+      const newWindowHeight = Math.max(currentHeight, requiredWindowHeight);
+
+      if (newWindowWidth > currentWidth || newWindowHeight > currentHeight) {
+        window.set_default_size(newWindowWidth, newWindowHeight);
+      }
+    }
   }
 }
 
@@ -523,6 +624,9 @@ function updateSelectionIndicators(state: SpacesPageState): void {
  * Update the preview pane with the selected collection
  */
 function updatePreview(state: SpacesPageState, collection: SpaceCollection): void {
+  // Expand preview and window width if needed
+  expandSizeIfNeeded(state, collection);
+
   // Clear existing preview
   let child = state.previewContainer.get_first_child();
   while (child) {
