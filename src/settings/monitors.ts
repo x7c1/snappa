@@ -174,27 +174,30 @@ export function loadMonitors(rows: SpacesRow[]): Map<string, Monitor> {
 
 /**
  * Create a default monitor map for a given display count
- * Used when no matching environment exists
+ * Uses reference monitor dimensions if provided, otherwise defaults to 1920x1080
  */
-export function createDefaultMonitors(displayCount: number): Map<string, Monitor> {
+export function createDefaultMonitors(
+  displayCount: number,
+  referenceMonitor?: Monitor
+): Map<string, Monitor> {
   const monitors = new Map<string, Monitor>();
-  const defaultWidth = 1920;
-  const defaultHeight = 1080;
+  const width = referenceMonitor?.geometry.width ?? 1920;
+  const height = referenceMonitor?.geometry.height ?? 1080;
 
   for (let i = 0; i < displayCount; i++) {
     monitors.set(String(i), {
       index: i,
       geometry: {
-        x: i * defaultWidth,
+        x: i * width,
         y: 0,
-        width: defaultWidth,
-        height: defaultHeight,
+        width,
+        height,
       },
       workArea: {
-        x: i * defaultWidth,
+        x: i * width,
         y: 0,
-        width: defaultWidth,
-        height: defaultHeight,
+        width,
+        height,
       },
       isPrimary: i === 0,
     });

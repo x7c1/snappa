@@ -99,8 +99,9 @@ function getMonitorsForDisplayCount(
     return fallbackMonitors;
   }
 
-  // Create default monitors for this display count
-  return createDefaultMonitors(displayCount);
+  // Create default monitors using current monitor's dimensions as reference
+  const referenceMonitor = fallbackMonitors.values().next().value as Monitor | undefined;
+  return createDefaultMonitors(displayCount, referenceMonitor);
 }
 
 // Opacity values for space visibility
@@ -497,6 +498,18 @@ function createCollectionRow(
     }
   });
   nameLabel.add_controller(clickGesture);
+
+  // Hover style for clickable label
+  nameLabel.set_cursor_from_name('pointer');
+  const motionController = new Gtk.EventControllerMotion();
+  motionController.connect('enter', () => {
+    nameLabel.set_opacity(0.7);
+  });
+  motionController.connect('leave', () => {
+    nameLabel.set_opacity(1.0);
+  });
+  nameLabel.add_controller(motionController);
+
   rowBox.append(nameLabel);
 
   // Spacer to push delete button and indicator to the right
