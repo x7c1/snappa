@@ -7,6 +7,7 @@
 
 import Gtk from 'gi://Gtk';
 
+import { DEFAULT_MONITOR_HEIGHT, DEFAULT_MONITOR_WIDTH } from '../app/constants.js';
 import type { Monitor, Space } from '../app/types/index.js';
 import { createGtkMiniatureDisplay } from './gtk-miniature-display.js';
 
@@ -44,7 +45,7 @@ function calculateBoundingBoxForSpace(
   }
 
   if (relevantMonitors.length === 0) {
-    return { minX: 0, minY: 0, width: 1920, height: 1080 };
+    return { minX: 0, minY: 0, width: DEFAULT_MONITOR_WIDTH, height: DEFAULT_MONITOR_HEIGHT };
   }
 
   let minX = Infinity;

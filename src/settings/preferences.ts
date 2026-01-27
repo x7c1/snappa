@@ -4,6 +4,7 @@ import type Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
 import type Gio from 'gi://Gio';
 
+import { DEFAULT_MONITOR_HEIGHT, DEFAULT_MONITOR_WIDTH } from '../app/constants.js';
 import { loadAllCollections } from '../app/repository/space-collection.js';
 import { ensurePresetForCurrentMonitors } from '../app/service/preset-generator.js';
 import { createGeneralPage } from './keyboard-shortcuts.js';
@@ -13,8 +14,8 @@ import { calculateWindowDimensionsForCollection, createSpacesPage } from './spac
 // Window size constants
 const MIN_WINDOW_WIDTH = 500;
 const MIN_WINDOW_HEIGHT = 400;
-const DEFAULT_SCREEN_WIDTH = 1920;
-const DEFAULT_SCREEN_HEIGHT = 1080;
+const DEFAULT_SCREEN_WIDTH = DEFAULT_MONITOR_WIDTH;
+const DEFAULT_SCREEN_HEIGHT = DEFAULT_MONITOR_HEIGHT;
 const WINDOW_HORIZONTAL_PADDING = 80;
 const WINDOW_VERTICAL_PADDING = 100;
 const SCREEN_HEIGHT_MARGIN = 100; // Margin for taskbars, panels, etc.

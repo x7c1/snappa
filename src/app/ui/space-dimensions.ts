@@ -6,6 +6,8 @@
  */
 
 import {
+  DEFAULT_MONITOR_HEIGHT,
+  DEFAULT_MONITOR_WIDTH,
   MAX_MONITOR_DISPLAY_HEIGHT,
   MAX_MONITOR_DISPLAY_WIDTH,
   MONITOR_MARGIN,
@@ -36,7 +38,7 @@ function calculateBoundingBoxForSpace(
   }
 
   if (relevantMonitors.length === 0) {
-    return { minX: 0, minY: 0, width: 1920, height: 1080 }; // Fallback
+    return { minX: 0, minY: 0, width: DEFAULT_MONITOR_WIDTH, height: DEFAULT_MONITOR_HEIGHT };
   }
 
   let minX = Infinity;

@@ -2,7 +2,12 @@ import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
-import { EXTENSION_UUID, MONITORS_FILE_NAME } from '../app/constants.js';
+import {
+  DEFAULT_MONITOR_HEIGHT,
+  DEFAULT_MONITOR_WIDTH,
+  EXTENSION_UUID,
+  MONITORS_FILE_NAME,
+} from '../app/constants.js';
 import type {
   Monitor,
   MonitorEnvironment,
@@ -138,16 +143,16 @@ export function loadMonitors(rows: SpacesRow[]): Map<string, Monitor> {
     console.log('[Snappa Prefs] No monitor info available, creating 1 default monitor');
     monitors.set('0', {
       index: 0,
-      geometry: { x: 0, y: 0, width: 1920, height: 1080 },
-      workArea: { x: 0, y: 0, width: 1920, height: 1080 },
+      geometry: { x: 0, y: 0, width: DEFAULT_MONITOR_WIDTH, height: DEFAULT_MONITOR_HEIGHT },
+      workArea: { x: 0, y: 0, width: DEFAULT_MONITOR_WIDTH, height: DEFAULT_MONITOR_HEIGHT },
       isPrimary: true,
     });
     return monitors;
   }
 
   const sortedKeys = Array.from(monitorKeys).sort();
-  const defaultWidth = 1920;
-  const defaultHeight = 1080;
+  const defaultWidth = DEFAULT_MONITOR_WIDTH;
+  const defaultHeight = DEFAULT_MONITOR_HEIGHT;
 
   for (let i = 0; i < sortedKeys.length; i++) {
     const key = sortedKeys[i];
@@ -174,15 +179,15 @@ export function loadMonitors(rows: SpacesRow[]): Map<string, Monitor> {
 
 /**
  * Create a default monitor map for a given display count
- * Uses reference monitor dimensions if provided, otherwise defaults to 1920x1080
+ * Uses reference monitor dimensions if provided, otherwise uses default monitor dimensions
  */
 export function createDefaultMonitors(
   displayCount: number,
   referenceMonitor?: Monitor
 ): Map<string, Monitor> {
   const monitors = new Map<string, Monitor>();
-  const width = referenceMonitor?.geometry.width ?? 1920;
-  const height = referenceMonitor?.geometry.height ?? 1080;
+  const width = referenceMonitor?.geometry.width ?? DEFAULT_MONITOR_WIDTH;
+  const height = referenceMonitor?.geometry.height ?? DEFAULT_MONITOR_HEIGHT;
 
   for (let i = 0; i < displayCount; i++) {
     monitors.set(String(i), {
