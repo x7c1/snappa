@@ -23,7 +23,11 @@
             "0": "half split",
             "1": "full"
           }
-        },
+        }
+      ]
+    },
+    {
+      "spaces": [
         {
           "displays": {
             "0": "full",
