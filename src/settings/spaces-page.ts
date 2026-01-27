@@ -774,13 +774,18 @@ function showImportDialog(state: SpacesPageState): void {
   const toplevel = state.previewContainer.get_root();
   const window = toplevel instanceof Gtk.Window ? toplevel : null;
 
-  // Use async/await pattern with promise wrapper
-  // @ts-expect-error - GTK4 FileDialog.open accepts callback as third argument
-  dialog.open(window, null, (_source: unknown, result: Gio.AsyncResult) => {
+  // @ts-expect-error - GTK4 FileDialog.open_multiple accepts callback as third argument
+  dialog.open_multiple(window, null, (_source: unknown, result: Gio.AsyncResult) => {
     try {
-      const file = dialog.open_finish(result);
-      if (file) {
-        importFile(state, file);
+      const files = dialog.open_multiple_finish(result);
+      if (files) {
+        const count = files.get_n_items();
+        for (let i = 0; i < count; i++) {
+          const file = files.get_item(i) as Gio.File | null;
+          if (file) {
+            importFile(state, file);
+          }
+        }
       }
     } catch (e) {
       // User cancelled or error
