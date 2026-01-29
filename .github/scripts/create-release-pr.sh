@@ -114,22 +114,20 @@ generate_pr_body() {
     local changelog="$3"
     local last_tag="$4"
     local repo_url="$5"
-    local compare_link=""
+    local changes_header
 
     if [ -n "$last_tag" ]; then
-        compare_link="- [Full diff](${repo_url}/compare/${last_tag}...release/v${version})"
+        changes_header="[Changes since v${current_version}](${repo_url}/compare/${last_tag}...release/v${version})"
+    else
+        changes_header="Changes since v${current_version}"
     fi
 
     cat <<EOF
 ## Release v${version}
 
-### Changes since v${current_version}
+### ${changes_header}
 
 ${changelog}
-
-### Links
-
-${compare_link}
 EOF
 }
 
