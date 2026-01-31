@@ -28,15 +28,15 @@ print_update_rules() {
     cat << 'EOF'
 ## PR Update Rules
 
-### IMPORTANT: Preserve Existing Content
+### IMPORTANT: Handle Checked Items Carefully
 Before updating, ALWAYS read the current PR description first:
 ```
 gh pr view <number> --json body -q '.body'
 ```
 
-- Preserve checkbox states (checked/unchecked)
-- Only modify or append what's necessary
-- Do NOT overwrite the entire body
+- `[x]` (checked): Preserve as-is, unless the content changed in recent commits
+- If content changed: Update the text AND uncheck it (`[x]` → `[ ]`) for human re-verification
+- Only update if there are actual changes to add
 
 EOF
     print_full_template
