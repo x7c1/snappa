@@ -37,14 +37,14 @@ Based on ADR decision: Use external billing provider with abstraction layer (see
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     snappa Extension                         │
+│                     snappa Extension                        │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
-│  │ Preferences │  │  License    │  │    Main Extension   │ │
-│  │     UI      │──│  Manager    │──│     Controller      │ │
-│  │             │  │             │  │                     │ │
-│  └─────────────┘  └──────┬──────┘  └─────────────────────┘ │
-│                          │                                   │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │ Preferences │  │  License    │  │    Main Extension   │  │
+│  │     UI      │──│  Manager    │──│     Controller      │  │
+│  │             │  │             │  │                     │  │
+│  └─────────────┘  └──────┬──────┘  └─────────────────────┘  │
+│                          │                                  │
 │                   ┌──────┴──────┐                           │
 │                   │   License   │                           │
 │                   │   Storage   │                           │
@@ -79,6 +79,70 @@ Based on ADR decision: Use external billing provider with abstraction layer (see
 - Provides `/v1/license/activate` and `/v1/license/validate` endpoints
 - Abstracts billing provider to allow future provider changes
 - Implementation details will be decided in the backend repository
+
+### License UI Design
+
+The license UI is added to the existing Preferences window as a new group within the "General" page.
+
+**Page Structure:**
+```
+General (Adw.PreferencesPage)
+├── Keyboard Shortcuts (Adw.PreferencesGroup)  ← existing
+│   ├── Show Main Panel
+│   └── Open Preferences
+└── License (Adw.PreferencesGroup)  ← new
+    ├── License Status (Adw.ActionRow)
+    └── License Key (Adw.EntryRow)
+```
+
+**License Status Row:**
+
+Displays current license state. Content varies by state:
+
+| State | Title | Subtitle |
+|-------|-------|----------|
+| Trial | "Trial" | "X days remaining" |
+| Trial (backend unreachable) | "Trial" | "Server unavailable" |
+| Active (verified) | "Active" | "Valid until YYYY-MM-DD" |
+| Active (offline) | "Active" | "Offline - connect within X days" |
+| Active (backend unreachable) | "Active" | "Server unavailable" |
+| Expired (trial) | "Trial Expired" | "Please purchase a license" |
+| Expired (subscription) | "Expired" | "Please renew your subscription" |
+| Invalid | "Invalid" | Error message from backend |
+
+A "Purchase License" link button is shown when in trial or expired state.
+
+**License Key Row:**
+
+- `Adw.EntryRow` with title "License Key"
+- Text entry field for license key input
+- "Activate" button as suffix
+
+**Activation Flow:**
+```
+User enters license key
+         │
+         ▼
+User clicks "Activate"
+         │
+         ▼
+Show spinner, disable button
+         │
+         ▼
+Call LicenseManager.activate()
+         │
+    ┌────┴────┐
+    │         │
+ Success    Error
+    │         │
+    ▼         ▼
+Update      Update status row
+status      to "Invalid" with
+row to      error message
+"Active"
+```
+
+Feedback is shown persistently in the License Status Row rather than transient toasts.
 
 ### API Integration
 
