@@ -150,14 +150,6 @@ Response (200 OK):
 }
 ```
 
-(Example for cancelled but still valid subscription):
-```json
-{
-  "valid_until": "2026-02-28T00:00:00Z",
-  "subscription_status": "cancelled_pending_expiry"
-}
-```
-
 Response (4xx error):
 ```json
 {
