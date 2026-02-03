@@ -38,11 +38,7 @@ import { LayoutApplicator } from '../infra/window/index.js';
 import { MainPanel } from '../ui/main-panel/index.js';
 import type { LayoutHistoryRepository } from '../usecase/history/index.js';
 import { LicenseService } from '../usecase/licensing/index.js';
-import {
-  getPresetGeneratorUseCase,
-  getSpaceCollectionUseCase,
-  loadAllCollections,
-} from './index.js';
+import { getPresetGeneratorUseCase, getSpaceCollectionUseCase } from './use-case-factory.js';
 
 declare function log(message: string): void;
 
@@ -244,7 +240,7 @@ export class Controller {
    */
   private getAllValidLayoutIds(): Set<string> {
     const ids = new Set<string>();
-    const collections = loadAllCollections();
+    const collections = getSpaceCollectionUseCase().loadAllCollections();
 
     for (const collection of collections) {
       for (const row of collection.rows) {

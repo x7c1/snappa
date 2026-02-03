@@ -1,3 +1,4 @@
+export type { LayoutGroupSetting, LayoutSetting } from '../types/layout-setting.js';
 export { CollectionId, InvalidCollectionIdError } from './collection-id.js';
 export { generateLayoutHash } from './layout-hash.js';
 export { InvalidLayoutIdError, LayoutId } from './layout-id.js';
@@ -9,8 +10,6 @@ export {
 export type {
   LayoutData,
   LayoutGroupData,
-  LayoutGroupSetting,
-  LayoutSetting,
   MonitorType,
   SpaceCollectionData,
   SpaceData,

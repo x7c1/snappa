@@ -1,15 +1,3 @@
-// Re-export domain constants for convenience
-export { DEFAULT_MONITOR_HEIGHT, DEFAULT_MONITOR_WIDTH } from '../domain/types/index.js';
-
-// Re-export infra constants for convenience
-export {
-  CUSTOM_SPACE_COLLECTIONS_FILE_NAME,
-  EXTENSION_UUID,
-  HISTORY_FILE_NAME,
-  MONITORS_FILE_NAME,
-  PRESET_SPACE_COLLECTIONS_FILE_NAME,
-} from '../infra/constants.js';
-
 // Timing
 export const AUTO_HIDE_DELAY_MS = 500; // Time to wait before hiding panel when cursor leaves
 

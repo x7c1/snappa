@@ -29,7 +29,6 @@
   "references": [
     { "path": "../libs" },
     { "path": "../domain" },
-    { "path": "../usecase" },
-    { "path": "../infra" }
+    { "path": "../usecase" }
   ]
 }

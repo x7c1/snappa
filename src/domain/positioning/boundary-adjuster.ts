@@ -4,7 +4,8 @@
  * Provides functions to adjust UI element positions to keep them within screen boundaries.
  */
 
-import type { Dimensions, MainPanelPositionOptions, Position, ScreenBoundaries } from './types.js';
+import type { Position, Size } from '../types/geometry.js';
+import type { MainPanelPositionOptions, ScreenBoundaries } from './types.js';
 
 /**
  * Adjust main panel position to keep it within screen boundaries
@@ -12,7 +13,7 @@ import type { Dimensions, MainPanelPositionOptions, Position, ScreenBoundaries }
  */
 export function adjustMainPanelPosition(
   cursorPosition: Position,
-  panelDimensions: Dimensions,
+  panelDimensions: Size,
   boundaries: ScreenBoundaries,
   options: MainPanelPositionOptions = {}
 ): Position {

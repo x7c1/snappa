@@ -16,6 +16,7 @@ import type {
   MonitorEnvironmentStorage,
 } from '../../domain/types/index.js';
 import { DEFAULT_MONITOR_HEIGHT, DEFAULT_MONITOR_WIDTH } from '../../domain/types/index.js';
+import type { MonitorProvider } from '../../usecase/monitor/index.js';
 import { MONITORS_FILE_NAME } from '../constants.js';
 import { getExtensionDataPath } from '../file/index.js';
 
@@ -40,7 +41,7 @@ function generateEnvironmentId(monitors: Monitor[]): string {
   return (hash >>> 0).toString(16).padStart(8, '0');
 }
 
-export class MonitorManager {
+export class MonitorManager implements MonitorProvider {
   private monitors: Map<string, Monitor> = new Map();
   private monitorsChangedId: number | null = null;
   private storage: MonitorEnvironmentStorage = { environments: [], current: '' };

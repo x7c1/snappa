@@ -1,9 +1,6 @@
 import type { LayoutGroupSetting, LayoutSetting } from '../types/layout-setting.js';
 import { generateLayoutHash } from './layout-hash.js';
 
-// Re-export for backward compatibility
-export type { LayoutGroupSetting, LayoutSetting };
-
 export type MonitorType = 'wide' | 'standard';
 
 export interface LayoutData {

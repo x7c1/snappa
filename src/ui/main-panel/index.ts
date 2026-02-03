@@ -18,8 +18,8 @@ import type {
   Size,
   SpacesRow,
 } from '../../domain/types/index.js';
-import type { MonitorManager } from '../../infra/monitor/manager.js';
 import type { LayoutHistoryRepository } from '../../usecase/history/index.js';
+import type { MonitorProvider } from '../../usecase/monitor/index.js';
 import { AUTO_HIDE_DELAY_MS } from '../constants.js';
 import { MainPanelAutoHide } from './auto-hide.js';
 import { MainPanelKeyboardNavigator } from './keyboard-navigator.js';
@@ -44,7 +44,7 @@ export class MainPanel {
   private metadata: ExtensionMetadata;
   private onPanelShownCallback: (() => void) | null = null;
   private onPanelHiddenCallback: (() => void) | null = null;
-  private monitorManager: MonitorManager; // Always required
+  private monitorManager: MonitorProvider; // Always required
   private layoutHistoryRepository: LayoutHistoryRepository;
   private getOpenPreferencesShortcuts: () => string[] = () => [];
   private getActiveSpaceCollectionId: () => string = () => '';
@@ -62,7 +62,7 @@ export class MainPanel {
 
   constructor(
     metadata: ExtensionMetadata,
-    monitorManager: MonitorManager,
+    monitorManager: MonitorProvider,
     layoutHistoryRepository: LayoutHistoryRepository
   ) {
     this.metadata = metadata;

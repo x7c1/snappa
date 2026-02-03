@@ -10,7 +10,7 @@ import type St from 'gi://St';
 import { adjustMainPanelPosition } from '../../domain/positioning/index.js';
 import type { ScreenBoundaries } from '../../domain/positioning/types.js';
 import type { Position, Size, SpacesRow } from '../../domain/types/index.js';
-import type { MonitorManager } from '../../infra/monitor/manager.js';
+import type { MonitorProvider } from '../../usecase/monitor/index.js';
 import { calculateSpaceDimensions } from '../components/space-dimensions.js';
 import {
   FOOTER_MARGIN_TOP,
@@ -21,9 +21,9 @@ import {
 } from '../constants.js';
 
 export class MainPanelPositionManager {
-  private monitorManager: MonitorManager;
+  private monitorManager: MonitorProvider;
 
-  constructor(monitorManager: MonitorManager) {
+  constructor(monitorManager: MonitorProvider) {
     this.monitorManager = monitorManager;
   }
   /**

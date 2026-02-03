@@ -2,16 +2,11 @@ import Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
+import { importLayoutConfigurationFromJson } from '../composition/custom-import-service.js';
 import {
-  deleteCustomCollection,
-  ensurePresetForCurrentMonitors,
-  findCollectionById,
-  importLayoutConfigurationFromJson,
-  loadAllCollections,
-  loadCustomCollections,
-  loadPresetCollections,
-  updateSpaceEnabled,
-} from '../composition/index.js';
+  getPresetGeneratorUseCase,
+  getSpaceCollectionUseCase,
+} from '../composition/use-case-factory.js';
 import type {
   Monitor,
   MonitorEnvironmentStorage,
@@ -209,7 +204,7 @@ export function createSpacesPage(
   onActiveChanged: (collectionId: string) => void
 ): Adw.PreferencesPage {
   // Ensure presets exist for current monitor count
-  ensurePresetForCurrentMonitors();
+  getPresetGeneratorUseCase().ensurePresetForCurrentMonitors();
 
   // Load monitor storage for multi-environment support
   const monitorStorage = loadMonitorStorage();
@@ -249,7 +244,7 @@ export function createSpacesPage(
   previewScrolled.set_child(previewContainer);
 
   // Determine initial active collection before creating UI
-  const allCollections = loadAllCollections();
+  const allCollections = getSpaceCollectionUseCase().loadAllCollections();
   const initialCollection =
     allCollections.find((c) => c.id === activeCollectionId) || allCollections[0];
   const resolvedActiveId = initialCollection?.id ?? '';
@@ -334,7 +329,7 @@ function renderCustomSection(state: SpacesPageState): void {
   }
 
   // Render custom collections or empty label
-  const customs = loadCustomCollections();
+  const customs = getSpaceCollectionUseCase().loadCustomCollections();
   if (customs.length === 0) {
     const emptyLabel = new Gtk.Label({
       label: 'No custom collections',
@@ -384,7 +379,7 @@ function createListPane(state: SpacesPageState): Gtk.Widget {
   });
   innerBox.append(presetLabel);
 
-  const presets = loadPresetCollections();
+  const presets = getSpaceCollectionUseCase().loadPresetCollections();
   const radioGroup: Gtk.CheckButton | null = null;
 
   for (const collection of presets) {
@@ -461,7 +456,7 @@ function createCollectionRow(
       state.onActiveChanged(collection.id);
       updateSelectionIndicators(state);
       // Reload collection from file to get latest enabled states
-      const freshCollection = findCollectionById(collection.id);
+      const freshCollection = getSpaceCollectionUseCase().findCollectionById(collection.id);
       if (freshCollection) {
         updatePreview(state, freshCollection);
       }
@@ -488,7 +483,7 @@ function createCollectionRow(
       state.onActiveChanged(collection.id);
       updateSelectionIndicators(state);
       // Reload collection from file to get latest enabled states
-      const freshCollection = findCollectionById(collection.id);
+      const freshCollection = getSpaceCollectionUseCase().findCollectionById(collection.id);
       if (freshCollection) {
         updatePreview(state, freshCollection);
       }
@@ -536,11 +531,11 @@ function createCollectionRow(
     const actionGroup = new Gio.SimpleActionGroup();
     const deleteAction = new Gio.SimpleAction({ name: 'delete' });
     deleteAction.connect('activate', () => {
-      const deleted = deleteCustomCollection(collection.id);
+      const deleted = getSpaceCollectionUseCase().deleteCustomCollection(collection.id);
       if (deleted) {
         // If this was the active collection, select first preset
         if (state.activeCollectionId === collection.id) {
-          const presets = loadPresetCollections();
+          const presets = getSpaceCollectionUseCase().loadPresetCollections();
           if (presets.length > 0) {
             state.activeCollectionId = presets[0].id;
             state.onActiveChanged(presets[0].id);
@@ -740,7 +735,7 @@ function createClickableSpace(
 
   button.connect('clicked', () => {
     enabled = !enabled;
-    updateSpaceEnabled(collectionId, space.id, enabled);
+    getSpaceCollectionUseCase().updateSpaceEnabled(collectionId, space.id, enabled);
     miniatureWidget.set_opacity(getBaseOpacity());
   });
 
