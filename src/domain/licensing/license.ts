@@ -17,9 +17,6 @@ export interface LicenseProps {
   status: LicenseStatus;
 }
 
-/**
- * Entity representing an activated license
- */
 export class License {
   readonly licenseKey: LicenseKey;
   readonly activationId: ActivationId;

@@ -6,8 +6,8 @@ import {
   LicenseKey,
   type LicenseStatus,
   parseLicenseStatus,
-  Trial,
   TrialDays,
+  TrialPeriod,
 } from '../../domain/licensing/index.js';
 import type { LicenseRepository } from '../../usecase/licensing/index.js';
 
@@ -53,17 +53,17 @@ export class GSettingsLicenseRepository implements LicenseRepository {
     this.settings.set_string('license-status', license.status);
   }
 
-  loadTrial(): Trial {
+  loadTrialPeriod(): TrialPeriod {
     const daysUsed = this.settings.get_int('trial-days-used');
     const lastUsedDate = this.settings.get_string('trial-last-used-date');
 
-    return new Trial({
+    return new TrialPeriod({
       daysUsed: new TrialDays(daysUsed),
       lastUsedDate: lastUsedDate ?? '',
     });
   }
 
-  saveTrial(trial: Trial): void {
+  saveTrialPeriod(trial: TrialPeriod): void {
     this.settings.set_int('trial-days-used', trial.daysUsed.toNumber());
     this.settings.set_string('trial-last-used-date', trial.lastUsedDate);
   }

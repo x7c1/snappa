@@ -1,24 +1,21 @@
 import { TrialDays } from './trial-days.js';
 
-export interface TrialProps {
+export interface TrialPeriodProps {
   daysUsed: TrialDays;
   lastUsedDate: string;
 }
 
-/**
- * Entity representing trial period state
- */
-export class Trial {
+export class TrialPeriod {
   readonly daysUsed: TrialDays;
   readonly lastUsedDate: string;
 
-  constructor(props: TrialProps) {
+  constructor(props: TrialPeriodProps) {
     this.daysUsed = props.daysUsed;
     this.lastUsedDate = props.lastUsedDate;
   }
 
-  static initial(): Trial {
-    return new Trial({
+  static initial(): TrialPeriod {
+    return new TrialPeriod({
       daysUsed: TrialDays.zero(),
       lastUsedDate: '',
     });
@@ -36,17 +33,17 @@ export class Trial {
     return this.lastUsedDate !== today && !this.isExpired();
   }
 
-  recordUsage(today: string): Trial {
+  recordUsage(today: string): TrialPeriod {
     if (!this.canRecordUsage(today)) {
       return this;
     }
-    return new Trial({
+    return new TrialPeriod({
       daysUsed: this.daysUsed.increment(),
       lastUsedDate: today,
     });
   }
 
-  reset(): Trial {
-    return Trial.initial();
+  reset(): TrialPeriod {
+    return TrialPeriod.initial();
   }
 }

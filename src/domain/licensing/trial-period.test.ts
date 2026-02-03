@@ -1,123 +1,123 @@
 import { describe, expect, it } from 'vitest';
-import { Trial } from './trial.js';
+import { TrialPeriod } from './trial-period.js';
 import { TrialDays } from './trial-days.js';
 
-describe('Trial', () => {
+describe('TrialPeriod', () => {
   describe('initial', () => {
-    it('creates trial with 0 days used and empty lastUsedDate', () => {
-      const trial = Trial.initial();
-      expect(trial.daysUsed.toNumber()).toBe(0);
-      expect(trial.lastUsedDate).toBe('');
+    it('creates trial period with 0 days used and empty lastUsedDate', () => {
+      const period = TrialPeriod.initial();
+      expect(period.daysUsed.toNumber()).toBe(0);
+      expect(period.lastUsedDate).toBe('');
     });
   });
 
   describe('constructor', () => {
-    it('creates trial with specified props', () => {
-      const trial = new Trial({
+    it('creates trial period with specified props', () => {
+      const period = new TrialPeriod({
         daysUsed: new TrialDays(10),
         lastUsedDate: '2026-01-15',
       });
-      expect(trial.daysUsed.toNumber()).toBe(10);
-      expect(trial.lastUsedDate).toBe('2026-01-15');
+      expect(period.daysUsed.toNumber()).toBe(10);
+      expect(period.lastUsedDate).toBe('2026-01-15');
     });
   });
 
   describe('getRemainingDays', () => {
     it('returns remaining days from TrialDays', () => {
-      const trial = new Trial({
+      const period = new TrialPeriod({
         daysUsed: new TrialDays(10),
         lastUsedDate: '2026-01-15',
       });
-      expect(trial.getRemainingDays()).toBe(20);
+      expect(period.getRemainingDays()).toBe(20);
     });
   });
 
   describe('isExpired', () => {
     it('returns false when not expired', () => {
-      const trial = new Trial({
+      const period = new TrialPeriod({
         daysUsed: new TrialDays(29),
         lastUsedDate: '2026-01-15',
       });
-      expect(trial.isExpired()).toBe(false);
+      expect(period.isExpired()).toBe(false);
     });
 
     it('returns true when expired', () => {
-      const trial = new Trial({
+      const period = new TrialPeriod({
         daysUsed: new TrialDays(30),
         lastUsedDate: '2026-01-15',
       });
-      expect(trial.isExpired()).toBe(true);
+      expect(period.isExpired()).toBe(true);
     });
   });
 
   describe('canRecordUsage', () => {
     it('returns true for new day when not expired', () => {
-      const trial = new Trial({
+      const period = new TrialPeriod({
         daysUsed: new TrialDays(10),
         lastUsedDate: '2026-01-14',
       });
-      expect(trial.canRecordUsage('2026-01-15')).toBe(true);
+      expect(period.canRecordUsage('2026-01-15')).toBe(true);
     });
 
     it('returns false if already used today', () => {
-      const trial = new Trial({
+      const period = new TrialPeriod({
         daysUsed: new TrialDays(10),
         lastUsedDate: '2026-01-15',
       });
-      expect(trial.canRecordUsage('2026-01-15')).toBe(false);
+      expect(period.canRecordUsage('2026-01-15')).toBe(false);
     });
 
     it('returns false if expired', () => {
-      const trial = new Trial({
+      const period = new TrialPeriod({
         daysUsed: new TrialDays(30),
         lastUsedDate: '2026-01-14',
       });
-      expect(trial.canRecordUsage('2026-01-15')).toBe(false);
+      expect(period.canRecordUsage('2026-01-15')).toBe(false);
     });
   });
 
   describe('recordUsage', () => {
     it('increments days and updates lastUsedDate', () => {
-      const trial = new Trial({
+      const period = new TrialPeriod({
         daysUsed: new TrialDays(10),
         lastUsedDate: '2026-01-14',
       });
-      const updated = trial.recordUsage('2026-01-15');
+      const updated = period.recordUsage('2026-01-15');
 
       expect(updated.daysUsed.toNumber()).toBe(11);
       expect(updated.lastUsedDate).toBe('2026-01-15');
     });
 
     it('returns same instance if already used today', () => {
-      const trial = new Trial({
+      const period = new TrialPeriod({
         daysUsed: new TrialDays(10),
         lastUsedDate: '2026-01-15',
       });
-      const updated = trial.recordUsage('2026-01-15');
+      const updated = period.recordUsage('2026-01-15');
 
-      expect(updated).toBe(trial);
+      expect(updated).toBe(period);
       expect(updated.daysUsed.toNumber()).toBe(10);
     });
 
     it('is immutable - original not modified', () => {
-      const trial = new Trial({
+      const period = new TrialPeriod({
         daysUsed: new TrialDays(10),
         lastUsedDate: '2026-01-14',
       });
-      trial.recordUsage('2026-01-15');
+      period.recordUsage('2026-01-15');
 
-      expect(trial.daysUsed.toNumber()).toBe(10);
-      expect(trial.lastUsedDate).toBe('2026-01-14');
+      expect(period.daysUsed.toNumber()).toBe(10);
+      expect(period.lastUsedDate).toBe('2026-01-14');
     });
   });
 
   describe('reset', () => {
-    it('returns initial trial state', () => {
-      const trial = new Trial({
+    it('returns initial trial period', () => {
+      const period = new TrialPeriod({
         daysUsed: new TrialDays(25),
         lastUsedDate: '2026-01-15',
       });
-      const reset = trial.reset();
+      const reset = period.reset();
 
       expect(reset.daysUsed.toNumber()).toBe(0);
       expect(reset.lastUsedDate).toBe('');

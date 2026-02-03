@@ -1,4 +1,4 @@
-import type { License, LicenseStatus, Trial } from '../../domain/licensing/index.js';
+import type { License, LicenseStatus, TrialPeriod } from '../../domain/licensing/index.js';
 
 /**
  * Interface for license data persistence
@@ -19,12 +19,12 @@ export interface LicenseRepository {
   /**
    * Load trial data from storage
    */
-  loadTrial(): Trial;
+  loadTrialPeriod(): TrialPeriod;
 
   /**
    * Save trial data to storage
    */
-  saveTrial(trial: Trial): void;
+  saveTrialPeriod(trial: TrialPeriod): void;
 
   /**
    * Get the current license status

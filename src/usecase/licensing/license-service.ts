@@ -103,7 +103,7 @@ export class LicenseService {
   getState(): LicenseState {
     const status = this.repository.getStatus();
     const license = this.repository.loadLicense();
-    const trial = this.repository.loadTrial();
+    const trial = this.repository.loadTrialPeriod();
     const networkState = this.networkStateProvider.getNetworkState();
 
     const daysSinceLastValidation = license ? license.daysSinceLastValidation() : 0;
@@ -124,7 +124,7 @@ export class LicenseService {
     const state = this.getState();
 
     if (state.status === 'trial') {
-      const trial = this.repository.loadTrial();
+      const trial = this.repository.loadTrialPeriod();
       return !trial.isExpired();
     }
 
@@ -210,7 +210,7 @@ export class LicenseService {
    * Record a trial usage day (called at startup when in trial mode)
    */
   recordTrialUsage(): boolean {
-    const trial = this.repository.loadTrial();
+    const trial = this.repository.loadTrialPeriod();
     const today = this.dateProvider.today();
 
     if (!trial.canRecordUsage(today)) {
@@ -219,7 +219,7 @@ export class LicenseService {
     }
 
     const updatedTrial = trial.recordUsage(today);
-    this.repository.saveTrial(updatedTrial);
+    this.repository.saveTrialPeriod(updatedTrial);
 
     log(`[LicenseService] Recorded trial day ${updatedTrial.daysUsed.toNumber()}/${30} (${today})`);
 
