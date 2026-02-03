@@ -7,7 +7,7 @@ import {
   type LicenseState,
   LicenseStorage,
   TrialManager,
-} from '../app/service/license/index.js';
+} from '../app/facade/license/index.js';
 
 /**
  * Create the License preferences group

@@ -1,9 +1,5 @@
-import { generateLayoutHash } from '../repository/layout-hash-generator.js';
-import {
-  addCustomCollection,
-  deleteCustomCollection as deleteCustomCollectionFromRepo,
-} from '../repository/space-collection.js';
-import { generateUUID } from '../repository/uuid-generator.js';
+import { generateLayoutHash } from '../../domain/layout/index.js';
+import { generateUUID } from '../../libs/uuid/index.js';
 import type { Layout, LayoutGroup, Space, SpaceCollection, SpacesRow } from '../types/index.js';
 import type {
   LayoutConfiguration,
@@ -12,9 +8,12 @@ import type {
   SpaceSetting,
   SpacesRowSetting,
 } from '../types/layout-setting.js';
+import {
+  addCustomCollection,
+  deleteCustomCollection as deleteCustomCollectionFromFacade,
+} from './space-collection.js';
 
-// Use console.log for compatibility with both extension and preferences contexts
-const log = (message: string): void => console.log(message);
+declare function log(message: string): void;
 
 /**
  * Validate that the input is a valid LayoutConfiguration with required name
@@ -154,5 +153,5 @@ export function importLayoutConfigurationFromJson(jsonString: string): SpaceColl
  * Returns true if deleted, false if not found or is a preset
  */
 export function deleteCustomCollection(collectionId: string): boolean {
-  return deleteCustomCollectionFromRepo(collectionId);
+  return deleteCustomCollectionFromFacade(collectionId);
 }

@@ -27,6 +27,7 @@
   "include": ["./**/*"],
   "exclude": ["**/*.test.ts"],
   "references": [
+    { "path": "../libs" },
     { "path": "../domain" }
   ]
 }

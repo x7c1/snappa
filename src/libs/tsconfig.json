@@ -4,8 +4,8 @@
     "lib": ["ES2022"],
     "module": "ES2022",
     "moduleResolution": "node",
-    "outDir": "../../dist/app",
-    "rootDir": "..",
+    "outDir": "../../dist/libs",
+    "rootDir": ".",
     "composite": true,
     "declaration": true,
     "declarationMap": true,
@@ -24,12 +24,6 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["./**/*", "../types/**/*", "../settings/**/*"],
-  "exclude": ["**/*.test.ts"],
-  "references": [
-    { "path": "../libs" },
-    { "path": "../domain" },
-    { "path": "../usecase" },
-    { "path": "../infra" }
-  ]
+  "include": ["./**/*"],
+  "exclude": ["**/*.test.ts"]
 }

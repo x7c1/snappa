@@ -4,17 +4,15 @@ import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 
 import {
+  deleteCustomCollection,
+  ensurePresetForCurrentMonitors,
   findCollectionById,
+  importLayoutConfigurationFromJson,
   loadAllCollections,
   loadCustomCollections,
   loadPresetCollections,
   updateSpaceEnabled,
-} from '../app/repository/space-collection.js';
-import {
-  deleteCustomCollection,
-  importLayoutConfigurationFromJson,
-} from '../app/service/custom-import.js';
-import { ensurePresetForCurrentMonitors } from '../app/service/preset-generator.js';
+} from '../app/facade/index.js';
 import type {
   Monitor,
   MonitorEnvironmentStorage,

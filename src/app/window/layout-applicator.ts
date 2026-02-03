@@ -8,9 +8,10 @@
 import type Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
+import { LayoutId } from '../../domain/layout/index.js';
+import type { LayoutHistoryRepository } from '../../usecase/history/index.js';
 import { evaluate, parse } from '../layout-expression/index.js';
 import type { MonitorManager } from '../monitor/manager.js';
-import type { LayoutHistoryRepository } from '../repository/history.js';
 import type { LayoutSelectedEvent } from '../types/index.js';
 
 declare function log(message: string): void;
@@ -48,7 +49,10 @@ export class LayoutApplicator {
     const wmClass = window.get_wm_class();
     const title = window.get_title();
     if (wmClass) {
-      this.layoutHistoryRepository.setSelectedLayout(windowId, wmClass, title, layout.id);
+      const layoutId = LayoutId.tryCreate(layout.id);
+      if (layoutId) {
+        this.layoutHistoryRepository.setSelectedLayout(windowId, wmClass, title, layoutId);
+      }
       if (this.callbacks.onLayoutApplied) {
         this.callbacks.onLayoutApplied(layout.id, monitorKey);
       }

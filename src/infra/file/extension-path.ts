@@ -1,6 +1,6 @@
 import GLib from 'gi://GLib';
 
-import { EXTENSION_UUID } from '../constants.js';
+const EXTENSION_UUID = 'snappa@x7c1.github.io';
 
 /**
  * Get the extension's data directory path

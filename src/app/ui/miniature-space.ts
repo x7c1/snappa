@@ -9,6 +9,7 @@
 import Clutter from 'gi://Clutter';
 import type Meta from 'gi://Meta';
 import St from 'gi://St';
+import type { LayoutHistoryRepository } from '../../usecase/history/index.js';
 import {
   DEFAULT_MONITOR_HEIGHT,
   DEFAULT_MONITOR_WIDTH,
@@ -16,7 +17,6 @@ import {
   MONITOR_MARGIN,
   SPACE_SPACING,
 } from '../constants.js';
-import type { LayoutHistoryRepository } from '../repository/history.js';
 import type { Layout, LayoutSelectedEvent, Monitor, Space } from '../types/index.js';
 import { createMiniatureDisplayView } from './miniature-display.js';
 import { calculateSpaceDimensions } from './space-dimensions.js';

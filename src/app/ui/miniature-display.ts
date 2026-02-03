@@ -1,8 +1,8 @@
 import Clutter from 'gi://Clutter';
 import type Meta from 'gi://Meta';
 import St from 'gi://St';
+import type { LayoutHistoryRepository } from '../../usecase/history/index.js';
 import { DISPLAY_BG_COLOR, DISPLAY_SPACING, DISPLAY_SPACING_HORIZONTAL } from '../constants.js';
-import type { LayoutHistoryRepository } from '../repository/history.js';
 import type { Layout, LayoutGroup, LayoutSelectedEvent, Monitor } from '../types/index.js';
 import { createLayoutButton } from './layout-button.js';
 
@@ -65,7 +65,8 @@ export function createMiniatureDisplayView(
     const wmClass = window.get_wm_class();
     const title = window.get_title();
     if (wmClass !== null) {
-      selectedLayoutId = layoutHistoryRepository.getSelectedLayoutId(windowId, wmClass, title);
+      const layoutId = layoutHistoryRepository.getSelectedLayoutId(windowId, wmClass, title);
+      selectedLayoutId = layoutId?.toString() ?? null;
     }
   }
 

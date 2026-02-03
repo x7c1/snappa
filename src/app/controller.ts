@@ -15,20 +15,24 @@
 import Meta from 'gi://Meta';
 import type { ExtensionMetadata } from 'resource:///org/gnome/shell/extensions/extension.js';
 
+import { CollectionId } from '../domain/layout/index.js';
+import { FileLayoutHistoryRepository, getExtensionDataPath } from '../infra/file/index.js';
 import type { ExtensionSettings } from '../settings/extension-settings.js';
+import type { LayoutHistoryRepository } from '../usecase/history/index.js';
+import { HISTORY_FILE_NAME } from './constants.js';
 import { DragSignalHandler } from './drag/drag-signal-handler.js';
 import { EdgeDetector } from './drag/edge-detector.js';
 import { EdgeTimerManager } from './drag/edge-timer-manager.js';
 import { MotionMonitor } from './drag/motion-monitor.js';
-import { MainPanel } from './main-panel/index.js';
-import { MonitorManager } from './monitor/manager.js';
-import { LayoutHistoryRepository } from './repository/history.js';
+import { loadAllCollections } from './facade/index.js';
 import {
   LicenseClient,
   LicenseManager,
   LicenseStorage,
   TrialManager,
-} from './service/license/index.js';
+} from './facade/license/index.js';
+import { MainPanel } from './main-panel/index.js';
+import { MonitorManager } from './monitor/manager.js';
 import { KeyboardShortcutManager } from './shortcuts/keyboard-shortcut-manager.js';
 import type { LayoutSelectedEvent, Position } from './types/index.js';
 import { LayoutApplicator } from './window/layout-applicator.js';
@@ -63,7 +67,10 @@ export class Controller {
     this.monitorManager = new MonitorManager();
 
     // Lazy load to avoid I/O until panel is actually displayed
-    this.layoutHistoryRepository = new LayoutHistoryRepository();
+    this.layoutHistoryRepository = new FileLayoutHistoryRepository(
+      getExtensionDataPath(HISTORY_FILE_NAME),
+      this.getAllValidLayoutIds()
+    );
 
     this.edgeDetector = new EdgeDetector(EDGE_THRESHOLD);
     this.edgeTimerManager = new EdgeTimerManager(EDGE_DELAY);
@@ -206,8 +213,34 @@ export class Controller {
    * Sync active collection ID to history repository
    */
   private syncActiveCollectionToHistory(): void {
-    const collectionId = this.settings.getActiveSpaceCollectionId();
-    this.layoutHistoryRepository.setActiveCollection(collectionId);
+    const collectionIdStr = this.settings.getActiveSpaceCollectionId();
+    const collectionId = CollectionId.tryCreate(collectionIdStr);
+    if (collectionId) {
+      this.layoutHistoryRepository.setActiveCollection(collectionId);
+    }
+  }
+
+  /**
+   * Get all valid layout IDs from all collections
+   */
+  private getAllValidLayoutIds(): Set<string> {
+    const ids = new Set<string>();
+    const collections = loadAllCollections();
+
+    for (const collection of collections) {
+      for (const row of collection.rows) {
+        for (const space of row.spaces) {
+          for (const monitorKey in space.displays) {
+            const layoutGroup = space.displays[monitorKey];
+            for (const layout of layoutGroup.layouts) {
+              ids.add(layout.id);
+            }
+          }
+        }
+      }
+    }
+
+    return ids;
   }
 
   /**

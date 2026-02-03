@@ -5,3 +5,4 @@
 export * from './api/index.js';
 export * from './file/index.js';
 export * from './gsettings/index.js';
+export * from './monitor/index.js';

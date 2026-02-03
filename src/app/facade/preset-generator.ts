@@ -1,21 +1,20 @@
 import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
 
+import { generateLayoutHash } from '../../domain/layout/index.js';
+import { getExtensionDataPath } from '../../infra/file/index.js';
+import { generateUUID } from '../../libs/uuid/index.js';
 import {
   BASE_LAYOUT_GROUPS,
   STANDARD_LAYOUT_GROUP_NAMES,
   WIDE_LAYOUT_GROUP_NAMES,
 } from '../config/base-layout-groups.js';
 import { MONITORS_FILE_NAME } from '../constants.js';
-import { getExtensionDataPath } from '../repository/extension-path.js';
-import { generateLayoutHash } from '../repository/layout-hash-generator.js';
-import { loadPresetCollections, savePresetCollections } from '../repository/space-collection.js';
-import { generateUUID } from '../repository/uuid-generator.js';
 import type { Layout, LayoutGroup, Space, SpaceCollection, SpacesRow } from '../types/index.js';
 import type { LayoutGroupSetting, LayoutSetting } from '../types/layout-setting.js';
+import { loadPresetCollections, savePresetCollections } from './space-collection.js';
 
-// Use console.log for compatibility with both extension and preferences contexts
-const log = (message: string): void => console.log(message);
+declare function log(message: string): void;
 
 export type MonitorType = 'wide' | 'standard';
 

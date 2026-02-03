@@ -30,6 +30,7 @@
   ],
   "exclude": ["node_modules", "dist", "**/*.test.ts"],
   "references": [
+    { "path": "./src/libs" },
     { "path": "./src/domain" },
     { "path": "./src/usecase" },
     { "path": "./src/infra" },

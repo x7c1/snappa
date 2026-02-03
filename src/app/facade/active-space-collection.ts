@@ -1,12 +1,11 @@
+import type { SpaceCollection } from '../types/index.js';
 import {
   findCollectionById,
   loadAllCollections,
   loadPresetCollections,
-} from '../repository/space-collection.js';
-import type { SpaceCollection } from '../types/index.js';
+} from './space-collection.js';
 
-// Use console.log for compatibility with both extension and preferences contexts
-const log = (message: string): void => console.log(message);
+declare function log(message: string): void;
 
 /**
  * Get the active SpaceCollection based on the stored ID
