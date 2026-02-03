@@ -1,10 +1,6 @@
 import { CollectionId, type SpaceCollection, SpaceId } from '../../domain/layout/index.js';
 import type { SpaceCollectionRepository } from './space-collection-repository.js';
 
-/**
- * Use case for managing space collections.
- * Provides high-level operations using the injected repository.
- */
 export class SpaceCollectionUseCase {
   constructor(private readonly repository: SpaceCollectionRepository) {}
 
@@ -33,27 +29,18 @@ export class SpaceCollectionUseCase {
   }
 
   deleteCustomCollection(collectionId: string): boolean {
-    const id = CollectionId.tryCreate(collectionId);
-    if (!id) {
-      return false;
-    }
+    const id = new CollectionId(collectionId);
     return this.repository.deleteCustomCollection(id);
   }
 
   findCollectionById(collectionId: string): SpaceCollection | undefined {
-    const id = CollectionId.tryCreate(collectionId);
-    if (!id) {
-      return undefined;
-    }
+    const id = new CollectionId(collectionId);
     return this.repository.findCollectionById(id);
   }
 
   updateSpaceEnabled(collectionId: string, spaceId: string, enabled: boolean): boolean {
-    const cId = CollectionId.tryCreate(collectionId);
-    const sId = SpaceId.tryCreate(spaceId);
-    if (!cId || !sId) {
-      return false;
-    }
+    const cId = new CollectionId(collectionId);
+    const sId = new SpaceId(spaceId);
     return this.repository.updateSpaceEnabled(cId, sId, enabled);
   }
 

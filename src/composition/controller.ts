@@ -224,13 +224,10 @@ export class Controller {
     this.syncActiveCollectionToHistory();
   }
 
-  /**
-   * Sync active collection ID to history repository
-   */
   private syncActiveCollectionToHistory(): void {
     const collectionIdStr = this.settings.getActiveSpaceCollectionId();
-    const collectionId = CollectionId.tryCreate(collectionIdStr);
-    if (collectionId) {
+    if (collectionIdStr) {
+      const collectionId = new CollectionId(collectionIdStr);
       this.layoutHistoryRepository.setActiveCollection(collectionId);
     }
   }

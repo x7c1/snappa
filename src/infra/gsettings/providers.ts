@@ -57,12 +57,12 @@ export class SystemDeviceInfoProvider implements DeviceInfoProvider {
       const [success, contents] = file.load_contents(null);
       if (success && contents) {
         const id = new TextDecoder().decode(contents).trim();
-        return DeviceId.create(id);
+        return new DeviceId(id);
       }
     } catch (e) {
       log(`[DeviceInfoProvider] Failed to read machine-id: ${e}`);
     }
-    return DeviceId.create('unknown-device');
+    return new DeviceId('unknown-device');
   }
 
   getDeviceLabel(): string {

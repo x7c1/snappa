@@ -8,30 +8,19 @@ export class InvalidTrialDaysError extends Error {
 const MIN_DAYS = 0;
 const MAX_DAYS = 30;
 
-/**
- * Value object representing trial days used (0-30 range)
- */
 export class TrialDays {
   static readonly LIMIT = MAX_DAYS;
 
-  private constructor(private readonly value: number) {}
+  private readonly value: number;
 
-  static create(value: unknown): TrialDays {
-    if (typeof value !== 'number' || !Number.isInteger(value)) {
+  constructor(value: number) {
+    if (!Number.isInteger(value)) {
       throw new InvalidTrialDaysError('Trial days must be an integer');
     }
     if (value < MIN_DAYS || value > MAX_DAYS) {
       throw new InvalidTrialDaysError(`Trial days must be between ${MIN_DAYS} and ${MAX_DAYS}`);
     }
-    return new TrialDays(value);
-  }
-
-  static tryCreate(value: unknown): TrialDays | null {
-    try {
-      return TrialDays.create(value);
-    } catch {
-      return null;
-    }
+    this.value = value;
   }
 
   static zero(): TrialDays {

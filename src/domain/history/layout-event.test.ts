@@ -4,12 +4,12 @@ import { LayoutId } from '../layout/layout-id.js';
 import { InvalidLayoutEventError, LayoutEvent } from './layout-event.js';
 
 describe('LayoutEvent', () => {
-  const validCollectionId = CollectionId.create('550e8400-e29b-41d4-a716-446655440000');
-  const validLayoutId = LayoutId.create('660e8400-e29b-41d4-a716-446655440000');
+  const validCollectionId = new CollectionId('550e8400-e29b-41d4-a716-446655440000');
+  const validLayoutId = new LayoutId('660e8400-e29b-41d4-a716-446655440000');
 
-  describe('create', () => {
+  describe('constructor', () => {
     it('creates a valid layout event', () => {
-      const event = LayoutEvent.create({
+      const event = new LayoutEvent({
         timestamp: 1234567890,
         collectionId: validCollectionId,
         wmClassHash: 'abcd1234abcd1234',
@@ -25,38 +25,41 @@ describe('LayoutEvent', () => {
     });
 
     it('throws InvalidLayoutEventError for negative timestamp', () => {
-      expect(() =>
-        LayoutEvent.create({
-          timestamp: -1,
-          collectionId: validCollectionId,
-          wmClassHash: 'abcd1234',
-          titleHash: 'efgh5678',
-          layoutId: validLayoutId,
-        })
+      expect(
+        () =>
+          new LayoutEvent({
+            timestamp: -1,
+            collectionId: validCollectionId,
+            wmClassHash: 'abcd1234',
+            titleHash: 'efgh5678',
+            layoutId: validLayoutId,
+          })
       ).toThrow(InvalidLayoutEventError);
     });
 
     it('throws InvalidLayoutEventError for empty wmClassHash', () => {
-      expect(() =>
-        LayoutEvent.create({
-          timestamp: 1234567890,
-          collectionId: validCollectionId,
-          wmClassHash: '',
-          titleHash: 'efgh5678',
-          layoutId: validLayoutId,
-        })
+      expect(
+        () =>
+          new LayoutEvent({
+            timestamp: 1234567890,
+            collectionId: validCollectionId,
+            wmClassHash: '',
+            titleHash: 'efgh5678',
+            layoutId: validLayoutId,
+          })
       ).toThrow(InvalidLayoutEventError);
     });
 
     it('throws InvalidLayoutEventError for empty titleHash', () => {
-      expect(() =>
-        LayoutEvent.create({
-          timestamp: 1234567890,
-          collectionId: validCollectionId,
-          wmClassHash: 'abcd1234',
-          titleHash: '',
-          layoutId: validLayoutId,
-        })
+      expect(
+        () =>
+          new LayoutEvent({
+            timestamp: 1234567890,
+            collectionId: validCollectionId,
+            wmClassHash: 'abcd1234',
+            titleHash: '',
+            layoutId: validLayoutId,
+          })
       ).toThrow(InvalidLayoutEventError);
     });
   });

@@ -26,15 +26,7 @@ export class LayoutEvent {
   readonly titleHash: string;
   readonly layoutId: LayoutId;
 
-  private constructor(props: LayoutEventProps) {
-    this.timestamp = props.timestamp;
-    this.collectionId = props.collectionId;
-    this.wmClassHash = props.wmClassHash;
-    this.titleHash = props.titleHash;
-    this.layoutId = props.layoutId;
-  }
-
-  static create(props: LayoutEventProps): LayoutEvent {
+  constructor(props: LayoutEventProps) {
     if (props.timestamp < 0) {
       throw new InvalidLayoutEventError('Timestamp must be non-negative');
     }
@@ -44,7 +36,11 @@ export class LayoutEvent {
     if (props.titleHash.length === 0) {
       throw new InvalidLayoutEventError('titleHash must be a non-empty string');
     }
-    return new LayoutEvent(props);
+    this.timestamp = props.timestamp;
+    this.collectionId = props.collectionId;
+    this.wmClassHash = props.wmClassHash;
+    this.titleHash = props.titleHash;
+    this.layoutId = props.layoutId;
   }
 
   static fromRaw(raw: unknown): LayoutEvent {
@@ -70,12 +66,12 @@ export class LayoutEvent {
       throw new InvalidLayoutEventError('layoutId must be a string');
     }
 
-    return LayoutEvent.create({
+    return new LayoutEvent({
       timestamp: obj.timestamp,
-      collectionId: CollectionId.create(obj.collectionId),
+      collectionId: new CollectionId(obj.collectionId),
       wmClassHash: obj.wmClassHash,
       titleHash: obj.titleHash,
-      layoutId: LayoutId.create(obj.layoutId),
+      layoutId: new LayoutId(obj.layoutId),
     });
   }
 

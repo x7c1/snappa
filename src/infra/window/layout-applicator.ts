@@ -48,10 +48,8 @@ export class LayoutApplicator {
     const wmClass = window.get_wm_class();
     const title = window.get_title();
     if (wmClass) {
-      const layoutId = LayoutId.tryCreate(layout.id);
-      if (layoutId) {
-        this.layoutHistoryRepository.setSelectedLayout(windowId, wmClass, title, layoutId);
-      }
+      const layoutId = new LayoutId(layout.id);
+      this.layoutHistoryRepository.setSelectedLayout(windowId, wmClass, title, layoutId);
       if (this.callbacks.onLayoutApplied) {
         this.callbacks.onLayoutApplied(layout.id, monitorKey);
       }

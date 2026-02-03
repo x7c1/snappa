@@ -94,7 +94,7 @@ export class FileLayoutHistoryRepository implements LayoutHistoryRepository {
 
     this.memory.byWindowId.set(windowId, layoutId);
 
-    const event = LayoutEvent.create({
+    const event = new LayoutEvent({
       timestamp: Date.now(),
       collectionId: this.activeCollectionId,
       wmClassHash: this.hashString(wmClass),
@@ -130,13 +130,13 @@ export class FileLayoutHistoryRepository implements LayoutHistoryRepository {
     const titleKey = `${this.activeCollectionId.toString()}:${wmClassHash}:${titleHash}`;
     const byTitle = this.memory.byTitleHash.get(titleKey);
     if (byTitle) {
-      return LayoutId.tryCreate(byTitle.layoutId);
+      return new LayoutId(byTitle.layoutId);
     }
 
     const wmClassKey = `${this.activeCollectionId.toString()}:${wmClassHash}`;
     const byWmClass = this.memory.byWmClassHash.get(wmClassKey);
     if (byWmClass && byWmClass.length > 0) {
-      return LayoutId.tryCreate(byWmClass[0].layoutId);
+      return new LayoutId(byWmClass[0].layoutId);
     }
 
     return null;

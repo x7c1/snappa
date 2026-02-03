@@ -69,12 +69,7 @@ export class HttpLicenseApiClient implements LicenseApiClient {
 
     try {
       const response = await this.makeRequest<ActivationResponseData>(url, body);
-
-      const activationId = ActivationId.tryCreate(response.activation_id);
-      if (!activationId) {
-        log(`[HttpLicenseApiClient] Invalid activation_id format: ${response.activation_id}`);
-        return ActivationResult.failed('UNKNOWN_ERROR', 'Invalid activation response');
-      }
+      const activationId = new ActivationId(response.activation_id);
 
       return ActivationResult.succeeded({
         activationId,

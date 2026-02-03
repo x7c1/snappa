@@ -179,9 +179,6 @@ export function deleteCustomCollection(
   repository: SpaceCollectionRepository,
   collectionId: string
 ): boolean {
-  const id = CollectionId.tryCreate(collectionId);
-  if (!id) {
-    return false;
-  }
+  const id = new CollectionId(collectionId);
   return repository.deleteCustomCollection(id);
 }

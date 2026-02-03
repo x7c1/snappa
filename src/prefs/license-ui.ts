@@ -217,7 +217,7 @@ function createLicenseKeyRow(
     setLoading(true);
 
     try {
-      const licenseKey = LicenseKey.create(licenseKeyText);
+      const licenseKey = new LicenseKey(licenseKeyText);
       const result = await licenseService.activate(licenseKey);
 
       if (result.success) {

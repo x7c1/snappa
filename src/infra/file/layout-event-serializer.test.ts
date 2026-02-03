@@ -6,10 +6,10 @@ import { toLayoutEventRaw } from './layout-event-serializer.js';
 
 describe('toLayoutEventRaw', () => {
   it('converts LayoutEvent to raw object', () => {
-    const collectionId = CollectionId.create('550e8400-e29b-41d4-a716-446655440000');
-    const layoutId = LayoutId.create('660e8400-e29b-41d4-a716-446655440000');
+    const collectionId = new CollectionId('550e8400-e29b-41d4-a716-446655440000');
+    const layoutId = new LayoutId('660e8400-e29b-41d4-a716-446655440000');
 
-    const event = LayoutEvent.create({
+    const event = new LayoutEvent({
       timestamp: 1234567890,
       collectionId,
       wmClassHash: 'abcd1234abcd1234',

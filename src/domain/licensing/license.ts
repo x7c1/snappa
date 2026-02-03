@@ -27,22 +27,12 @@ export class License {
   readonly lastValidated: Date;
   readonly status: LicenseStatus;
 
-  private constructor(props: LicenseProps) {
+  constructor(props: LicenseProps) {
     this.licenseKey = props.licenseKey;
     this.activationId = props.activationId;
     this.validUntil = props.validUntil;
     this.lastValidated = props.lastValidated;
     this.status = props.status;
-  }
-
-  static create(props: LicenseProps): License {
-    if (props.validUntil.getTime() < 0) {
-      throw new InvalidLicenseError('validUntil must be a valid date');
-    }
-    if (props.lastValidated.getTime() < 0) {
-      throw new InvalidLicenseError('lastValidated must be a valid date');
-    }
-    return new License(props);
   }
 
   isValid(): boolean {

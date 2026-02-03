@@ -6,34 +6,25 @@ export class InvalidDeviceIdError extends Error {
 }
 
 const MACHINE_ID_REGEX = /^[0-9a-f]{32}$/i;
+const UNKNOWN_DEVICE = 'unknown-device';
 
-/**
- * Value object representing a validated device ID (machine-id format)
- */
 export class DeviceId {
-  private constructor(private readonly value: string) {}
+  private readonly value: string;
 
-  static create(value: unknown): DeviceId {
-    if (typeof value !== 'string') {
-      throw new InvalidDeviceIdError('Device ID must be a string');
+  constructor(value: string) {
+    if (value === UNKNOWN_DEVICE) {
+      this.value = value;
+      return;
     }
-    const trimmed = value.trim().toLowerCase();
-    if (!MACHINE_ID_REGEX.test(trimmed)) {
+    const normalized = value.trim().toLowerCase();
+    if (!MACHINE_ID_REGEX.test(normalized)) {
       throw new InvalidDeviceIdError(`Invalid machine-id format: ${value}`);
     }
-    return new DeviceId(trimmed);
-  }
-
-  static tryCreate(value: unknown): DeviceId | null {
-    try {
-      return DeviceId.create(value);
-    } catch {
-      return null;
-    }
+    this.value = normalized;
   }
 
   static unknown(): DeviceId {
-    return new DeviceId('unknown-device');
+    return new DeviceId(UNKNOWN_DEVICE);
   }
 
   toString(): string {
@@ -45,6 +36,6 @@ export class DeviceId {
   }
 
   isUnknown(): boolean {
-    return this.value === 'unknown-device';
+    return this.value === UNKNOWN_DEVICE;
   }
 }

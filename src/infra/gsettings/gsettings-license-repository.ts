@@ -11,8 +11,6 @@ import {
 } from '../../domain/licensing/index.js';
 import type { LicenseRepository } from '../../usecase/licensing/index.js';
 
-const log = (message: string): void => console.log(message);
-
 /**
  * GSettings implementation of LicenseRepository
  * Converts GSettings values to domain objects
@@ -31,34 +29,17 @@ export class GSettingsLicenseRepository implements LicenseRepository {
       return null;
     }
 
-    const licenseKey = LicenseKey.tryCreate(licenseKeyStr);
-    const activationId = ActivationId.tryCreate(activationIdStr);
+    const licenseKey = new LicenseKey(licenseKeyStr);
+    const activationId = new ActivationId(activationIdStr);
+    const status = parseLicenseStatus(statusStr);
 
-    if (!licenseKey || !activationId) {
-      log('[GSettingsLicenseRepository] Invalid license data in storage');
-      return null;
-    }
-
-    let status: LicenseStatus;
-    try {
-      status = parseLicenseStatus(statusStr);
-    } catch {
-      log(`[GSettingsLicenseRepository] Invalid status in storage: ${statusStr}`);
-      status = 'invalid';
-    }
-
-    try {
-      return License.create({
-        licenseKey,
-        activationId,
-        validUntil: new Date(validUntil * 1000),
-        lastValidated: new Date(lastValidated * 1000),
-        status,
-      });
-    } catch (e) {
-      log(`[GSettingsLicenseRepository] Failed to create License: ${e}`);
-      return null;
-    }
+    return new License({
+      licenseKey,
+      activationId,
+      validUntil: new Date(validUntil * 1000),
+      lastValidated: new Date(lastValidated * 1000),
+      status,
+    });
   }
 
   saveLicense(license: License): void {
@@ -76,14 +57,8 @@ export class GSettingsLicenseRepository implements LicenseRepository {
     const daysUsed = this.settings.get_int('trial-days-used');
     const lastUsedDate = this.settings.get_string('trial-last-used-date');
 
-    const trialDays = TrialDays.tryCreate(daysUsed);
-    if (!trialDays) {
-      log(`[GSettingsLicenseRepository] Invalid trial days in storage: ${daysUsed}`);
-      return Trial.initial();
-    }
-
-    return Trial.create({
-      daysUsed: trialDays,
+    return new Trial({
+      daysUsed: new TrialDays(daysUsed),
       lastUsedDate: lastUsedDate ?? '',
     });
   }

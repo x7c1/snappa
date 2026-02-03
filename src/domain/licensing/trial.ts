@@ -12,13 +12,9 @@ export class Trial {
   readonly daysUsed: TrialDays;
   readonly lastUsedDate: string;
 
-  private constructor(props: TrialProps) {
+  constructor(props: TrialProps) {
     this.daysUsed = props.daysUsed;
     this.lastUsedDate = props.lastUsedDate;
-  }
-
-  static create(props: TrialProps): Trial {
-    return new Trial(props);
   }
 
   static initial(): Trial {

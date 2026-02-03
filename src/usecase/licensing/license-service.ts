@@ -295,7 +295,7 @@ export class LicenseService {
     activationId: ActivationId,
     validUntil: Date
   ): License {
-    return License.create({
+    return new License({
       licenseKey,
       activationId,
       validUntil,

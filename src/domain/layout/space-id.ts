@@ -7,29 +7,15 @@ export class InvalidSpaceIdError extends Error {
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/**
- * Value object representing a validated space ID (UUID format)
- */
 export class SpaceId {
-  private constructor(private readonly value: string) {}
+  private readonly value: string;
 
-  static create(value: unknown): SpaceId {
-    if (typeof value !== 'string') {
-      throw new InvalidSpaceIdError('Space ID must be a string');
-    }
-    const trimmed = value.trim().toLowerCase();
-    if (!UUID_REGEX.test(trimmed)) {
+  constructor(value: string) {
+    const normalized = value.trim().toLowerCase();
+    if (!UUID_REGEX.test(normalized)) {
       throw new InvalidSpaceIdError(`Invalid UUID format: ${value}`);
     }
-    return new SpaceId(trimmed);
-  }
-
-  static tryCreate(value: unknown): SpaceId | null {
-    try {
-      return SpaceId.create(value);
-    } catch {
-      return null;
-    }
+    this.value = normalized;
   }
 
   toString(): string {

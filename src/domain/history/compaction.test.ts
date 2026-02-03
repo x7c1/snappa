@@ -18,12 +18,12 @@ function event(
   layoutNum: number,
   collectionNum: number = 0
 ): LayoutEvent {
-  return LayoutEvent.create({
+  return new LayoutEvent({
     timestamp,
-    collectionId: CollectionId.create(uuid(collectionNum)),
+    collectionId: new CollectionId(uuid(collectionNum)),
     wmClassHash,
     titleHash,
-    layoutId: LayoutId.create(uuid(layoutNum)),
+    layoutId: new LayoutId(uuid(layoutNum)),
   });
 }
 
