@@ -7,9 +7,9 @@ import {
   generatePreset,
   getPresetName,
   type MonitorType,
-  type SpaceCollectionData,
   type UUIDGenerator,
 } from '../../domain/layout/preset-generator.js';
+import type { SpaceCollection } from '../../domain/layout/types.js';
 import type { MonitorCountProvider } from './monitor-count-provider.js';
 import type { SpaceCollectionRepository } from './space-collection-repository.js';
 
@@ -89,7 +89,7 @@ export class PresetGeneratorUseCase {
   /**
    * Generate a preset for the given monitor count and type.
    */
-  generatePreset(monitorCount: number, monitorType: MonitorType): SpaceCollectionData {
+  generatePreset(monitorCount: number, monitorType: MonitorType): SpaceCollection {
     const layoutGroupNames =
       monitorType === 'wide' ? WIDE_LAYOUT_GROUP_NAMES : STANDARD_LAYOUT_GROUP_NAMES;
     return generatePreset(

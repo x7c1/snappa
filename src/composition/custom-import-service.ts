@@ -4,8 +4,7 @@
  * Services for importing and deleting custom layout configurations.
  */
 
-import type { SpaceCollectionData } from '../domain/layout/index.js';
-import { generateLayoutHash } from '../domain/layout/index.js';
+import { generateLayoutHash, type SpaceCollection } from '../domain/layout/index.js';
 import type {
   Layout,
   LayoutConfiguration,
@@ -120,7 +119,7 @@ function configurationToSpacesRows(config: LayoutConfiguration): SpacesRow[] {
  * Import a LayoutConfiguration JSON and create a custom SpaceCollection
  * Returns the created SpaceCollection, or null if validation failed
  */
-export function importLayoutConfiguration(data: unknown): SpaceCollectionData | null {
+export function importLayoutConfiguration(data: unknown): SpaceCollection | null {
   if (!isValidLayoutConfiguration(data)) {
     log('[CustomImport] Invalid LayoutConfiguration: missing required fields or invalid format');
     return null;
@@ -145,7 +144,7 @@ export function importLayoutConfiguration(data: unknown): SpaceCollectionData | 
  * Import a LayoutConfiguration from JSON string
  * Returns the created SpaceCollection, or null if parsing or validation failed
  */
-export function importLayoutConfigurationFromJson(jsonString: string): SpaceCollectionData | null {
+export function importLayoutConfigurationFromJson(jsonString: string): SpaceCollection | null {
   try {
     const data = JSON.parse(jsonString);
     return importLayoutConfiguration(data);

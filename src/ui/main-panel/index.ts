@@ -10,12 +10,12 @@ import Meta from 'gi://Meta';
 import St from 'gi://St';
 import type { ExtensionMetadata } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import type { SpaceCollectionData } from '../../domain/layout/index.js';
 import type {
   Layout,
   LayoutSelectedEvent,
   Position,
   Size,
+  SpaceCollection,
   SpacesRow,
 } from '../../domain/types/index.js';
 import type { LayoutHistoryRepository } from '../../usecase/history/index.js';
@@ -50,7 +50,7 @@ export class MainPanel {
   private getActiveSpaceCollectionId: () => string = () => '';
   private onLayoutSelected!: (event: LayoutSelectedEvent) => void;
   private ensurePresetForCurrentMonitors: () => void = () => {};
-  private getActiveSpaceCollection: (activeId: string) => SpaceCollectionData | undefined = () =>
+  private getActiveSpaceCollection: (activeId: string) => SpaceCollection | undefined = () =>
     undefined;
 
   // Component instances
@@ -108,9 +108,7 @@ export class MainPanel {
   /**
    * Set callback for getting active space collection
    */
-  setGetActiveSpaceCollection(
-    callback: (activeId: string) => SpaceCollectionData | undefined
-  ): void {
+  setGetActiveSpaceCollection(callback: (activeId: string) => SpaceCollection | undefined): void {
     this.getActiveSpaceCollection = callback;
   }
 

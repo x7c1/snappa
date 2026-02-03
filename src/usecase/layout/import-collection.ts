@@ -1,11 +1,11 @@
 import {
   CollectionId,
   generateLayoutHash,
-  type LayoutData,
-  type LayoutGroupData,
-  type SpaceCollectionData,
-  type SpaceData,
-  type SpacesRowData,
+  type Layout,
+  type LayoutGroup,
+  type Space,
+  type SpaceCollection,
+  type SpacesRow,
 } from '../../domain/layout/index.js';
 import { generateUUID } from '../../libs/uuid/index.js';
 import type { SpaceCollectionRepository } from './space-collection-repository.js';
@@ -70,10 +70,7 @@ function isValidLayoutConfiguration(data: unknown): data is LayoutConfiguration 
   return true;
 }
 
-/**
- * Convert a LayoutSetting to a LayoutData with generated ID and hash
- */
-function settingToLayout(setting: LayoutSetting): LayoutData {
+function settingToLayout(setting: LayoutSetting): Layout {
   return {
     id: generateUUID(),
     hash: generateLayoutHash(setting.x, setting.y, setting.width, setting.height),
@@ -83,14 +80,11 @@ function settingToLayout(setting: LayoutSetting): LayoutData {
   };
 }
 
-/**
- * Convert SpaceSetting to SpaceData
- */
 function settingToSpace(
   spaceSetting: SpaceSetting,
   layoutGroupSettings: LayoutGroupSetting[]
-): SpaceData {
-  const displays: { [monitorKey: string]: LayoutGroupData } = {};
+): Space {
+  const displays: { [monitorKey: string]: LayoutGroup } = {};
 
   for (const [monitorKey, layoutGroupName] of Object.entries(spaceSetting.displays)) {
     const layoutGroupSetting = layoutGroupSettings.find((g) => g.name === layoutGroupName);
@@ -102,7 +96,7 @@ function settingToSpace(
       continue;
     }
 
-    const layoutGroup: LayoutGroupData = {
+    const layoutGroup: LayoutGroup = {
       name: layoutGroupSetting.name,
       layouts: layoutGroupSetting.layouts.map((setting) => settingToLayout(setting)),
     };
@@ -117,22 +111,16 @@ function settingToSpace(
   };
 }
 
-/**
- * Convert SpacesRowSetting to SpacesRowData
- */
 function settingToSpacesRow(
   rowSetting: SpacesRowSetting,
   layoutGroupSettings: LayoutGroupSetting[]
-): SpacesRowData {
+): SpacesRow {
   return {
     spaces: rowSetting.spaces.map((s) => settingToSpace(s, layoutGroupSettings)),
   };
 }
 
-/**
- * Convert LayoutConfiguration to SpacesRowData[]
- */
-function configurationToSpacesRows(config: LayoutConfiguration): SpacesRowData[] {
+function configurationToSpacesRows(config: LayoutConfiguration): SpacesRow[] {
   return config.rows.map((rowSetting) => settingToSpacesRow(rowSetting, config.layoutGroups));
 }
 
@@ -143,7 +131,7 @@ function configurationToSpacesRows(config: LayoutConfiguration): SpacesRowData[]
 export function importLayoutConfiguration(
   repository: SpaceCollectionRepository,
   data: unknown
-): SpaceCollectionData | null {
+): SpaceCollection | null {
   if (!isValidLayoutConfiguration(data)) {
     log(
       '[ImportCollection] Invalid LayoutConfiguration: missing required fields or invalid format'
@@ -173,7 +161,7 @@ export function importLayoutConfiguration(
 export function importLayoutConfigurationFromJson(
   repository: SpaceCollectionRepository,
   jsonString: string
-): SpaceCollectionData | null {
+): SpaceCollection | null {
   try {
     const data = JSON.parse(jsonString);
     return importLayoutConfiguration(repository, data);

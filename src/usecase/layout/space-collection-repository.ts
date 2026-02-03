@@ -1,4 +1,4 @@
-import type { CollectionId, SpaceCollectionData, SpaceId } from '../../domain/layout/index.js';
+import type { CollectionId, SpaceCollection, SpaceId } from '../../domain/layout/index.js';
 
 /**
  * Interface for space collection persistence
@@ -8,33 +8,33 @@ export interface SpaceCollectionRepository {
   /**
    * Load preset collections
    */
-  loadPresetCollections(): SpaceCollectionData[];
+  loadPresetCollections(): SpaceCollection[];
 
   /**
    * Save preset collections
    */
-  savePresetCollections(collections: SpaceCollectionData[]): void;
+  savePresetCollections(collections: SpaceCollection[]): void;
 
   /**
    * Load custom collections
    */
-  loadCustomCollections(): SpaceCollectionData[];
+  loadCustomCollections(): SpaceCollection[];
 
   /**
    * Save custom collections
    */
-  saveCustomCollections(collections: SpaceCollectionData[]): void;
+  saveCustomCollections(collections: SpaceCollection[]): void;
 
   /**
    * Load all collections (preset + custom)
    */
-  loadAllCollections(): SpaceCollectionData[];
+  loadAllCollections(): SpaceCollection[];
 
   /**
    * Add a new custom collection
    * Returns the created collection with generated ID
    */
-  addCustomCollection(collection: Omit<SpaceCollectionData, 'id'>): SpaceCollectionData;
+  addCustomCollection(collection: Omit<SpaceCollection, 'id'>): SpaceCollection;
 
   /**
    * Delete a custom collection by ID
@@ -45,7 +45,7 @@ export interface SpaceCollectionRepository {
   /**
    * Find a collection by ID
    */
-  findCollectionById(collectionId: CollectionId): SpaceCollectionData | undefined;
+  findCollectionById(collectionId: CollectionId): SpaceCollection | undefined;
 
   /**
    * Update space enabled state

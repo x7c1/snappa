@@ -1,4 +1,4 @@
-import { CollectionId, type SpaceCollectionData, SpaceId } from '../../domain/layout/index.js';
+import { CollectionId, type SpaceCollection, SpaceId } from '../../domain/layout/index.js';
 import type { SpaceCollectionRepository } from './space-collection-repository.js';
 
 /**
@@ -8,27 +8,27 @@ import type { SpaceCollectionRepository } from './space-collection-repository.js
 export class SpaceCollectionUseCase {
   constructor(private readonly repository: SpaceCollectionRepository) {}
 
-  loadPresetCollections(): SpaceCollectionData[] {
+  loadPresetCollections(): SpaceCollection[] {
     return this.repository.loadPresetCollections();
   }
 
-  savePresetCollections(collections: SpaceCollectionData[]): void {
+  savePresetCollections(collections: SpaceCollection[]): void {
     this.repository.savePresetCollections(collections);
   }
 
-  loadCustomCollections(): SpaceCollectionData[] {
+  loadCustomCollections(): SpaceCollection[] {
     return this.repository.loadCustomCollections();
   }
 
-  saveCustomCollections(collections: SpaceCollectionData[]): void {
+  saveCustomCollections(collections: SpaceCollection[]): void {
     this.repository.saveCustomCollections(collections);
   }
 
-  loadAllCollections(): SpaceCollectionData[] {
+  loadAllCollections(): SpaceCollection[] {
     return this.repository.loadAllCollections();
   }
 
-  addCustomCollection(collection: Omit<SpaceCollectionData, 'id'>): SpaceCollectionData {
+  addCustomCollection(collection: Omit<SpaceCollection, 'id'>): SpaceCollection {
     return this.repository.addCustomCollection(collection);
   }
 
@@ -40,7 +40,7 @@ export class SpaceCollectionUseCase {
     return this.repository.deleteCustomCollection(id);
   }
 
-  findCollectionById(collectionId: string): SpaceCollectionData | undefined {
+  findCollectionById(collectionId: string): SpaceCollection | undefined {
     const id = CollectionId.tryCreate(collectionId);
     if (!id) {
       return undefined;
@@ -61,7 +61,7 @@ export class SpaceCollectionUseCase {
    * Get the active SpaceCollection based on the stored ID.
    * Falls back to the first preset collection if the ID is empty or invalid.
    */
-  getActiveSpaceCollection(activeId: string): SpaceCollectionData | undefined {
+  getActiveSpaceCollection(activeId: string): SpaceCollection | undefined {
     if (activeId) {
       const collection = this.findCollectionById(activeId);
       if (collection) {

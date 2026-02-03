@@ -1,6 +1,6 @@
 import Gio from 'gi://Gio';
 
-import type { CollectionId, SpaceCollectionData, SpaceId } from '../../domain/layout/index.js';
+import type { CollectionId, SpaceCollection, SpaceId } from '../../domain/layout/index.js';
 import type { SpaceCollectionRepository } from '../../usecase/layout/space-collection-repository.js';
 
 const log = (message: string): void => console.log(message);
@@ -16,30 +16,30 @@ export class FileSpaceCollectionRepository implements SpaceCollectionRepository 
     private readonly generateUUID: () => string
   ) {}
 
-  loadPresetCollections(): SpaceCollectionData[] {
+  loadPresetCollections(): SpaceCollection[] {
     return this.loadCollectionsFromFile(this.presetFilePath);
   }
 
-  savePresetCollections(collections: SpaceCollectionData[]): void {
+  savePresetCollections(collections: SpaceCollection[]): void {
     this.saveCollectionsToFile(this.presetFilePath, collections);
   }
 
-  loadCustomCollections(): SpaceCollectionData[] {
+  loadCustomCollections(): SpaceCollection[] {
     return this.loadCollectionsFromFile(this.customFilePath);
   }
 
-  saveCustomCollections(collections: SpaceCollectionData[]): void {
+  saveCustomCollections(collections: SpaceCollection[]): void {
     this.saveCollectionsToFile(this.customFilePath, collections);
   }
 
-  loadAllCollections(): SpaceCollectionData[] {
+  loadAllCollections(): SpaceCollection[] {
     const presets = this.loadPresetCollections();
     const customs = this.loadCustomCollections();
     return [...presets, ...customs];
   }
 
-  addCustomCollection(collection: Omit<SpaceCollectionData, 'id'>): SpaceCollectionData {
-    const newCollection: SpaceCollectionData = {
+  addCustomCollection(collection: Omit<SpaceCollection, 'id'>): SpaceCollection {
+    const newCollection: SpaceCollection = {
       ...collection,
       id: this.generateUUID(),
     };
@@ -68,7 +68,7 @@ export class FileSpaceCollectionRepository implements SpaceCollectionRepository 
     return true;
   }
 
-  findCollectionById(collectionId: CollectionId): SpaceCollectionData | undefined {
+  findCollectionById(collectionId: CollectionId): SpaceCollection | undefined {
     const all = this.loadAllCollections();
     return all.find((c) => c.id === collectionId.toString());
   }
@@ -119,7 +119,7 @@ export class FileSpaceCollectionRepository implements SpaceCollectionRepository 
     return false;
   }
 
-  private loadCollectionsFromFile(filePath: string): SpaceCollectionData[] {
+  private loadCollectionsFromFile(filePath: string): SpaceCollection[] {
     const file = Gio.File.new_for_path(filePath);
 
     if (!file.query_exists(null)) {
@@ -148,7 +148,7 @@ export class FileSpaceCollectionRepository implements SpaceCollectionRepository 
     }
   }
 
-  private saveCollectionsToFile(filePath: string, collections: SpaceCollectionData[]): void {
+  private saveCollectionsToFile(filePath: string, collections: SpaceCollection[]): void {
     const file = Gio.File.new_for_path(filePath);
 
     try {
@@ -166,7 +166,7 @@ export class FileSpaceCollectionRepository implements SpaceCollectionRepository 
     }
   }
 
-  private isValidSpaceCollectionArray(data: unknown): data is SpaceCollectionData[] {
+  private isValidSpaceCollectionArray(data: unknown): data is SpaceCollection[] {
     if (!Array.isArray(data)) {
       return false;
     }

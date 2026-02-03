@@ -7,14 +7,16 @@ export {
   STANDARD_LAYOUT_GROUP_NAMES,
   WIDE_LAYOUT_GROUP_NAMES,
 } from './preset-config.js';
-export type {
-  LayoutData,
-  LayoutGroupData,
-  MonitorType,
-  SpaceCollectionData,
-  SpaceData,
-  SpacesRowData,
-  UUIDGenerator,
-} from './preset-generator.js';
+export type { MonitorType, UUIDGenerator } from './preset-generator.js';
 export { generatePreset, getPresetName } from './preset-generator.js';
 export { InvalidSpaceIdError, SpaceId } from './space-id.js';
+export type {
+  Layout,
+  LayoutGroup,
+  LayoutPosition,
+  LayoutSelectedEvent,
+  LayoutSize,
+  Space,
+  SpaceCollection,
+  SpacesRow,
+} from './types.js';

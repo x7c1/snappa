@@ -7,7 +7,7 @@ import {
   getPresetGeneratorUseCase,
   getSpaceCollectionUseCase,
 } from '../composition/use-case-factory.js';
-import type { SpaceCollectionData } from '../domain/layout/index.js';
+import type { SpaceCollection } from '../domain/layout/index.js';
 import { DEFAULT_MONITOR_HEIGHT, DEFAULT_MONITOR_WIDTH } from '../domain/types/index.js';
 import { createGeneralPage } from './keyboard-shortcuts.js';
 import { loadMonitors } from './monitors.js';
@@ -39,7 +39,7 @@ export function buildPreferencesUI(window: Adw.PreferencesWindow, settings: Gio.
 
   // Load collections and monitors
   console.log('[Snappa Prefs] Loading collections...');
-  let collections: SpaceCollectionData[] = [];
+  let collections: SpaceCollection[] = [];
   try {
     collections = getSpaceCollectionUseCase().loadAllCollections();
     console.log(`[Snappa Prefs] Loaded ${collections.length} collections`);

@@ -1,36 +1,8 @@
 import type { LayoutGroupSetting, LayoutSetting } from '../types/layout-setting.js';
 import { generateLayoutHash } from './layout-hash.js';
+import type { Layout, LayoutGroup, Space, SpaceCollection, SpacesRow } from './types.js';
 
 export type MonitorType = 'wide' | 'standard';
-
-export interface LayoutData {
-  id: string;
-  hash: string;
-  label: string;
-  position: { x: string; y: string };
-  size: { width: string; height: string };
-}
-
-export interface LayoutGroupData {
-  name: string;
-  layouts: LayoutData[];
-}
-
-export interface SpaceData {
-  id: string;
-  enabled: boolean;
-  displays: { [monitorKey: string]: LayoutGroupData };
-}
-
-export interface SpacesRowData {
-  spaces: SpaceData[];
-}
-
-export interface SpaceCollectionData {
-  id: string;
-  name: string;
-  rows: SpacesRowData[];
-}
 
 export interface UUIDGenerator {
   generate(): string;
@@ -46,10 +18,7 @@ export function getPresetName(monitorCount: number, monitorType: MonitorType): s
   return `${monitorCount} ${suffix} - ${typeLabel}`;
 }
 
-/**
- * Convert a LayoutSetting to a LayoutData with generated ID and hash
- */
-function createLayout(setting: LayoutSetting, uuidGenerator: UUIDGenerator): LayoutData {
+function createLayout(setting: LayoutSetting, uuidGenerator: UUIDGenerator): Layout {
   return {
     id: uuidGenerator.generate(),
     hash: generateLayoutHash(setting.x, setting.y, setting.width, setting.height),
@@ -59,28 +28,22 @@ function createLayout(setting: LayoutSetting, uuidGenerator: UUIDGenerator): Lay
   };
 }
 
-/**
- * Create a LayoutGroupData from a LayoutGroupSetting
- */
 function createLayoutGroup(
   groupSetting: LayoutGroupSetting,
   uuidGenerator: UUIDGenerator
-): LayoutGroupData {
+): LayoutGroup {
   return {
     name: groupSetting.name,
     layouts: groupSetting.layouts.map((setting) => createLayout(setting, uuidGenerator)),
   };
 }
 
-/**
- * Create a SpaceData with the given layout group for all monitors
- */
 function createSpace(
   layoutGroupSetting: LayoutGroupSetting,
   monitorCount: number,
   uuidGenerator: UUIDGenerator
-): SpaceData {
-  const displays: { [monitorKey: string]: LayoutGroupData } = {};
+): Space {
+  const displays: { [monitorKey: string]: LayoutGroup } = {};
   for (let i = 0; i < monitorCount; i++) {
     displays[String(i)] = createLayoutGroup(layoutGroupSetting, uuidGenerator);
   }
@@ -92,22 +55,17 @@ function createSpace(
   };
 }
 
-/**
- * Generate rows based on monitor count and type
- * - 1 monitor: 2 spaces per row
- * - 2+ monitors: 1 space per row
- */
 function generateRows(
   monitorCount: number,
   layoutGroupNames: string[],
   allLayoutGroups: LayoutGroupSetting[],
   uuidGenerator: UUIDGenerator
-): SpacesRowData[] {
+): SpacesRow[] {
   const spacesPerRow = monitorCount === 1 ? 2 : 1;
-  const rows: SpacesRowData[] = [];
+  const rows: SpacesRow[] = [];
 
   for (let i = 0; i < layoutGroupNames.length; i += spacesPerRow) {
-    const spaces: SpaceData[] = [];
+    const spaces: Space[] = [];
     for (let j = 0; j < spacesPerRow && i + j < layoutGroupNames.length; j++) {
       const layoutGroupName = layoutGroupNames[i + j];
       const layoutGroupSetting = allLayoutGroups.find((g) => g.name === layoutGroupName);
@@ -123,16 +81,13 @@ function generateRows(
   return rows;
 }
 
-/**
- * Generate a preset SpaceCollectionData for the given monitor count and type
- */
 export function generatePreset(
   monitorCount: number,
   monitorType: MonitorType,
   layoutGroupNames: string[],
   allLayoutGroups: LayoutGroupSetting[],
   uuidGenerator: UUIDGenerator
-): SpaceCollectionData {
+): SpaceCollection {
   return {
     id: uuidGenerator.generate(),
     name: getPresetName(monitorCount, monitorType),
