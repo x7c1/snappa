@@ -15,6 +15,12 @@
 import Meta from 'gi://Meta';
 import type { ExtensionMetadata } from 'resource:///org/gnome/shell/extensions/extension.js';
 import { loadAllCollections } from '../composition/index.js';
+import {
+  LicenseClient,
+  LicenseManager,
+  LicenseStorage,
+  TrialManager,
+} from '../composition/license/index.js';
 import { CollectionId } from '../domain/layout/index.js';
 import { FileLayoutHistoryRepository, getExtensionDataPath } from '../infra/file/index.js';
 import {
@@ -30,12 +36,6 @@ import type { ExtensionSettings } from '../prefs/extension-settings.js';
 import { MainPanel } from '../ui/main-panel/index.js';
 import type { LayoutHistoryRepository } from '../usecase/history/index.js';
 import { HISTORY_FILE_NAME } from './constants.js';
-import {
-  LicenseClient,
-  LicenseManager,
-  LicenseStorage,
-  TrialManager,
-} from './facade/license/index.js';
 import type { LayoutSelectedEvent, Position } from './types/index.js';
 
 declare function log(message: string): void;
