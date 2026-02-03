@@ -5,7 +5,7 @@ import Gdk from 'gi://Gdk';
 import type Gio from 'gi://Gio';
 
 import { DEFAULT_MONITOR_HEIGHT, DEFAULT_MONITOR_WIDTH } from '../app/constants.js';
-import { ensurePresetForCurrentMonitors, loadAllCollections } from '../app/facade/index.js';
+import { ensurePresetForCurrentMonitors, loadAllCollections } from '../composition/index.js';
 import { createGeneralPage } from './keyboard-shortcuts.js';
 import { loadMonitors } from './monitors.js';
 import { calculateWindowDimensionsForCollection, createSpacesPage } from './spaces-page.js';

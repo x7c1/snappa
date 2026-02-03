@@ -2,7 +2,13 @@ import Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
-
+import type {
+  Monitor,
+  MonitorEnvironmentStorage,
+  Space,
+  SpaceCollection,
+  SpacesRow,
+} from '../app/types/index.js';
 import {
   deleteCustomCollection,
   ensurePresetForCurrentMonitors,
@@ -12,14 +18,7 @@ import {
   loadCustomCollections,
   loadPresetCollections,
   updateSpaceEnabled,
-} from '../app/facade/index.js';
-import type {
-  Monitor,
-  MonitorEnvironmentStorage,
-  Space,
-  SpaceCollection,
-  SpacesRow,
-} from '../app/types/index.js';
+} from '../composition/index.js';
 import { calculateSpaceDimensions, createGtkMiniatureSpace } from './gtk-miniature-space.js';
 import {
   createDefaultMonitors,

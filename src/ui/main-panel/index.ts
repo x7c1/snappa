@@ -11,10 +11,6 @@ import St from 'gi://St';
 import type { ExtensionMetadata } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { AUTO_HIDE_DELAY_MS } from '../../app/constants.js';
-import {
-  ensurePresetForCurrentMonitors,
-  getActiveSpaceCollection,
-} from '../../app/facade/index.js';
 import type {
   Layout,
   LayoutSelectedEvent,
@@ -22,6 +18,10 @@ import type {
   Size,
   SpacesRow,
 } from '../../app/types/index.js';
+import {
+  ensurePresetForCurrentMonitors,
+  getActiveSpaceCollection,
+} from '../../composition/index.js';
 import type { MonitorManager } from '../../infra/monitor/manager.js';
 import type { LayoutHistoryRepository } from '../../usecase/history/index.js';
 import { MainPanelAutoHide } from './auto-hide.js';
