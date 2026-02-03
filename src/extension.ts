@@ -1,4 +1,4 @@
-/// <reference path="./types/build-mode.d.ts" />
+/// <reference path="./libs/gnome-types/build-mode.d.ts" />
 
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import { Controller } from './composition/controller.js';

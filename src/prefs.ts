@@ -1,4 +1,4 @@
-/// <reference path="./types/build-mode.d.ts" />
+/// <reference path="./libs/gnome-types/build-mode.d.ts" />
 
 import type Adw from 'gi://Adw';
 import Gio from 'gi://Gio';

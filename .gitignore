@@ -27,6 +27,9 @@ src/**/*.js
 src/**/*.js.map
 src/dist/
 
+# Exception: manually written GNOME type stubs
+!src/libs/gnome-types/
+
 # Rust artifacts
 target
 

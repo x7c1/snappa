@@ -21,7 +21,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/extension.ts", "src/prefs.ts", "src/types/**/*"],
+  "include": ["src/extension.ts", "src/prefs.ts", "src/libs/gnome-types/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"],
   "references": [
     { "path": "./src/libs" },

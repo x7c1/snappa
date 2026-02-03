@@ -24,7 +24,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["./**/*", "../types/**/*"],
+  "include": ["./**/*", "../libs/gnome-types/**/*"],
   "exclude": ["**/*.test.ts"],
   "references": [
     { "path": "../domain" },
