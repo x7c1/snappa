@@ -7,18 +7,18 @@
 
 import Clutter from 'gi://Clutter';
 import type St from 'gi://St';
-import { adjustMainPanelPosition } from '../../domain/positioning/index.js';
-import type { ScreenBoundaries } from '../../domain/positioning/types.js';
 import {
   FOOTER_MARGIN_TOP,
   PANEL_EDGE_PADDING,
   PANEL_PADDING,
   ROW_SPACING,
   SPACE_SPACING,
-} from '../constants.js';
-import type { MonitorManager } from '../monitor/manager.js';
-import type { Position, Size, SpacesRow } from '../types/index.js';
-import { calculateSpaceDimensions } from '../ui/space-dimensions.js';
+} from '../../app/constants.js';
+import type { Position, Size, SpacesRow } from '../../app/types/index.js';
+import { adjustMainPanelPosition } from '../../domain/positioning/index.js';
+import type { ScreenBoundaries } from '../../domain/positioning/types.js';
+import type { MonitorManager } from '../../infra/monitor/manager.js';
+import { calculateSpaceDimensions } from '../components/space-dimensions.js';
 
 export class MainPanelPositionManager {
   private monitorManager: MonitorManager;

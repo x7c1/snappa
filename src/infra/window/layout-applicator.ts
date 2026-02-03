@@ -7,12 +7,11 @@
 
 import type Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-
+import type { LayoutSelectedEvent } from '../../app/types/index.js';
 import { LayoutId } from '../../domain/layout/index.js';
 import { evaluate, parse } from '../../domain/layout-expression/index.js';
 import type { LayoutHistoryRepository } from '../../usecase/history/index.js';
 import type { MonitorManager } from '../monitor/manager.js';
-import type { LayoutSelectedEvent } from '../types/index.js';
 
 declare function log(message: string): void;
 

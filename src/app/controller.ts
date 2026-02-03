@@ -17,13 +17,19 @@ import type { ExtensionMetadata } from 'resource:///org/gnome/shell/extensions/e
 
 import { CollectionId } from '../domain/layout/index.js';
 import { FileLayoutHistoryRepository, getExtensionDataPath } from '../infra/file/index.js';
+import {
+  DragSignalHandler,
+  EdgeDetector,
+  EdgeTimerManager,
+  KeyboardShortcutManager,
+  LayoutApplicator,
+  MonitorManager,
+  MotionMonitor,
+} from '../infra/index.js';
 import type { ExtensionSettings } from '../prefs/extension-settings.js';
+import { MainPanel } from '../ui/main-panel/index.js';
 import type { LayoutHistoryRepository } from '../usecase/history/index.js';
 import { HISTORY_FILE_NAME } from './constants.js';
-import { DragSignalHandler } from './drag/drag-signal-handler.js';
-import { EdgeDetector } from './drag/edge-detector.js';
-import { EdgeTimerManager } from './drag/edge-timer-manager.js';
-import { MotionMonitor } from './drag/motion-monitor.js';
 import { loadAllCollections } from './facade/index.js';
 import {
   LicenseClient,
@@ -31,11 +37,7 @@ import {
   LicenseStorage,
   TrialManager,
 } from './facade/license/index.js';
-import { MainPanel } from './main-panel/index.js';
-import { MonitorManager } from './monitor/manager.js';
-import { KeyboardShortcutManager } from './shortcuts/keyboard-shortcut-manager.js';
 import type { LayoutSelectedEvent, Position } from './types/index.js';
-import { LayoutApplicator } from './window/layout-applicator.js';
 
 declare function log(message: string): void;
 

@@ -1,8 +1,6 @@
 import Meta from 'gi://Meta';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-
-import type { LayoutHistoryRepository } from '../../usecase/history/index.js';
 import {
   FOOTER_MARGIN_TOP,
   FOOTER_TEXT_COLOR,
@@ -10,10 +8,11 @@ import {
   PANEL_BORDER_COLOR,
   PANEL_PADDING,
   SPACE_SPACING,
-} from '../constants.js';
-import type { LayoutButtonWithMetadata } from '../types/button.js';
-import type { Layout, LayoutSelectedEvent, Monitor, SpacesRow } from '../types/index.js';
-import { createMiniatureSpaceView } from '../ui/miniature-space.js';
+} from '../../app/constants.js';
+import type { LayoutButtonWithMetadata } from '../../app/types/button.js';
+import type { Layout, LayoutSelectedEvent, Monitor, SpacesRow } from '../../app/types/index.js';
+import type { LayoutHistoryRepository } from '../../usecase/history/index.js';
+import { createMiniatureSpaceView } from '../components/miniature-space.js';
 
 declare function log(message: string): void;
 

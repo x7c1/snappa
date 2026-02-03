@@ -5,7 +5,7 @@
     "module": "ES2022",
     "moduleResolution": "node",
     "outDir": "../../dist/ui",
-    "rootDir": ".",
+    "rootDir": "..",
     "composite": true,
     "declaration": true,
     "declarationMap": true,
@@ -24,10 +24,13 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["./**/*"],
+  "include": ["./**/*", "../types/**/*"],
   "exclude": ["**/*.test.ts"],
   "references": [
+    { "path": "../libs" },
     { "path": "../domain" },
-    { "path": "../usecase" }
+    { "path": "../usecase" },
+    { "path": "../infra" },
+    { "path": "../app" }
   ]
 }

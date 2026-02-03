@@ -11,8 +11,8 @@ import {
   MAX_MONITOR_DISPLAY_HEIGHT,
   MAX_MONITOR_DISPLAY_WIDTH,
   MONITOR_MARGIN,
-} from '../constants.js';
-import type { Monitor, Space } from '../types/index.js';
+} from '../../app/constants.js';
+import type { Monitor, Space } from '../../app/types/index.js';
 
 export interface SpaceDimensions {
   width: number;
