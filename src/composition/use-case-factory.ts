@@ -5,7 +5,7 @@
  * Provides singleton access to UseCase instances.
  */
 
-import { FileMonitorCountProvider } from '../infra/monitor/index.js';
+import { FileMonitorCountProvider } from '../infra/monitor/gdk-monitor-detector.js';
 import { generateUUID } from '../libs/uuid/index.js';
 import { PresetGeneratorUseCase, SpaceCollectionUseCase } from '../usecase/layout/index.js';
 import { getSpaceCollectionRepository } from './space-collection-repository.js';
