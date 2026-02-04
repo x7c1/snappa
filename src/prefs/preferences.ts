@@ -3,7 +3,6 @@
 import type Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
 import type Gio from 'gi://Gio';
-import { getSpaceCollectionRepository } from '../composition/repository-factory.js';
 import {
   getPresetGeneratorUseCase,
   getSpaceCollectionUseCase,
@@ -81,14 +80,9 @@ export function buildPreferencesUI(window: Adw.PreferencesWindow, settings: Gio.
   // Create Spaces page with collection selection
   console.log('[Snappa Prefs] Creating Spaces page...');
   try {
-    const spacesPage = createSpacesPage(
-      getSpaceCollectionRepository(),
-      monitors,
-      activeCollectionId,
-      (newActiveId) => {
-        settings.set_string('active-space-collection-id', newActiveId);
-      }
-    );
+    const spacesPage = createSpacesPage(monitors, activeCollectionId, (newActiveId) => {
+      settings.set_string('active-space-collection-id', newActiveId);
+    });
     console.log('[Snappa Prefs] Spaces page created, adding to window...');
     window.add(spacesPage);
 

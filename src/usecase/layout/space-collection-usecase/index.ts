@@ -1,5 +1,6 @@
-import { CollectionId, type SpaceCollection, SpaceId } from '../../domain/layout/index.js';
-import type { SpaceCollectionRepository } from './space-collection-repository.js';
+import { CollectionId, type SpaceCollection, SpaceId } from '../../../domain/layout/index.js';
+import type { SpaceCollectionRepository } from '../space-collection-repository.js';
+import { importLayoutConfigurationFromJson } from './import-collection.js';
 
 export class SpaceCollectionUseCase {
   constructor(private readonly repository: SpaceCollectionRepository) {}
@@ -76,5 +77,9 @@ export class SpaceCollectionUseCase {
   resolveActiveSpaceCollectionId(activeId: string): string {
     const collection = this.getActiveSpaceCollection(activeId);
     return collection?.id ?? '';
+  }
+
+  importFromJson(jsonString: string): SpaceCollection | null {
+    return importLayoutConfigurationFromJson(this.repository, jsonString);
   }
 }
