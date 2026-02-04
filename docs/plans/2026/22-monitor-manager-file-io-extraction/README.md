@@ -1,124 +1,116 @@
-# Plan 22: GnomeShellMonitorProvider File I/O Extraction
+# Plan 22: MonitorEnvironment Usecase Extraction
 
 ## Overview
 
-Extract file I/O responsibilities from `GnomeShellMonitorProvider` into a dedicated repository class, following the layer architecture pattern established in Plan 18.
+Extract environment management responsibilities from `GnomeShellMonitorProvider` into a dedicated usecase class. The provider should only detect monitors (read-only), while a usecase orchestrates storage and business logic.
 
 ## Background
 
-`GnomeShellMonitorProvider` in `infra/monitor/` directly performs file I/O operations using `getExtensionDataPath` from `infra/file/`. This violates single responsibility and creates inappropriate cross-dependencies within the infrastructure layer.
+`GnomeShellMonitorProvider` has multiple responsibilities that violate layer architecture:
+
+1. **Naming issue**: A "Provider" should only provide/read data, not save it
+2. **Layer violation**: Infra component orchestrates another repository (infra calling infra)
+3. **Mixed concerns**: Monitor detection + environment management + file I/O in one class
 
 ## Current State
 
-`GnomeShellMonitorProvider` (`infra/monitor/gnome-shell-monitor-provider.ts`) has two methods that perform file I/O:
+`GnomeShellMonitorProvider` contains:
 
-- `loadStorage()`: Loads monitor environment configuration from file
-- `saveMonitors()`: Saves monitor configuration to file
-
-Both methods use `getExtensionDataPath(MONITORS_FILE_NAME)` to access `monitors.snappa.json`.
-
-### Existing Layer Structure
-
-```
-usecase/monitor/
-  MonitorProvider           # Interface for monitor access (already exists)
-  MonitorCountRepository    # Interface for loading monitor count (already exists)
-  MonitorDetector           # Interface for detecting monitors (already exists)
-
-infra/monitor/
-  GnomeShellMonitorProvider # Implements MonitorProvider (has file I/O problem)
-  GdkMonitorDetector        # Implements MonitorDetector
-
-infra/file/
-  FileMonitorCountRepository  # Implements MonitorCountRepository
-```
+- Monitor detection (appropriate for infra)
+- Environment ID generation (business logic → usecase)
+- Environment change detection (business logic → usecase)
+- Collection activation decision (business logic → usecase)
+- File I/O via injected repository (orchestration → usecase)
 
 ## Problem
 
-- `GnomeShellMonitorProvider` has mixed responsibilities (monitor detection + file storage)
-- `infra/monitor/` depends on `infra/file/` utilities (`getExtensionDataPath`)
-- Difficult to test monitor logic in isolation from file system
+```
+Controller (composition)
+    └── GnomeShellMonitorProvider (infra)
+            └── MonitorEnvironmentRepository (usecase interface)
+```
+
+Infra should not orchestrate repositories. That's the usecase layer's role.
 
 ## Solution
 
-### Separation of Concerns
+### Target Architecture
 
-The current `saveMonitors()` method contains two distinct responsibilities:
-
-1. **Business logic**: Environment ID generation, change detection, collection activation decision
-2. **File I/O**: Reading/writing `MonitorEnvironmentStorage` to disk
-
-The repository will handle only file I/O. Business logic remains in `GnomeShellMonitorProvider`.
-
-### Create New Repository Interface
-
-Create `MonitorEnvironmentRepository` interface in `usecase/monitor/`:
-
-```typescript
-interface MonitorEnvironmentRepository {
-  load(): MonitorEnvironmentStorage | null;
-  save(storage: MonitorEnvironmentStorage): void;
-}
 ```
-
-### Create File-based Implementation
-
-Create `FileMonitorEnvironmentRepository` in `infra/file/`:
-
-```typescript
-class FileMonitorEnvironmentRepository implements MonitorEnvironmentRepository {
-  constructor(private readonly filePath: string) {}
-
-  load(): MonitorEnvironmentStorage | null { ... }
-  save(storage: MonitorEnvironmentStorage): void { ... }
-}
+Controller (composition)
+    └── MonitorEnvironmentUsecase (usecase)
+            ├── GnomeShellMonitorProvider (infra) - monitor detection only
+            └── FileMonitorEnvironmentRepository (infra) - storage only
 ```
 
 ### Refactor GnomeShellMonitorProvider
 
-- Inject `MonitorEnvironmentRepository` via constructor
-- Replace direct Gio file operations with repository calls
-- Keep all environment management logic (ID generation, change detection, `saveMonitors()` return value)
+Remove all storage-related code. Keep only:
+
+- `detectMonitors()`: Detect connected monitors
+- `getMonitors()`, `getMonitorByKey()`, `getCurrentMonitor()`, etc.
+- `connectToMonitorChanges()`, `disconnectMonitorChanges()`
+- `calculateBoundingBox()`, `getMonitorsForRendering()`
+
+Remove:
+
+- `loadStorage()`, `saveMonitors()`
+- `setActiveCollectionId()`, `getLastActiveCollectionId()`
+- `getStorage()`, `getCurrentEnvironment()`, `findEnvironmentForCollection()`
+- Constructor dependency on `MonitorEnvironmentRepository`
+
+### Create MonitorEnvironmentUsecase
+
+New usecase class that:
+
+- Holds `MonitorEnvironmentStorage` state
+- Generates environment ID from monitors
+- Detects environment changes
+- Determines collection to activate
+- Orchestrates provider and repository
+
+```typescript
+class MonitorEnvironmentUsecase {
+  constructor(
+    private readonly provider: MonitorProvider,
+    private readonly repository: MonitorEnvironmentRepository
+  ) {}
+
+  initialize(): void { /* load storage */ }
+
+  detectAndSaveMonitors(): string | null { /* returns collection to activate */ }
+
+  setActiveCollectionId(id: string): void { /* update and save */ }
+
+  getMonitorsForRendering(displayCount: number): { ... }
+}
+```
 
 ## Implementation Steps
 
-1. Create `MonitorEnvironmentRepository` interface in `usecase/monitor/`
-2. Create `FileMonitorEnvironmentRepository` in `infra/file/`
-3. Refactor `GnomeShellMonitorProvider`:
-   - Add constructor parameter: `repository: MonitorEnvironmentRepository`
-   - Replace `loadStorage()` file operations with `this.repository.load()`
-   - Replace `saveMonitors()` file operations with `this.repository.save()`
-   - Keep `saveMonitors()` return type as `string | null` (business logic unchanged)
-4. Update `Controller` to instantiate and inject dependencies:
-   ```typescript
-   const repository = new FileMonitorEnvironmentRepository(
-     getExtensionDataPath(MONITORS_FILE_NAME)
-   );
-   this.monitorProvider = new GnomeShellMonitorProvider(repository);
-   ```
-5. Remove `getExtensionDataPath` and `Gio` imports from `gnome-shell-monitor-provider.ts`
-6. Export `FileMonitorEnvironmentRepository` from `infra/file/index.ts`
-7. Run build, check, and tests
+1. Create `MonitorEnvironmentUsecase` in `usecase/monitor/`
+2. Move business logic from `GnomeShellMonitorProvider` to usecase
+3. Simplify `GnomeShellMonitorProvider` to monitor detection only
+4. Remove repository dependency from `GnomeShellMonitorProvider`
+5. Update `Controller` to use `MonitorEnvironmentUsecase`
+6. Run build, check, and tests
 
 ## Expected Outcome
 
 ```
 usecase/monitor/
   MonitorProvider               # Interface (existing)
-  MonitorCountRepository        # Interface (existing)
-  MonitorDetector               # Interface (existing)
-  MonitorEnvironmentRepository  # Interface (new)
+  MonitorEnvironmentRepository  # Interface (existing)
+  MonitorEnvironmentUsecase     # New usecase class
 
 infra/file/
-  FileMonitorCountRepository       # Implementation (existing)
-  FileMonitorEnvironmentRepository # Implementation (new)
+  FileMonitorEnvironmentRepository  # Implementation (existing)
 
 infra/monitor/
-  GnomeShellMonitorProvider  # No longer imports from infra/file/
-  GdkMonitorDetector         # Unchanged
+  GnomeShellMonitorProvider  # Monitor detection only, no repository dependency
 
 composition/
-  Controller  # Wires FileMonitorEnvironmentRepository → GnomeShellMonitorProvider
+  Controller  # Wires usecase with infra implementations
 ```
 
 ### Dependency Flow
@@ -126,11 +118,13 @@ composition/
 ```
 Controller (composition)
     │
-    ├── creates FileMonitorEnvironmentRepository (infra/file)
-    │
-    └── injects into GnomeShellMonitorProvider (infra/monitor)
+    └── MonitorEnvironmentUsecase (usecase)
             │
-            └── uses MonitorEnvironmentRepository interface (usecase)
+            ├── GnomeShellMonitorProvider (infra/monitor)
+            │       └── implements MonitorProvider interface
+            │
+            └── FileMonitorEnvironmentRepository (infra/file)
+                    └── implements MonitorEnvironmentRepository interface
 ```
 
 ## Related
