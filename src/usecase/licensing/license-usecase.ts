@@ -250,8 +250,8 @@ export class LicenseUsecase {
       INVALID_LICENSE_KEY: 'License key not found',
       LICENSE_EXPIRED: 'Subscription has expired',
       LICENSE_CANCELLED: 'Subscription was cancelled',
-      NETWORK_ERROR: 'Cannot connect to server. Please check your internet connection.',
-      BACKEND_UNREACHABLE: 'Cannot connect to server. Please check your internet connection.',
+      NETWORK_ERROR: 'No internet connection',
+      BACKEND_UNREACHABLE: 'License server unavailable',
     };
 
     if (error === 'NETWORK_ERROR' || error === 'BACKEND_UNREACHABLE') {
