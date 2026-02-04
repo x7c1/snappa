@@ -16,6 +16,6 @@ export {
 } from './license-status.js';
 export type { NetworkState } from './network-state.js';
 export { isValidNetworkState, NETWORK_STATES } from './network-state.js';
+export { InvalidTrialDaysError, TrialDays } from './trial-days.js';
 export type { TrialPeriodProps } from './trial-period.js';
 export { TrialPeriod } from './trial-period.js';
-export { InvalidTrialDaysError, TrialDays } from './trial-days.js';

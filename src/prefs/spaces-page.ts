@@ -2,7 +2,6 @@ import Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
-import { importLayoutConfigurationFromJson } from '../composition/custom-import-service.js';
 import {
   getPresetGeneratorUseCase,
   getSpaceCollectionUseCase,
@@ -14,6 +13,10 @@ import type {
   SpaceCollection,
   SpacesRow,
 } from '../domain/types/index.js';
+import {
+  importLayoutConfigurationFromJson,
+  type SpaceCollectionRepository,
+} from '../usecase/layout/index.js';
 import { calculateSpaceDimensions, createGtkMiniatureSpace } from './gtk-miniature-space.js';
 import {
   createDefaultMonitors,
@@ -179,6 +182,7 @@ export function calculateRequiredHeight(rows: SpacesRow[], monitors: Map<string,
 }
 
 interface SpacesPageState {
+  repository: SpaceCollectionRepository;
   activeCollectionId: string;
   selectedCollectionId: string;
   previewContainer: Gtk.Box;
@@ -199,6 +203,7 @@ interface SpacesPageState {
  * Create the Spaces preferences page with SpaceCollection selection
  */
 export function createSpacesPage(
+  repository: SpaceCollectionRepository,
   monitors: Map<string, Monitor>,
   activeCollectionId: string,
   onActiveChanged: (collectionId: string) => void
@@ -269,6 +274,7 @@ export function createSpacesPage(
 
   // Create state object for managing selections
   const state: SpacesPageState = {
+    repository,
     activeCollectionId: resolvedActiveId,
     selectedCollectionId: resolvedActiveId,
     previewContainer,
@@ -798,7 +804,7 @@ function importFile(state: SpacesPageState, file: Gio.File): void {
     }
 
     const jsonString = new TextDecoder('utf-8').decode(contents);
-    const collection = importLayoutConfigurationFromJson(jsonString);
+    const collection = importLayoutConfigurationFromJson(state.repository, jsonString);
 
     if (collection) {
       console.log(`Successfully imported: ${collection.name}`);

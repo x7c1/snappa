@@ -7,7 +7,7 @@
     "doc": "docs"
   },
   "scripts": {
-    "build": "tsc --build && node esbuild.config.js",
+    "build": ". ./.envrc && tsc --build && node esbuild.config.js",
     "build:release": "BUILD_MODE=release tsc --build && BUILD_MODE=release node esbuild.config.js",
     "watch": "tsc --build --watch",
     "clean": "rm -f dist/*.js dist/*.js.map",

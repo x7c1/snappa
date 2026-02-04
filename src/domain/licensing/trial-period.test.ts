@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { TrialPeriod } from './trial-period.js';
 import { TrialDays } from './trial-days.js';
+import { TrialPeriod } from './trial-period.js';
 
 describe('TrialPeriod', () => {
   describe('initial', () => {
