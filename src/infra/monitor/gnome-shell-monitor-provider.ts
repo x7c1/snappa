@@ -4,63 +4,25 @@
  * WARNING: This module depends on GNOME Shell APIs (main.js) and can only be used
  * in the extension context. Do NOT import this from prefs or other GTK-only contexts.
  *
- * Provides monitor detection and multi-environment configuration.
+ * Provides monitor detection from GNOME Shell.
  * Tracks connected monitors and provides lookup methods.
- * Stores multiple monitor environments for different physical setups.
  */
 
 import type Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {
-  type BoundingBox,
-  DEFAULT_MONITOR_HEIGHT,
-  DEFAULT_MONITOR_WIDTH,
-  type Monitor,
-  type MonitorEnvironment,
-  type MonitorEnvironmentStorage,
-} from '../../domain/monitor/index.js';
-import type { MonitorEnvironmentRepository, MonitorProvider } from '../../usecase/monitor/index.js';
+import type { BoundingBox, Monitor } from '../../domain/monitor/index.js';
+import type { MonitorDetectionProvider } from '../../usecase/monitor/index.js';
 
 declare function log(message: string): void;
 
-/**
- * Generate a hash ID from monitor geometries
- * Input: Combined geometry values (x, y, width, height) for all monitors
- * Output: 8-character hash string
- */
-function generateEnvironmentId(monitors: Monitor[]): string {
-  const sorted = [...monitors].sort((a, b) => a.index - b.index);
-  const geometryString = sorted
-    .map((m) => `${m.geometry.x},${m.geometry.y},${m.geometry.width},${m.geometry.height}`)
-    .join('|');
-
-  // Simple hash function (djb2)
-  let hash = 5381;
-  for (let i = 0; i < geometryString.length; i++) {
-    hash = (hash * 33) ^ geometryString.charCodeAt(i);
-  }
-  return (hash >>> 0).toString(16).padStart(8, '0');
-}
-
-export class GnomeShellMonitorProvider implements MonitorProvider {
+export class GnomeShellMonitorProvider implements MonitorDetectionProvider {
   private monitors: Map<string, Monitor> = new Map();
   private monitorsChangedId: number | null = null;
-  private storage: MonitorEnvironmentStorage = { environments: [], current: '' };
-  private currentActiveCollectionId: string = '';
-  private storageLoaded: boolean = false;
-
-  constructor(private readonly repository: MonitorEnvironmentRepository) {}
 
   /**
-   * Detect all connected monitors
-   * Also loads environment storage on first call
+   * Detect all connected monitors.
    */
   detectMonitors(): Map<string, Monitor> {
-    // Load storage on first detect (lazy initialization)
-    if (!this.storageLoaded) {
-      this.loadStorage();
-      this.storageLoaded = true;
-    }
     const monitors = new Map<string, Monitor>();
     const nMonitors = global.display.get_n_monitors();
     const primaryMonitorIndex = global.display.get_primary_monitor();
@@ -102,15 +64,21 @@ export class GnomeShellMonitorProvider implements MonitorProvider {
   }
 
   /**
-   * Get monitor by key (e.g., "0", "1", "2")
+   * Get all monitors.
+   */
+  getMonitors(): Map<string, Monitor> {
+    return this.monitors;
+  }
+
+  /**
+   * Get monitor by key (e.g., "0", "1", "2").
    */
   getMonitorByKey(monitorKey: string): Monitor | null {
     return this.monitors.get(monitorKey) ?? null;
   }
 
   /**
-   * Get current monitor (based on cursor position or focused window)
-   * Uses GNOME Shell's built-in monitor detection
+   * Get current monitor (based on cursor position or focused window).
    */
   getCurrentMonitor(): Monitor | null {
     const monitorIndex = global.display.get_current_monitor();
@@ -118,7 +86,7 @@ export class GnomeShellMonitorProvider implements MonitorProvider {
   }
 
   /**
-   * Get monitor at position (for cursor-based detection)
+   * Get monitor at position (for cursor-based detection).
    */
   getMonitorAtPosition(x: number, y: number): Monitor | null {
     for (const monitor of this.monitors.values()) {
@@ -136,7 +104,7 @@ export class GnomeShellMonitorProvider implements MonitorProvider {
   }
 
   /**
-   * Get monitor for window (which monitor a window is on)
+   * Get monitor for window (which monitor a window is on).
    */
   getMonitorForWindow(window: Meta.Window): Monitor | null {
     const rect = window.get_frame_rect();
@@ -146,7 +114,7 @@ export class GnomeShellMonitorProvider implements MonitorProvider {
   }
 
   /**
-   * Connect to monitor configuration changes
+   * Connect to monitor configuration changes.
    */
   connectToMonitorChanges(onMonitorsChanged: () => void): void {
     if (this.monitorsChangedId !== null) {
@@ -154,10 +122,8 @@ export class GnomeShellMonitorProvider implements MonitorProvider {
       return;
     }
 
-    // Use Main.layoutManager instead of global.display for monitors-changed signal
     this.monitorsChangedId = Main.layoutManager.connect('monitors-changed', () => {
-      log('[GnomeShellMonitorProvider] Monitors configuration changed, re-detecting...');
-      this.detectMonitors();
+      log('[GnomeShellMonitorProvider] Monitors configuration changed');
       onMonitorsChanged();
     });
 
@@ -165,7 +131,7 @@ export class GnomeShellMonitorProvider implements MonitorProvider {
   }
 
   /**
-   * Disconnect from monitor configuration changes
+   * Disconnect from monitor configuration changes.
    */
   disconnectMonitorChanges(): void {
     if (this.monitorsChangedId !== null) {
@@ -176,7 +142,7 @@ export class GnomeShellMonitorProvider implements MonitorProvider {
   }
 
   /**
-   * Calculate bounding box that contains all monitors
+   * Calculate bounding box that contains all monitors.
    */
   calculateBoundingBox(monitors: Monitor[]): BoundingBox {
     if (monitors.length === 0) {
@@ -202,209 +168,5 @@ export class GnomeShellMonitorProvider implements MonitorProvider {
       width: maxX - minX,
       height: maxY - minY,
     };
-  }
-
-  /**
-   * Get all monitors
-   */
-  getMonitors(): Map<string, Monitor> {
-    return this.monitors;
-  }
-
-  /**
-   * Load storage from repository
-   * Called during initialization to restore environment history
-   */
-  private loadStorage(): void {
-    const loaded = this.repository.load();
-    if (loaded) {
-      this.storage = loaded;
-      log(`[GnomeShellMonitorProvider] Loaded ${this.storage.environments.length} environments`);
-    } else {
-      log('[GnomeShellMonitorProvider] No storage found, starting fresh');
-    }
-  }
-
-  /**
-   * Result of saveMonitors operation
-   */
-  public static readonly NO_ENVIRONMENT_CHANGE = null;
-
-  /**
-   * Save current monitor configuration
-   * Maintains environment history for different monitor setups
-   * Returns the collection ID to activate if environment changed, null otherwise
-   */
-  saveMonitors(): string | null {
-    const monitorsArray = Array.from(this.monitors.values());
-    const envId = generateEnvironmentId(monitorsArray);
-    const now = Date.now();
-    const previousEnvId = this.storage.current;
-    const environmentChanged = previousEnvId !== '' && previousEnvId !== envId;
-
-    let collectionToActivate: string | null = null;
-    let environment = this.storage.environments.find((e) => e.id === envId);
-
-    if (environment) {
-      environment.monitors = monitorsArray;
-      environment.lastActiveAt = now;
-
-      if (environmentChanged) {
-        collectionToActivate = environment.lastActiveCollectionId;
-        log(
-          `[GnomeShellMonitorProvider] Environment switched to ${envId}, activating collection: ${collectionToActivate}`
-        );
-      } else if (this.currentActiveCollectionId) {
-        environment.lastActiveCollectionId = this.currentActiveCollectionId;
-      }
-    } else {
-      const defaultCollectionId = this.getDefaultCollectionId();
-      environment = {
-        id: envId,
-        monitors: monitorsArray,
-        lastActiveCollectionId: defaultCollectionId,
-        lastActiveAt: now,
-      };
-      this.storage.environments.push(environment);
-      collectionToActivate = defaultCollectionId;
-      log(
-        `[GnomeShellMonitorProvider] New environment detected: ${envId} (${monitorsArray.length} monitors), activating: ${defaultCollectionId}`
-      );
-    }
-
-    this.storage.current = envId;
-    this.repository.save(this.storage);
-    log('[GnomeShellMonitorProvider] Monitors saved successfully');
-
-    return collectionToActivate;
-  }
-
-  /**
-   * Get default collection ID for new environments
-   * Uses preset collection matching the monitor count
-   */
-  private getDefaultCollectionId(): string {
-    const monitorCount = this.monitors.size;
-    return `preset-${monitorCount}-monitor`;
-  }
-
-  /**
-   * Set the current active collection ID
-   * Call this when the user changes the collection in settings
-   */
-  setActiveCollectionId(collectionId: string): void {
-    this.currentActiveCollectionId = collectionId;
-
-    // Update current environment if it exists
-    const currentEnv = this.storage.environments.find((e) => e.id === this.storage.current);
-    if (currentEnv) {
-      currentEnv.lastActiveCollectionId = collectionId;
-      currentEnv.lastActiveAt = Date.now();
-      this.saveMonitors();
-    }
-  }
-
-  /**
-   * Get the last active collection ID for the current environment
-   */
-  getLastActiveCollectionId(): string | null {
-    const currentEnv = this.storage.environments.find((e) => e.id === this.storage.current);
-    return currentEnv?.lastActiveCollectionId ?? null;
-  }
-
-  /**
-   * Get storage (for settings screen to access all environments)
-   */
-  getStorage(): MonitorEnvironmentStorage {
-    return this.storage;
-  }
-
-  /**
-   * Get current environment
-   */
-  getCurrentEnvironment(): MonitorEnvironment | null {
-    return this.storage.environments.find((e) => e.id === this.storage.current) ?? null;
-  }
-
-  /**
-   * Find best matching environment for a collection
-   * Priority: 1) Match monitor count, 2) Most recent
-   */
-  findEnvironmentForCollection(displayCount: number): MonitorEnvironment | null {
-    // Filter environments with matching monitor count
-    const matching = this.storage.environments.filter((e) => e.monitors.length === displayCount);
-
-    if (matching.length > 0) {
-      // Return most recent matching environment
-      return matching.sort((a, b) => b.lastActiveAt - a.lastActiveAt)[0];
-    }
-
-    // No matching environment found
-    return null;
-  }
-
-  /**
-   * Get monitors for rendering a space with a specific display count
-   * Returns monitors from matching environment, with inactive flags for monitors
-   * that don't exist in the current physical setup
-   */
-  getMonitorsForRendering(displayCount: number): {
-    monitors: Map<string, Monitor>;
-    inactiveMonitorKeys: Set<string>;
-  } {
-    const currentMonitorCount = this.monitors.size;
-    const inactiveMonitorKeys = new Set<string>();
-
-    // If display count matches current monitors, use current monitors
-    if (displayCount === currentMonitorCount) {
-      return { monitors: this.monitors, inactiveMonitorKeys };
-    }
-
-    // Try to find environment with matching monitor count
-    const environment = this.findEnvironmentForCollection(displayCount);
-    if (environment) {
-      const monitors = new Map<string, Monitor>();
-      for (const monitor of environment.monitors) {
-        const key = String(monitor.index);
-        monitors.set(key, monitor);
-        // Mark as inactive if this monitor doesn't exist in current setup
-        if (!this.monitors.has(key)) {
-          inactiveMonitorKeys.add(key);
-        }
-      }
-      return { monitors, inactiveMonitorKeys };
-    }
-
-    // Fallback: create default monitors using current monitor as reference
-    const monitors = new Map<string, Monitor>();
-    const referenceMonitor = this.monitors.values().next().value as Monitor | undefined;
-    const defaultWidth = referenceMonitor?.geometry.width ?? DEFAULT_MONITOR_WIDTH;
-    const defaultHeight = referenceMonitor?.geometry.height ?? DEFAULT_MONITOR_HEIGHT;
-
-    for (let i = 0; i < displayCount; i++) {
-      const key = String(i);
-      monitors.set(key, {
-        index: i,
-        geometry: {
-          x: i * defaultWidth,
-          y: 0,
-          width: defaultWidth,
-          height: defaultHeight,
-        },
-        workArea: {
-          x: i * defaultWidth,
-          y: 0,
-          width: defaultWidth,
-          height: defaultHeight,
-        },
-        isPrimary: i === 0,
-      });
-      // Mark as inactive if this monitor doesn't exist in current setup
-      if (!this.monitors.has(key)) {
-        inactiveMonitorKeys.add(key);
-      }
-    }
-
-    return { monitors, inactiveMonitorKeys };
   }
 }

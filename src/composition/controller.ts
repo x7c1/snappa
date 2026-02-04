@@ -35,6 +35,7 @@ import { GnomeShellMonitorProvider } from '../infra/monitor/gnome-shell-monitor-
 import { MainPanel } from '../ui/main-panel/index.js';
 import type { LayoutHistoryRepository } from '../usecase/history/index.js';
 import { LicenseUsecase } from '../usecase/licensing/index.js';
+import { MonitorEnvironmentUsecase } from '../usecase/monitor/index.js';
 import { DragSignalHandler, EdgeTimerManager, MotionMonitor } from './drag/index.js';
 import { resolvePresetGeneratorUsecase, resolveSpaceCollectionUsecase } from './factory/index.js';
 import { KeyboardShortcutManager } from './shortcuts/index.js';
@@ -53,6 +54,7 @@ export class Controller {
   private isAtEdge: boolean = false;
   private mainPanel: MainPanel;
   private monitorProvider: GnomeShellMonitorProvider;
+  private monitorEnvironmentUsecase: MonitorEnvironmentUsecase;
   private edgeDetector: EdgeDetector;
   private edgeTimerManager: EdgeTimerManager;
   private motionMonitor: MotionMonitor;
@@ -67,10 +69,14 @@ export class Controller {
 
   constructor(preferencesRepository: GSettingsPreferencesRepository, metadata: ExtensionMetadata) {
     this.preferencesRepository = preferencesRepository;
+    this.monitorProvider = new GnomeShellMonitorProvider();
     const monitorEnvironmentRepository = new FileMonitorEnvironmentRepository(
       getExtensionDataPath(MONITORS_FILE_NAME)
     );
-    this.monitorProvider = new GnomeShellMonitorProvider(monitorEnvironmentRepository);
+    this.monitorEnvironmentUsecase = new MonitorEnvironmentUsecase(
+      this.monitorProvider,
+      monitorEnvironmentRepository
+    );
 
     // Lazy load to avoid I/O until panel is actually displayed
     this.layoutHistoryRepository = new FileLayoutHistoryRepository(
@@ -115,7 +121,7 @@ export class Controller {
 
     this.mainPanel = new MainPanel({
       metadata,
-      monitorProvider: this.monitorProvider,
+      monitorProvider: this.monitorEnvironmentUsecase,
       layoutHistoryRepository: this.layoutHistoryRepository,
       onLayoutSelected: (event) => this.applyLayoutToCurrentWindow(event),
       getOpenPreferencesShortcuts: () => preferencesRepository.getOpenPreferencesShortcut(),
@@ -142,21 +148,17 @@ export class Controller {
       }
     });
 
-    this.monitorProvider.detectMonitors();
-
-    // Sync current active collection from settings to GnomeShellMonitorProvider
+    // Sync current active collection from settings
     const currentCollectionId = this.preferencesRepository.getActiveSpaceCollectionId();
     if (currentCollectionId) {
-      this.monitorProvider.setActiveCollectionId(currentCollectionId);
+      this.monitorEnvironmentUsecase.setActiveCollectionId(currentCollectionId);
     }
 
-    // Save monitors and handle any environment-triggered collection change
-    this.handleMonitorsSaveResult(this.monitorProvider.saveMonitors());
+    // Detect monitors and save environment
+    this.handleMonitorsSaveResult(this.monitorEnvironmentUsecase.detectAndSaveMonitors());
 
     this.monitorProvider.connectToMonitorChanges(() => {
-      this.monitorProvider.detectMonitors();
-      // Save and handle environment change
-      const collectionToActivate = this.monitorProvider.saveMonitors();
+      const collectionToActivate = this.monitorEnvironmentUsecase.detectAndSaveMonitors();
       this.handleMonitorsSaveResult(collectionToActivate);
 
       // Re-render panel when monitors change to reflect new configuration
@@ -204,7 +206,7 @@ export class Controller {
     if (collectionToActivate) {
       log(`[Controller] Environment changed, activating collection: ${collectionToActivate}`);
       this.preferencesRepository.setActiveSpaceCollectionId(collectionToActivate);
-      this.monitorProvider.setActiveCollectionId(collectionToActivate);
+      this.monitorEnvironmentUsecase.setActiveCollectionId(collectionToActivate);
       this.syncActiveCollectionToHistory();
     }
   }
@@ -330,7 +332,7 @@ export class Controller {
     }
 
     this.ensureHistoryLoaded();
-    this.handleMonitorsSaveResult(this.monitorProvider.saveMonitors());
+    this.handleMonitorsSaveResult(this.monitorEnvironmentUsecase.detectAndSaveMonitors());
 
     const cursor = this.getCursorPosition();
     const window = this.getCurrentWindow();
