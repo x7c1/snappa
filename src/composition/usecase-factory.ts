@@ -7,7 +7,7 @@
 
 import { MONITORS_FILE_NAME } from '../infra/constants.js';
 import { FileMonitorCountRepository, getExtensionDataPath } from '../infra/file/index.js';
-import { GdkMonitorDetector } from '../infra/monitor/index.js';
+import { GdkMonitorDetector } from '../infra/monitor/gdk-monitor-detector.js';
 import { uuidGenerator } from '../libs/uuid/index.js';
 import { PresetGeneratorUsecase, SpaceCollectionUsecase } from '../usecase/layout/index.js';
 import { resolveSpaceCollectionRepository } from './repository-factory.js';

@@ -32,7 +32,7 @@ import {
   GSettingsLicenseRepository,
   SystemDeviceInfoProvider,
 } from '../infra/gsettings/index.js';
-import { MonitorManager } from '../infra/monitor/manager.js';
+import { GnomeShellMonitorManager } from '../infra/monitor/gnome-shell-monitor-manager.js';
 import type { ExtensionSettings } from '../infra/settings/extension-settings.js';
 import { KeyboardShortcutManager } from '../infra/shortcuts/index.js';
 import { LayoutApplicator } from '../infra/window/index.js';
@@ -53,7 +53,7 @@ export class Controller {
   private isDragging: boolean = false;
   private isAtEdge: boolean = false;
   private mainPanel: MainPanel;
-  private monitorManager: MonitorManager;
+  private monitorManager: GnomeShellMonitorManager;
   private edgeDetector: EdgeDetector;
   private edgeTimerManager: EdgeTimerManager;
   private motionMonitor: MotionMonitor;
@@ -68,7 +68,7 @@ export class Controller {
 
   constructor(settings: ExtensionSettings, metadata: ExtensionMetadata) {
     this.settings = settings;
-    this.monitorManager = new MonitorManager();
+    this.monitorManager = new GnomeShellMonitorManager();
 
     // Lazy load to avoid I/O until panel is actually displayed
     this.layoutHistoryRepository = new FileLayoutHistoryRepository(
@@ -149,7 +149,7 @@ export class Controller {
 
     this.monitorManager.detectMonitors();
 
-    // Sync current active collection from settings to MonitorManager
+    // Sync current active collection from settings to GnomeShellMonitorManager
     const currentCollectionId = this.settings.getActiveSpaceCollectionId();
     if (currentCollectionId) {
       this.monitorManager.setActiveCollectionId(currentCollectionId);
