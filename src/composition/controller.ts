@@ -18,8 +18,12 @@ import { EdgeDetector, type Position } from '../domain/geometry/index.js';
 import type { LayoutSelectedEvent } from '../domain/layout/index.js';
 import { CollectionId, extractLayoutIds } from '../domain/layout/index.js';
 import { HttpLicenseApiClient } from '../infra/api/index.js';
-import { HISTORY_FILE_NAME } from '../infra/constants.js';
-import { FileLayoutHistoryRepository, getExtensionDataPath } from '../infra/file/index.js';
+import { HISTORY_FILE_NAME, MONITORS_FILE_NAME } from '../infra/constants.js';
+import {
+  FileLayoutHistoryRepository,
+  FileMonitorEnvironmentRepository,
+  getExtensionDataPath,
+} from '../infra/file/index.js';
 import {
   GioNetworkStateProvider,
   GLibDateProvider,
@@ -63,7 +67,10 @@ export class Controller {
 
   constructor(preferencesRepository: GSettingsPreferencesRepository, metadata: ExtensionMetadata) {
     this.preferencesRepository = preferencesRepository;
-    this.monitorProvider = new GnomeShellMonitorProvider();
+    const monitorEnvironmentRepository = new FileMonitorEnvironmentRepository(
+      getExtensionDataPath(MONITORS_FILE_NAME)
+    );
+    this.monitorProvider = new GnomeShellMonitorProvider(monitorEnvironmentRepository);
 
     // Lazy load to avoid I/O until panel is actually displayed
     this.layoutHistoryRepository = new FileLayoutHistoryRepository(

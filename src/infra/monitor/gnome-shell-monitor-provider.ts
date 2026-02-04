@@ -9,7 +9,6 @@
  * Stores multiple monitor environments for different physical setups.
  */
 
-import Gio from 'gi://Gio';
 import type Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {
@@ -20,9 +19,7 @@ import {
   type MonitorEnvironment,
   type MonitorEnvironmentStorage,
 } from '../../domain/monitor/index.js';
-import type { MonitorProvider } from '../../usecase/monitor/index.js';
-import { MONITORS_FILE_NAME } from '../constants.js';
-import { getExtensionDataPath } from '../file/index.js';
+import type { MonitorEnvironmentRepository, MonitorProvider } from '../../usecase/monitor/index.js';
 
 declare function log(message: string): void;
 
@@ -51,6 +48,8 @@ export class GnomeShellMonitorProvider implements MonitorProvider {
   private storage: MonitorEnvironmentStorage = { environments: [], current: '' };
   private currentActiveCollectionId: string = '';
   private storageLoaded: boolean = false;
+
+  constructor(private readonly repository: MonitorEnvironmentRepository) {}
 
   /**
    * Detect all connected monitors
@@ -213,29 +212,16 @@ export class GnomeShellMonitorProvider implements MonitorProvider {
   }
 
   /**
-   * Load storage from file
+   * Load storage from repository
    * Called during initialization to restore environment history
    */
-  loadStorage(): void {
-    const filePath = getExtensionDataPath(MONITORS_FILE_NAME);
-    const file = Gio.File.new_for_path(filePath);
-
-    if (!file.query_exists(null)) {
-      log('[GnomeShellMonitorProvider] No storage file found, starting fresh');
-      return;
-    }
-
-    try {
-      const [success, contents] = file.load_contents(null);
-      if (success) {
-        const json = new TextDecoder('utf-8').decode(contents);
-        const parsed = JSON.parse(json);
-
-        this.storage = parsed as MonitorEnvironmentStorage;
-        log(`[GnomeShellMonitorProvider] Loaded ${this.storage.environments.length} environments`);
-      }
-    } catch (e) {
-      log(`[GnomeShellMonitorProvider] Error loading storage: ${e}`);
+  private loadStorage(): void {
+    const loaded = this.repository.load();
+    if (loaded) {
+      this.storage = loaded;
+      log(`[GnomeShellMonitorProvider] Loaded ${this.storage.environments.length} environments`);
+    } else {
+      log('[GnomeShellMonitorProvider] No storage found, starting fresh');
     }
   }
 
@@ -245,69 +231,50 @@ export class GnomeShellMonitorProvider implements MonitorProvider {
   public static readonly NO_ENVIRONMENT_CHANGE = null;
 
   /**
-   * Save current monitor configuration to file
+   * Save current monitor configuration
    * Maintains environment history for different monitor setups
    * Returns the collection ID to activate if environment changed, null otherwise
    */
   saveMonitors(): string | null {
-    const filePath = getExtensionDataPath(MONITORS_FILE_NAME);
-    const file = Gio.File.new_for_path(filePath);
+    const monitorsArray = Array.from(this.monitors.values());
+    const envId = generateEnvironmentId(monitorsArray);
+    const now = Date.now();
+    const previousEnvId = this.storage.current;
+    const environmentChanged = previousEnvId !== '' && previousEnvId !== envId;
+
     let collectionToActivate: string | null = null;
+    let environment = this.storage.environments.find((e) => e.id === envId);
 
-    try {
-      const parent = file.get_parent();
-      if (parent && !parent.query_exists(null)) {
-        parent.make_directory_with_parents(null);
-      }
+    if (environment) {
+      environment.monitors = monitorsArray;
+      environment.lastActiveAt = now;
 
-      // Update or create environment for current monitors
-      const monitorsArray = Array.from(this.monitors.values());
-      const envId = generateEnvironmentId(monitorsArray);
-      const now = Date.now();
-      const previousEnvId = this.storage.current;
-      const environmentChanged = previousEnvId !== '' && previousEnvId !== envId;
-
-      let environment = this.storage.environments.find((e) => e.id === envId);
-      if (environment) {
-        // Existing environment - update monitors and timestamp
-        environment.monitors = monitorsArray;
-        environment.lastActiveAt = now;
-
-        // If environment changed, use the stored collection for this environment
-        if (environmentChanged) {
-          collectionToActivate = environment.lastActiveCollectionId;
-          log(
-            `[GnomeShellMonitorProvider] Environment switched to ${envId}, activating collection: ${collectionToActivate}`
-          );
-        } else if (this.currentActiveCollectionId) {
-          // Same environment - update collection if we have one
-          environment.lastActiveCollectionId = this.currentActiveCollectionId;
-        }
-      } else {
-        // New environment - create with default collection
-        const defaultCollectionId = this.getDefaultCollectionId();
-        environment = {
-          id: envId,
-          monitors: monitorsArray,
-          lastActiveCollectionId: defaultCollectionId,
-          lastActiveAt: now,
-        };
-        this.storage.environments.push(environment);
-        collectionToActivate = defaultCollectionId;
+      if (environmentChanged) {
+        collectionToActivate = environment.lastActiveCollectionId;
         log(
-          `[GnomeShellMonitorProvider] New environment detected: ${envId} (${monitorsArray.length} monitors), activating: ${defaultCollectionId}`
+          `[GnomeShellMonitorProvider] Environment switched to ${envId}, activating collection: ${collectionToActivate}`
         );
+      } else if (this.currentActiveCollectionId) {
+        environment.lastActiveCollectionId = this.currentActiveCollectionId;
       }
-
-      this.storage.current = envId;
-
-      const json = JSON.stringify(this.storage, null, 2);
-      file.replace_contents(json, null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
-
-      log('[GnomeShellMonitorProvider] Monitors saved successfully');
-    } catch (e) {
-      log(`[GnomeShellMonitorProvider] Error saving monitors: ${e}`);
+    } else {
+      const defaultCollectionId = this.getDefaultCollectionId();
+      environment = {
+        id: envId,
+        monitors: monitorsArray,
+        lastActiveCollectionId: defaultCollectionId,
+        lastActiveAt: now,
+      };
+      this.storage.environments.push(environment);
+      collectionToActivate = defaultCollectionId;
+      log(
+        `[GnomeShellMonitorProvider] New environment detected: ${envId} (${monitorsArray.length} monitors), activating: ${defaultCollectionId}`
+      );
     }
+
+    this.storage.current = envId;
+    this.repository.save(this.storage);
+    log('[GnomeShellMonitorProvider] Monitors saved successfully');
 
     return collectionToActivate;
   }
