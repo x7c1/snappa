@@ -1,31 +1,54 @@
-# Plan 22: MonitorManager File I/O Extraction
+# Plan 22: GnomeShellMonitorProvider File I/O Extraction
 
 ## Overview
 
-Extract file I/O responsibilities from `MonitorManager` into a dedicated repository class, following the same pattern established in Plan 18 (Layer Architecture Refactoring).
+Extract file I/O responsibilities from `GnomeShellMonitorProvider` into a dedicated repository class, following the layer architecture pattern established in Plan 18.
 
 ## Background
 
-During the refactoring of `loadMonitorCount` (separating file reading and Gdk detection), we discovered that `MonitorManager` in `infra/monitor/` directly performs file I/O operations using `getExtensionDataPath` from `infra/file/`.
-
-This violates the principle of single responsibility and creates inappropriate cross-dependencies within the infrastructure layer.
+`GnomeShellMonitorProvider` in `infra/monitor/` directly performs file I/O operations using `getExtensionDataPath` from `infra/file/`. This violates single responsibility and creates inappropriate cross-dependencies within the infrastructure layer.
 
 ## Current State
 
-`MonitorManager` (`infra/monitor/manager.ts`) has two methods that perform file I/O:
+`GnomeShellMonitorProvider` (`infra/monitor/gnome-shell-monitor-provider.ts`) has two methods that perform file I/O:
 
 - `loadStorage()`: Loads monitor environment configuration from file
 - `saveMonitors()`: Saves monitor configuration to file
 
 Both methods use `getExtensionDataPath(MONITORS_FILE_NAME)` to access `monitors.snappa.json`.
 
+### Existing Layer Structure
+
+```
+usecase/monitor/
+  MonitorProvider           # Interface for monitor access (already exists)
+  MonitorCountRepository    # Interface for loading monitor count (already exists)
+  MonitorDetector           # Interface for detecting monitors (already exists)
+
+infra/monitor/
+  GnomeShellMonitorProvider # Implements MonitorProvider (has file I/O problem)
+  GdkMonitorDetector        # Implements MonitorDetector
+
+infra/file/
+  FileMonitorCountRepository  # Implements MonitorCountRepository
+```
+
 ## Problem
 
-- `MonitorManager` has mixed responsibilities (monitor detection + file storage)
-- `infra/monitor/` depends on `infra/file/` utilities
+- `GnomeShellMonitorProvider` has mixed responsibilities (monitor detection + file storage)
+- `infra/monitor/` depends on `infra/file/` utilities (`getExtensionDataPath`)
 - Difficult to test monitor logic in isolation from file system
 
 ## Solution
+
+### Separation of Concerns
+
+The current `saveMonitors()` method contains two distinct responsibilities:
+
+1. **Business logic**: Environment ID generation, change detection, collection activation decision
+2. **File I/O**: Reading/writing `MonitorEnvironmentStorage` to disk
+
+The repository will handle only file I/O. Business logic remains in `GnomeShellMonitorProvider`.
 
 ### Create New Repository Interface
 
@@ -51,40 +74,65 @@ class FileMonitorEnvironmentRepository implements MonitorEnvironmentRepository {
 }
 ```
 
-### Refactor MonitorManager
+### Refactor GnomeShellMonitorProvider
 
-- Remove direct file I/O from `MonitorManager`
-- Inject `MonitorEnvironmentRepository` as a dependency
-- `MonitorManager` focuses solely on monitor detection and environment management logic
+- Inject `MonitorEnvironmentRepository` via constructor
+- Replace direct Gio file operations with repository calls
+- Keep all environment management logic (ID generation, change detection, `saveMonitors()` return value)
 
 ## Implementation Steps
 
-- Create `MonitorEnvironmentRepository` interface in `usecase/monitor/`
-- Create `FileMonitorEnvironmentRepository` in `infra/file/`
-- Refactor `MonitorManager` to use the repository
-- Update composition layer to wire dependencies
-- Remove `getExtensionDataPath` import from `infra/monitor/manager.ts`
-- Run build, check, and tests
+1. Create `MonitorEnvironmentRepository` interface in `usecase/monitor/`
+2. Create `FileMonitorEnvironmentRepository` in `infra/file/`
+3. Refactor `GnomeShellMonitorProvider`:
+   - Add constructor parameter: `repository: MonitorEnvironmentRepository`
+   - Replace `loadStorage()` file operations with `this.repository.load()`
+   - Replace `saveMonitors()` file operations with `this.repository.save()`
+   - Keep `saveMonitors()` return type as `string | null` (business logic unchanged)
+4. Update `Controller` to instantiate and inject dependencies:
+   ```typescript
+   const repository = new FileMonitorEnvironmentRepository(
+     getExtensionDataPath(MONITORS_FILE_NAME)
+   );
+   this.monitorProvider = new GnomeShellMonitorProvider(repository);
+   ```
+5. Remove `getExtensionDataPath` and `Gio` imports from `gnome-shell-monitor-provider.ts`
+6. Export `FileMonitorEnvironmentRepository` from `infra/file/index.ts`
+7. Run build, check, and tests
 
 ## Expected Outcome
 
 ```
 usecase/monitor/
-  MonitorEnvironmentRepository  # Interface (port)
+  MonitorProvider               # Interface (existing)
+  MonitorCountRepository        # Interface (existing)
+  MonitorDetector               # Interface (existing)
+  MonitorEnvironmentRepository  # Interface (new)
 
 infra/file/
-  FileMonitorEnvironmentRepository  # Implementation
+  FileMonitorCountRepository       # Implementation (existing)
+  FileMonitorEnvironmentRepository # Implementation (new)
 
 infra/monitor/
-  MonitorManager  # No longer imports from infra/file/
+  GnomeShellMonitorProvider  # No longer imports from infra/file/
+  GdkMonitorDetector         # Unchanged
+
+composition/
+  Controller  # Wires FileMonitorEnvironmentRepository → GnomeShellMonitorProvider
 ```
 
-## Timeline
+### Dependency Flow
 
-- Priority: Medium (next PR after current refactoring)
-- Estimated effort: 2 points
+```
+Controller (composition)
+    │
+    ├── creates FileMonitorEnvironmentRepository (infra/file)
+    │
+    └── injects into GnomeShellMonitorProvider (infra/monitor)
+            │
+            └── uses MonitorEnvironmentRepository interface (usecase)
+```
 
 ## Related
 
 - Plan 18: Layer Architecture Refactoring
-- Current PR: feature/2026-18-layer-architecture-refactoring
