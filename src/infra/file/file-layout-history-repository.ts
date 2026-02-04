@@ -1,6 +1,6 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
-import { LayoutEvent } from '../../domain/history/index.js';
+import { LayoutEvent, type WindowIdentifier } from '../../domain/history/index.js';
 import { type CollectionId, LayoutId } from '../../domain/layout/index.js';
 import type { LayoutHistoryRepository } from '../../usecase/history/index.js';
 import { toRawLayoutEvent } from './layout-event-serializer.js';
@@ -81,8 +81,8 @@ export class FileLayoutHistoryRepository implements LayoutHistoryRepository {
     log(`[LayoutHistory] Loaded ${this.events.length} events`);
   }
 
-  setSelectedLayout(windowId: number, wmClass: string, title: string, layoutId: LayoutId): void {
-    if (!wmClass) {
+  setSelectedLayout(target: WindowIdentifier, layoutId: LayoutId): void {
+    if (!target.wmClass) {
       log('[LayoutHistory] wmClass is empty, skipping history update');
       return;
     }
@@ -92,13 +92,13 @@ export class FileLayoutHistoryRepository implements LayoutHistoryRepository {
       return;
     }
 
-    this.memory.byWindowId.set(windowId, layoutId);
+    this.memory.byWindowId.set(target.windowId, layoutId);
 
     const event = new LayoutEvent({
       timestamp: Date.now(),
       collectionId: this.activeCollectionId,
-      wmClassHash: this.hashString(wmClass),
-      titleHash: this.hashString(title),
+      wmClassHash: this.hashString(target.wmClass),
+      titleHash: this.hashString(target.title),
       layoutId,
     });
 
@@ -110,12 +110,12 @@ export class FileLayoutHistoryRepository implements LayoutHistoryRepository {
     );
   }
 
-  getSelectedLayoutId(windowId: number, wmClass: string, title: string): LayoutId | null {
-    if (!wmClass) {
+  getSelectedLayoutId(target: WindowIdentifier): LayoutId | null {
+    if (!target.wmClass) {
       return null;
     }
 
-    const byWindowId = this.memory.byWindowId.get(windowId);
+    const byWindowId = this.memory.byWindowId.get(target.windowId);
     if (byWindowId) {
       return byWindowId;
     }
@@ -124,8 +124,8 @@ export class FileLayoutHistoryRepository implements LayoutHistoryRepository {
       return null;
     }
 
-    const wmClassHash = this.hashString(wmClass);
-    const titleHash = this.hashString(title);
+    const wmClassHash = this.hashString(target.wmClass);
+    const titleHash = this.hashString(target.title);
 
     const titleKey = `${this.activeCollectionId.toString()}:${wmClassHash}:${titleHash}`;
     const byTitle = this.memory.byTitleHash.get(titleKey);

@@ -62,11 +62,13 @@ export function createMiniatureDisplayView(
   // Get selected layout ID for this window using three-tier lookup
   let selectedLayoutId: string | null = null;
   if (window) {
-    const windowId = window.get_id();
     const wmClass = window.get_wm_class();
-    const title = window.get_title();
     if (wmClass !== null) {
-      const layoutId = layoutHistoryRepository.getSelectedLayoutId(windowId, wmClass, title);
+      const layoutId = layoutHistoryRepository.getSelectedLayoutId({
+        windowId: window.get_id(),
+        wmClass,
+        title: window.get_title(),
+      });
       selectedLayoutId = layoutId?.toString() ?? null;
     }
   }

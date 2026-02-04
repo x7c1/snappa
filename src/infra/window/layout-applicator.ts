@@ -44,12 +44,13 @@ export class LayoutApplicator {
     // This ensures we always use the current workArea, especially after monitor changes
     const workArea = Main.layoutManager.getWorkAreaForMonitor(targetMonitor.index);
 
-    const windowId = window.get_id();
     const wmClass = window.get_wm_class();
-    const title = window.get_title();
     if (wmClass) {
       const layoutId = new LayoutId(layout.id);
-      this.layoutHistoryRepository.setSelectedLayout(windowId, wmClass, title, layoutId);
+      this.layoutHistoryRepository.setSelectedLayout(
+        { windowId: window.get_id(), wmClass, title: window.get_title() },
+        layoutId
+      );
       if (this.callbacks.onLayoutApplied) {
         this.callbacks.onLayoutApplied(layout.id, monitorKey);
       }

@@ -1,3 +1,4 @@
+import type { WindowIdentifier } from '../../domain/history/index.js';
 import type { CollectionId, LayoutId } from '../../domain/layout/index.js';
 
 /**
@@ -18,11 +19,11 @@ export interface LayoutHistoryRepository {
   /**
    * Record a layout selection for a window
    */
-  setSelectedLayout(windowId: number, wmClass: string, title: string, layoutId: LayoutId): void;
+  setSelectedLayout(target: WindowIdentifier, layoutId: LayoutId): void;
 
   /**
    * Get the previously selected layout for a window
    * Returns null if no history exists
    */
-  getSelectedLayoutId(windowId: number, wmClass: string, title: string): LayoutId | null;
+  getSelectedLayoutId(target: WindowIdentifier): LayoutId | null;
 }
