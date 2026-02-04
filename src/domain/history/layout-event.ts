@@ -74,12 +74,4 @@ export class LayoutEvent {
       layoutId: new LayoutId(obj.layoutId),
     });
   }
-
-  static tryFromRaw(raw: unknown): LayoutEvent | null {
-    try {
-      return LayoutEvent.fromRaw(raw);
-    } catch {
-      return null;
-    }
-  }
 }

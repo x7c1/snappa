@@ -164,12 +164,7 @@ export class FileLayoutHistoryRepository implements LayoutHistoryRepository {
       for (const line of lines) {
         try {
           const parsed: unknown = JSON.parse(line);
-          const event = LayoutEvent.tryFromRaw(parsed);
-          if (event) {
-            events.push(event);
-          } else {
-            log(`[LayoutHistory] Skipping invalid event: ${line}`);
-          }
+          events.push(LayoutEvent.fromRaw(parsed));
         } catch {
           log(`[LayoutHistory] Skipping invalid line: ${line}`);
         }

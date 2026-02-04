@@ -102,24 +102,4 @@ describe('LayoutEvent', () => {
       expect(() => LayoutEvent.fromRaw(raw)).toThrow();
     });
   });
-
-  describe('tryFromRaw', () => {
-    it('returns LayoutEvent for valid input', () => {
-      const raw = {
-        timestamp: 1234567890,
-        collectionId: '550e8400-e29b-41d4-a716-446655440000',
-        wmClassHash: 'abcd1234abcd1234',
-        titleHash: 'efgh5678efgh5678',
-        layoutId: '660e8400-e29b-41d4-a716-446655440000',
-      };
-
-      const event = LayoutEvent.tryFromRaw(raw);
-      expect(event).not.toBeNull();
-    });
-
-    it('returns null for invalid input', () => {
-      expect(LayoutEvent.tryFromRaw(null)).toBeNull();
-      expect(LayoutEvent.tryFromRaw({ invalid: true })).toBeNull();
-    });
-  });
 });
