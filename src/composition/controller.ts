@@ -16,7 +16,7 @@ import Meta from 'gi://Meta';
 import type { ExtensionMetadata } from 'resource:///org/gnome/shell/extensions/extension.js';
 import type { Position } from '../domain/geometry/index.js';
 import type { LayoutSelectedEvent } from '../domain/layout/index.js';
-import { CollectionId } from '../domain/layout/index.js';
+import { CollectionId, extractLayoutIds } from '../domain/layout/index.js';
 import { HttpLicenseApiClient } from '../infra/api/index.js';
 import { HISTORY_FILE_NAME } from '../infra/constants.js';
 import {
@@ -230,23 +230,8 @@ export class Controller {
    * Get all valid layout IDs from all collections
    */
   private getAllValidLayoutIds(): Set<string> {
-    const ids = new Set<string>();
     const collections = resolveSpaceCollectionUsecase().loadAllCollections();
-
-    for (const collection of collections) {
-      for (const row of collection.rows) {
-        for (const space of row.spaces) {
-          for (const monitorKey in space.displays) {
-            const layoutGroup = space.displays[monitorKey];
-            for (const layout of layoutGroup.layouts) {
-              ids.add(layout.id);
-            }
-          }
-        }
-      }
-    }
-
-    return ids;
+    return extractLayoutIds(collections);
   }
 
   /**
