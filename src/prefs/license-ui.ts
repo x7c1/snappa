@@ -225,6 +225,7 @@ function createLicenseKeyRow(
   activateButton.connect('clicked', async () => {
     const licenseKeyText = row.get_text().trim();
     if (!licenseKeyText) {
+      showError('Please enter a license key');
       return;
     }
 
@@ -254,6 +255,10 @@ function createLicenseKeyRow(
 
   row.connect('entry-activated', () => {
     activateButton.emit('clicked');
+  });
+
+  row.connect('changed', () => {
+    clearError();
   });
 
   spinner.set_visible(false);
