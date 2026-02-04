@@ -3,11 +3,11 @@
 import type Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
 import type Gio from 'gi://Gio';
-import { getSpaceCollectionRepository } from '../composition/space-collection-repository.js';
+import { getSpaceCollectionRepository } from '../composition/repository-factory.js';
 import {
   getPresetGeneratorUseCase,
   getSpaceCollectionUseCase,
-} from '../composition/use-case-factory.js';
+} from '../composition/usecase-factory.js';
 import type { SpaceCollection } from '../domain/layout/index.js';
 import { DEFAULT_MONITOR_HEIGHT, DEFAULT_MONITOR_WIDTH } from '../domain/types/index.js';
 import { createGeneralPage } from './keyboard-shortcuts.js';

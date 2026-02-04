@@ -38,7 +38,7 @@ import { LayoutApplicator } from '../infra/window/index.js';
 import { MainPanel } from '../ui/main-panel/index.js';
 import type { LayoutHistoryRepository } from '../usecase/history/index.js';
 import { LicenseService } from '../usecase/licensing/index.js';
-import { getPresetGeneratorUseCase, getSpaceCollectionUseCase } from './use-case-factory.js';
+import { getPresetGeneratorUseCase, getSpaceCollectionUseCase } from './usecase-factory.js';
 
 declare function log(message: string): void;
 

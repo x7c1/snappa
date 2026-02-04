@@ -8,7 +8,7 @@
 import { FileMonitorCountProvider } from '../infra/monitor/gdk-monitor-detector.js';
 import { generateUUID } from '../libs/uuid/index.js';
 import { PresetGeneratorUseCase, SpaceCollectionUseCase } from '../usecase/layout/index.js';
-import { getSpaceCollectionRepository } from './space-collection-repository.js';
+import { getSpaceCollectionRepository } from './repository-factory.js';
 
 let spaceCollectionUseCase: SpaceCollectionUseCase | null = null;
 let presetGeneratorUseCase: PresetGeneratorUseCase | null = null;

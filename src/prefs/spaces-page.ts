@@ -5,7 +5,7 @@ import Gtk from 'gi://Gtk';
 import {
   getPresetGeneratorUseCase,
   getSpaceCollectionUseCase,
-} from '../composition/use-case-factory.js';
+} from '../composition/usecase-factory.js';
 import type {
   Monitor,
   MonitorEnvironmentStorage,
