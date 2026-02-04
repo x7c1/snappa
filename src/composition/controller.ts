@@ -63,7 +63,7 @@ export class Controller {
   private layoutHistoryRepository: LayoutHistoryRepository;
   private historyLoaded: boolean = false;
   private settings: ExtensionSettings;
-  private licenseService: LicenseUseCase;
+  private licenseUseCase: LicenseUseCase;
   private isLicenseValid: boolean = true;
 
   constructor(settings: ExtensionSettings, metadata: ExtensionMetadata) {
@@ -96,15 +96,15 @@ export class Controller {
     // Initialize license management
     const licenseRepository = new GSettingsLicenseRepository(settings.getGSettings());
     const licenseApiClient = new HttpLicenseApiClient(__LICENSE_API_BASE_URL__);
-    this.licenseService = new LicenseUseCase(
+    this.licenseUseCase = new LicenseUseCase(
       licenseRepository,
       licenseApiClient,
       new GLibDateProvider(),
       new GioNetworkStateProvider(),
       new SystemDeviceInfoProvider()
     );
-    this.licenseService.onStateChange(() => {
-      this.isLicenseValid = this.licenseService.shouldExtensionBeEnabled();
+    this.licenseUseCase.onStateChange(() => {
+      this.isLicenseValid = this.licenseUseCase.shouldExtensionBeEnabled();
       if (!this.isLicenseValid) {
         log('[Controller] License invalid, hiding panel');
         this.mainPanel.hide();
@@ -140,8 +140,8 @@ export class Controller {
    */
   enable(): void {
     // Initialize license checking
-    this.licenseService.initialize().then(() => {
-      this.isLicenseValid = this.licenseService.shouldExtensionBeEnabled();
+    this.licenseUseCase.initialize().then(() => {
+      this.isLicenseValid = this.licenseUseCase.shouldExtensionBeEnabled();
       if (!this.isLicenseValid) {
         log('[Controller] License invalid on startup, extension disabled');
       }
@@ -184,7 +184,7 @@ export class Controller {
    * Disable the controller
    */
   disable(): void {
-    this.licenseService.clearCallbacks();
+    this.licenseUseCase.clearCallbacks();
     this.motionMonitor.stop();
     this.dragSignalHandler.disconnect();
     this.keyboardShortcutManager.unregisterAll();

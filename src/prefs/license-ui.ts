@@ -24,7 +24,7 @@ export function createLicenseGroup(
 
   const repository = new GSettingsLicenseRepository(settings);
   const apiClient = new HttpLicenseApiClient(__LICENSE_API_BASE_URL__);
-  const licenseService = new LicenseUseCase(
+  const licenseUseCase = new LicenseUseCase(
     repository,
     apiClient,
     new GLibDateProvider(),
@@ -32,20 +32,20 @@ export function createLicenseGroup(
     new SystemDeviceInfoProvider()
   );
 
-  const statusRow = createStatusRow(licenseService.getState());
+  const statusRow = createStatusRow(licenseUseCase.getState());
   group.add(statusRow);
 
-  const { row: keyRow } = createLicenseKeyRow(licenseService, () =>
-    updateStatusRow(statusRow, licenseService.getState())
+  const { row: keyRow } = createLicenseKeyRow(licenseUseCase, () =>
+    updateStatusRow(statusRow, licenseUseCase.getState())
   );
   group.add(keyRow);
 
-  licenseService.onStateChange((state: LicenseState) => {
+  licenseUseCase.onStateChange((state: LicenseState) => {
     updateStatusRow(statusRow, state);
   });
 
   window.connect('close-request', () => {
-    licenseService.clearCallbacks();
+    licenseUseCase.clearCallbacks();
     return false;
   });
 
@@ -171,7 +171,7 @@ interface LicenseKeyRowResult {
 }
 
 function createLicenseKeyRow(
-  licenseService: LicenseUseCase,
+  licenseUseCase: LicenseUseCase,
   onUpdate: () => void
 ): LicenseKeyRowResult {
   const row = new Adw.EntryRow({
@@ -218,7 +218,7 @@ function createLicenseKeyRow(
 
     try {
       const licenseKey = new LicenseKey(licenseKeyText);
-      const result = await licenseService.activate(licenseKey);
+      const result = await licenseUseCase.activate(licenseKey);
 
       if (result.success) {
         row.set_text('');
