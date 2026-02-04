@@ -31,7 +31,7 @@ export interface DeviceInfoProvider {
   getDeviceLabel(): string;
 }
 
-export interface LicenseServiceResult {
+export interface LicenseUseCaseResult {
   success: boolean;
   deactivatedDevice?: string | null;
   error?: string;
@@ -42,7 +42,7 @@ export interface LicenseServiceResult {
  * Coordinates validation, activation, and state transitions
  * Does not contain GLib/timer dependencies - those belong in the controller
  */
-export class LicenseService {
+export class LicenseUseCase {
   private readonly repository: LicenseRepository;
   private readonly apiClient: LicenseApiClient;
   private readonly dateProvider: DateProvider;
@@ -69,7 +69,7 @@ export class LicenseService {
    * Should be called when extension is enabled
    */
   async initialize(): Promise<void> {
-    log('[LicenseService] Initializing...');
+    log('[LicenseUseCase] Initializing...');
 
     const status = this.repository.getStatus();
     const license = this.repository.loadLicense();
@@ -141,8 +141,8 @@ export class LicenseService {
   /**
    * Activate a license key for this device
    */
-  async activate(licenseKey: LicenseKey): Promise<LicenseServiceResult> {
-    log('[LicenseService] Activating license...');
+  async activate(licenseKey: LicenseKey): Promise<LicenseUseCaseResult> {
+    log('[LicenseUseCase] Activating license...');
 
     const deviceId = this.deviceInfoProvider.getDeviceId();
     const deviceLabel = this.deviceInfoProvider.getDeviceLabel();
@@ -156,7 +156,7 @@ export class LicenseService {
       );
       this.repository.setStatus('valid');
 
-      log('[LicenseService] License activated successfully');
+      log('[LicenseUseCase] License activated successfully');
       this.notifyStateChange();
 
       return {
@@ -175,11 +175,11 @@ export class LicenseService {
     const license = this.repository.loadLicense();
 
     if (!license) {
-      log('[LicenseService] No license to validate');
+      log('[LicenseUseCase] No license to validate');
       return false;
     }
 
-    log('[LicenseService] Validating license...');
+    log('[LicenseUseCase] Validating license...');
 
     const result = await this.apiClient.validate(license.licenseKey, license.activationId);
 
@@ -189,7 +189,7 @@ export class LicenseService {
       this.repository.saveLicense(updatedLicense);
       this.repository.setStatus('valid');
 
-      log('[LicenseService] License validation successful');
+      log('[LicenseUseCase] License validation successful');
       this.notifyStateChange();
       return true;
     }
@@ -203,7 +203,7 @@ export class LicenseService {
   clearLicense(): void {
     this.repository.clearLicense();
     this.notifyStateChange();
-    log('[LicenseService] License cleared, returning to trial mode');
+    log('[LicenseUseCase] License cleared, returning to trial mode');
   }
 
   /**
@@ -214,17 +214,17 @@ export class LicenseService {
     const today = this.dateProvider.today();
 
     if (!trial.canRecordUsage(today)) {
-      log(`[LicenseService] Trial usage already recorded for today`);
+      log(`[LicenseUseCase] Trial usage already recorded for today`);
       return false;
     }
 
     const updatedTrial = trial.recordUsage(today);
     this.repository.saveTrialPeriod(updatedTrial);
 
-    log(`[LicenseService] Recorded trial day ${updatedTrial.daysUsed.toNumber()}/${30} (${today})`);
+    log(`[LicenseUseCase] Recorded trial day ${updatedTrial.daysUsed.toNumber()}/${30} (${today})`);
 
     if (updatedTrial.isExpired()) {
-      log('[LicenseService] Trial period has ended');
+      log('[LicenseUseCase] Trial period has ended');
       this.repository.setStatus('expired');
     }
 
@@ -236,14 +236,14 @@ export class LicenseService {
     const networkState = this.networkStateProvider.getNetworkState();
 
     if (networkState === 'backend_unreachable') {
-      log('[LicenseService] Backend unreachable during trial, not counting usage day');
+      log('[LicenseUseCase] Backend unreachable during trial, not counting usage day');
       return;
     }
 
     this.recordTrialUsage();
   }
 
-  private handleActivationError(result: ActivationResult): LicenseServiceResult {
+  private handleActivationError(result: ActivationResult): LicenseUseCaseResult {
     const error = result.getError();
 
     const errorMessages: Record<string, string> = {
@@ -271,7 +271,7 @@ export class LicenseService {
   }
 
   private handleValidationError(error: ValidationError): boolean {
-    log(`[LicenseService] Validation failed: ${error}`);
+    log(`[LicenseUseCase] Validation failed: ${error}`);
 
     if (
       error === 'LICENSE_EXPIRED' ||
@@ -280,7 +280,7 @@ export class LicenseService {
     ) {
       this.repository.setStatus('expired');
     } else if (error === 'NETWORK_ERROR' || error === 'BACKEND_UNREACHABLE') {
-      log('[LicenseService] Backend unreachable during validation, using cached status');
+      log('[LicenseUseCase] Backend unreachable during validation, using cached status');
       return this.repository.getStatus() === 'valid';
     } else {
       this.repository.setStatus('invalid');
@@ -310,7 +310,7 @@ export class LicenseService {
       try {
         callback(state);
       } catch (e) {
-        log(`[LicenseService] State change callback error: ${e}`);
+        log(`[LicenseUseCase] State change callback error: ${e}`);
       }
     }
   }

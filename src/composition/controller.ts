@@ -37,7 +37,7 @@ import { KeyboardShortcutManager } from '../infra/shortcuts/index.js';
 import { LayoutApplicator } from '../infra/window/index.js';
 import { MainPanel } from '../ui/main-panel/index.js';
 import type { LayoutHistoryRepository } from '../usecase/history/index.js';
-import { LicenseService } from '../usecase/licensing/index.js';
+import { LicenseUseCase } from '../usecase/licensing/index.js';
 import { resolvePresetGeneratorUseCase, resolveSpaceCollectionUseCase } from './usecase-factory.js';
 
 declare function log(message: string): void;
@@ -62,7 +62,7 @@ export class Controller {
   private layoutHistoryRepository: LayoutHistoryRepository;
   private historyLoaded: boolean = false;
   private settings: ExtensionSettings;
-  private licenseService: LicenseService;
+  private licenseService: LicenseUseCase;
   private isLicenseValid: boolean = true;
 
   constructor(settings: ExtensionSettings, metadata: ExtensionMetadata) {
@@ -95,7 +95,7 @@ export class Controller {
     // Initialize license management
     const licenseRepository = new GSettingsLicenseRepository(settings.getGSettings());
     const licenseApiClient = new HttpLicenseApiClient(__LICENSE_API_BASE_URL__);
-    this.licenseService = new LicenseService(
+    this.licenseService = new LicenseUseCase(
       licenseRepository,
       licenseApiClient,
       new GLibDateProvider(),
