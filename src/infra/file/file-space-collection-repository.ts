@@ -1,6 +1,6 @@
 import Gio from 'gi://Gio';
 
-import type { CollectionId, SpaceCollection, SpaceId } from '../../domain/layout/index.js';
+import type { CollectionId, Space, SpaceCollection, SpaceId } from '../../domain/layout/index.js';
 import type { UUIDGenerator } from '../../libs/uuid/index.js';
 import type { SpaceCollectionRepository } from '../../usecase/layout/space-collection-repository.js';
 
@@ -79,39 +79,25 @@ export class FileSpaceCollectionRepository implements SpaceCollectionRepository 
     const spaceIdStr = spaceId.toString();
 
     const presets = this.loadPresetCollections();
-    for (const collection of presets) {
-      if (collection.id === collectionIdStr) {
-        for (const row of collection.rows) {
-          for (const space of row.spaces) {
-            if (space.id === spaceIdStr) {
-              space.enabled = enabled;
-              this.savePresetCollections(presets);
-              log(
-                `[SpaceCollectionRepository] Updated space ${spaceIdStr} enabled=${enabled} in preset collection`
-              );
-              return true;
-            }
-          }
-        }
-      }
+    const presetSpace = this.findSpace(presets, collectionIdStr, spaceIdStr);
+    if (presetSpace) {
+      presetSpace.enabled = enabled;
+      this.savePresetCollections(presets);
+      log(
+        `[SpaceCollectionRepository] Updated space ${spaceIdStr} enabled=${enabled} in preset collection`
+      );
+      return true;
     }
 
     const customs = this.loadCustomCollections();
-    for (const collection of customs) {
-      if (collection.id === collectionIdStr) {
-        for (const row of collection.rows) {
-          for (const space of row.spaces) {
-            if (space.id === spaceIdStr) {
-              space.enabled = enabled;
-              this.saveCustomCollections(customs);
-              log(
-                `[SpaceCollectionRepository] Updated space ${spaceIdStr} enabled=${enabled} in custom collection`
-              );
-              return true;
-            }
-          }
-        }
-      }
+    const customSpace = this.findSpace(customs, collectionIdStr, spaceIdStr);
+    if (customSpace) {
+      customSpace.enabled = enabled;
+      this.saveCustomCollections(customs);
+      log(
+        `[SpaceCollectionRepository] Updated space ${spaceIdStr} enabled=${enabled} in custom collection`
+      );
+      return true;
     }
 
     log(
@@ -188,5 +174,15 @@ export class FileSpaceCollectionRepository implements SpaceCollectionRepository 
     }
 
     return true;
+  }
+
+  private findSpace(
+    collections: SpaceCollection[],
+    collectionId: string,
+    spaceId: string
+  ): Space | null {
+    const collection = collections.find((c) => c.id === collectionId);
+    if (!collection) return null;
+    return collection.rows.flatMap((row) => row.spaces).find((s) => s.id === spaceId) ?? null;
   }
 }
