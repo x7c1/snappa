@@ -35,6 +35,7 @@ export interface LicenseUsecaseResult {
   success: boolean;
   deactivatedDevice?: string | null;
   error?: string;
+  isRetryable?: boolean;
 }
 
 /**
@@ -258,6 +259,7 @@ export class LicenseUsecase {
       return {
         success: false,
         error: errorMessages[error],
+        isRetryable: true,
       };
     }
 

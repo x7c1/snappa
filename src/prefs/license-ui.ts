@@ -212,12 +212,14 @@ function createLicenseKeyRow(
     row.set_sensitive(!loading);
   };
 
-  const showError = (message: string) => {
-    row.add_css_class('error');
+  const showMessage = (message: string, isError: boolean) => {
+    if (isError) {
+      row.add_css_class('error');
+    }
     row.set_title(`License Key - ${message}`);
   };
 
-  const clearError = () => {
+  const clearMessage = () => {
     row.remove_css_class('error');
     row.set_title('License Key');
   };
@@ -225,12 +227,12 @@ function createLicenseKeyRow(
   activateButton.connect('clicked', async () => {
     const licenseKeyText = row.get_text().trim();
     if (!licenseKeyText) {
-      showError('Please enter a license key');
+      showMessage('Please enter a license key', true);
       return;
     }
 
     setLoading(true);
-    clearError();
+    clearMessage();
 
     try {
       const licenseKey = new LicenseKey(licenseKeyText);
@@ -242,11 +244,12 @@ function createLicenseKeyRow(
           console.log(`[LicenseUI] Device deactivated: ${result.deactivatedDevice}`);
         }
       } else {
-        showError(result.error ?? 'Activation failed');
+        const isUserError = !result.isRetryable;
+        showMessage(result.error ?? 'Activation failed', isUserError);
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : 'An error occurred';
-      showError(message);
+      showMessage(message, false);
     } finally {
       setLoading(false);
       onUpdate();
@@ -258,7 +261,7 @@ function createLicenseKeyRow(
   });
 
   row.connect('changed', () => {
-    clearError();
+    clearMessage();
   });
 
   spinner.set_visible(false);
