@@ -17,6 +17,18 @@ describe('LicenseKey', () => {
       expect(() => new LicenseKey('')).toThrow(InvalidLicenseKeyError);
       expect(() => new LicenseKey('   ')).toThrow(InvalidLicenseKeyError);
     });
+
+    it('throws InvalidLicenseKeyError for string exceeding max length', () => {
+      const tooLong = 'a'.repeat(257);
+      expect(() => new LicenseKey(tooLong)).toThrow(InvalidLicenseKeyError);
+      expect(() => new LicenseKey(tooLong)).toThrow('too long');
+    });
+
+    it('accepts string at max length', () => {
+      const maxLength = 'a'.repeat(256);
+      const key = new LicenseKey(maxLength);
+      expect(key.toString()).toBe(maxLength);
+    });
   });
 
   describe('equals', () => {
