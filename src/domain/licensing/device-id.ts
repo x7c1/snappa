@@ -5,7 +5,9 @@ export class InvalidDeviceIdError extends Error {
   }
 }
 
-const MACHINE_ID_REGEX = /^[0-9a-f]{32}$/i;
+// systemd's /etc/machine-id is 32 hex chars, but non-systemd systems (e.g., Alpine)
+// may use different formats, so we only enforce a reasonable upper bound here.
+const MAX_LENGTH = 256;
 const UNKNOWN_DEVICE = 'unknown-device';
 
 export class DeviceId {
@@ -17,8 +19,11 @@ export class DeviceId {
       return;
     }
     const normalized = value.trim().toLowerCase();
-    if (!MACHINE_ID_REGEX.test(normalized)) {
-      throw new InvalidDeviceIdError(`Invalid machine-id format: ${value}`);
+    if (normalized === '') {
+      throw new InvalidDeviceIdError('Device ID cannot be empty');
+    }
+    if (normalized.length > MAX_LENGTH) {
+      throw new InvalidDeviceIdError(`Device ID too long (max ${MAX_LENGTH} characters)`);
     }
     this.value = normalized;
   }
