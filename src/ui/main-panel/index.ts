@@ -37,7 +37,7 @@ declare function log(message: string): void;
 
 export interface MainPanelOptions {
   metadata: ExtensionMetadata;
-  monitorManager: MonitorProvider;
+  monitorProvider: MonitorProvider;
   layoutHistoryRepository: LayoutHistoryRepository;
   getActiveSpaceCollectionId: () => string;
   onLayoutSelected: (event: LayoutSelectedEvent) => void;
@@ -54,7 +54,7 @@ export class MainPanel {
   private layoutButtons: Map<St.Button, Layout> = new Map();
   private rendererEventIds: PanelEventIds | null = null;
   private readonly metadata: ExtensionMetadata;
-  private readonly monitorManager: MonitorProvider;
+  private readonly monitorProvider: MonitorProvider;
   private readonly layoutHistoryRepository: LayoutHistoryRepository;
   private readonly getActiveSpaceCollectionId: () => string;
   private readonly onLayoutSelected: (event: LayoutSelectedEvent) => void;
@@ -73,7 +73,7 @@ export class MainPanel {
 
   constructor(options: MainPanelOptions) {
     this.metadata = options.metadata;
-    this.monitorManager = options.monitorManager;
+    this.monitorProvider = options.monitorProvider;
     this.layoutHistoryRepository = options.layoutHistoryRepository;
     this.getActiveSpaceCollectionId = options.getActiveSpaceCollectionId;
     this.onLayoutSelected = options.onLayoutSelected;
@@ -83,7 +83,7 @@ export class MainPanel {
     this.onPanelShownCallback = options.onPanelShown;
     this.onPanelHiddenCallback = options.onPanelHidden;
 
-    this.positionManager = new MainPanelPositionManager(this.monitorManager);
+    this.positionManager = new MainPanelPositionManager(this.monitorProvider);
     this.autoHide.setOnHide(() => {
       this.hide();
     });
@@ -344,7 +344,7 @@ export class MainPanel {
 
     // Get monitors for rendering (may include data from different environment)
     const { monitors, inactiveMonitorKeys } =
-      this.monitorManager.getMonitorsForRendering(maxDisplayCount);
+      this.monitorProvider.getMonitorsForRendering(maxDisplayCount);
 
     const rowsView = createSpacesRowView(
       monitors,

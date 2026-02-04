@@ -21,7 +21,7 @@ export interface LayoutApplicationCallbacks {
 
 export class LayoutApplicator {
   constructor(
-    private readonly monitorManager: GnomeShellMonitorProvider,
+    private readonly monitorProvider: GnomeShellMonitorProvider,
     private readonly layoutHistoryRepository: LayoutHistoryRepository,
     private readonly callbacks: LayoutApplicationCallbacks = {}
   ) {}
@@ -34,7 +34,7 @@ export class LayoutApplicator {
     log(`[LayoutApplicator] Apply layout: ${layout.label} (ID: ${layout.id})`);
 
     log(`[LayoutApplicator] Using monitor: ${monitorKey}`);
-    const targetMonitor = this.monitorManager.getMonitorByKey(monitorKey);
+    const targetMonitor = this.monitorProvider.getMonitorByKey(monitorKey);
     if (!targetMonitor) {
       log(`[LayoutApplicator] Could not find monitor with key: ${monitorKey}`);
       return;
