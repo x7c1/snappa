@@ -150,10 +150,13 @@ export class LicenseOperations {
 
     const result = await this.apiClient.activate(licenseKey, deviceId, deviceLabel);
 
-    if (result.isSuccess()) {
-      const data = result.getData()!;
+    if (result.success) {
       this.repository.saveLicense(
-        this.createLicenseFromActivation(licenseKey, data.activationId, data.validUntil)
+        this.createLicenseFromActivation(
+          licenseKey,
+          result.data.activationId,
+          result.data.validUntil
+        )
       );
       this.repository.setStatus('valid');
 
@@ -162,7 +165,7 @@ export class LicenseOperations {
 
       return {
         success: true,
-        deactivatedDevice: data.deactivatedDevice,
+        deactivatedDevice: result.data.deactivatedDevice,
       };
     }
 
@@ -184,9 +187,11 @@ export class LicenseOperations {
 
     const result = await this.apiClient.validate(license.licenseKey, license.activationId);
 
-    if (result.isSuccess()) {
-      const data = result.getData()!;
-      const updatedLicense = license.withValidation(data.validUntil, this.dateProvider.now());
+    if (result.success) {
+      const updatedLicense = license.withValidation(
+        result.data.validUntil,
+        this.dateProvider.now()
+      );
       this.repository.saveLicense(updatedLicense);
       this.repository.setStatus('valid');
 
@@ -195,7 +200,7 @@ export class LicenseOperations {
       return true;
     }
 
-    return this.handleValidationError(result.getError()!);
+    return this.handleValidationError(result.error);
   }
 
   /**
@@ -246,8 +251,10 @@ export class LicenseOperations {
     this.recordTrialUsage();
   }
 
-  private handleActivationError(result: ActivationResult): LicenseOperationsResult {
-    const error = result.getError();
+  private handleActivationError(
+    result: Extract<ActivationResult, { success: false }>
+  ): LicenseOperationsResult {
+    const error = result.error;
 
     const errorMessages: Record<string, string> = {
       INVALID_LICENSE_KEY: 'License key not found',
