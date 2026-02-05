@@ -39,30 +39,11 @@ export interface ValidationSuccess {
   subscriptionStatus: string;
 }
 
-export class ValidationResult {
-  private constructor(
-    private readonly success: boolean,
-    private readonly data?: ValidationSuccess,
-    private readonly error?: ValidationError
-  ) {}
+export type ValidationResult =
+  | { success: true; data: ValidationSuccess }
+  | { success: false; error: ValidationError };
 
-  static succeeded(data: ValidationSuccess): ValidationResult {
-    return new ValidationResult(true, data);
-  }
-
-  static failed(error: ValidationError): ValidationResult {
-    return new ValidationResult(false, undefined, error);
-  }
-
-  isSuccess(): boolean {
-    return this.success;
-  }
-
-  getData(): ValidationSuccess | undefined {
-    return this.data;
-  }
-
-  getError(): ValidationError | undefined {
-    return this.error;
-  }
-}
+export const ValidationResult = {
+  succeeded: (data: ValidationSuccess): ValidationResult => ({ success: true, data }),
+  failed: (error: ValidationError): ValidationResult => ({ success: false, error }),
+};
