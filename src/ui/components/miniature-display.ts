@@ -1,7 +1,12 @@
 import Clutter from 'gi://Clutter';
 import type Meta from 'gi://Meta';
 import St from 'gi://St';
-import type { Layout, LayoutGroup, LayoutSelectedEvent } from '../../domain/layout/index.js';
+import type {
+  Layout,
+  LayoutGroup,
+  LayoutId,
+  LayoutSelectedEvent,
+} from '../../domain/layout/index.js';
 import type { Monitor } from '../../domain/monitor/index.js';
 import type { LayoutHistoryRepository } from '../../operations/history/index.js';
 import { DISPLAY_BG_COLOR, DISPLAY_SPACING, DISPLAY_SPACING_HORIZONTAL } from '../constants.js';
@@ -60,23 +65,23 @@ export function createMiniatureDisplayView(
   const buttonEvents: MiniatureDisplayView['buttonEvents'] = [];
 
   // Get selected layout ID for this window using three-tier lookup
-  let selectedLayoutId: string | null = null;
+  let selectedLayoutId: LayoutId | null = null;
   if (window) {
     const wmClass = window.get_wm_class();
     if (wmClass !== null) {
-      const layoutId = layoutHistoryRepository.getSelectedLayoutId({
-        windowId: window.get_id(),
-        wmClass,
-        title: window.get_title(),
-      });
-      selectedLayoutId = layoutId?.toString() ?? null;
+      selectedLayoutId =
+        layoutHistoryRepository.getSelectedLayoutId({
+          windowId: window.get_id(),
+          wmClass,
+          title: window.get_title(),
+        }) ?? null;
     }
   }
 
   // Add layout buttons from this group to the miniature display
   for (const layout of group.layouts) {
     // Determine if this layout is selected
-    const isSelected = selectedLayoutId !== null && layout.id === selectedLayoutId;
+    const isSelected = selectedLayoutId !== null && layout.id.equals(selectedLayoutId);
 
     // Create button using full display size
     const result = createLayoutButton(

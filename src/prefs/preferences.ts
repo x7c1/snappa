@@ -7,7 +7,7 @@ import {
   resolvePresetGeneratorOperations,
   resolveSpaceCollectionOperations,
 } from '../composition/factory/index.js';
-import type { SpaceCollection } from '../domain/layout/index.js';
+import { CollectionId, type SpaceCollection } from '../domain/layout/index.js';
 import { DEFAULT_MONITOR_HEIGHT, DEFAULT_MONITOR_WIDTH } from '../domain/monitor/index.js';
 import { createGeneralPage } from './keyboard-shortcuts.js';
 import { loadMonitors } from './monitors.js';
@@ -53,11 +53,21 @@ export function buildPreferencesUI(window: Adw.PreferencesWindow, settings: Gio.
   console.log(`[Sutto Prefs] Loaded ${monitors.size} monitors`);
 
   // Get current active collection ID from settings
-  const activeCollectionId = settings.get_string('active-space-collection-id') ?? '';
-  console.log(`[Sutto Prefs] Active collection ID: "${activeCollectionId}"`);
+  const activeCollectionIdStr = settings.get_string('active-space-collection-id') ?? '';
+  console.log(`[Sutto Prefs] Active collection ID: "${activeCollectionIdStr}"`);
+  let activeCollectionId: CollectionId | null = null;
+  if (activeCollectionIdStr) {
+    try {
+      activeCollectionId = new CollectionId(activeCollectionIdStr);
+    } catch {
+      // Invalid value (e.g. legacy preset-N-monitor), treat as null
+    }
+  }
 
   // Find the active collection, fallback to first collection
-  const activeCollection = collections.find((c) => c.id === activeCollectionId) || collections[0];
+  const activeCollection =
+    (activeCollectionId && collections.find((c) => c.id.equals(activeCollectionId))) ||
+    collections[0];
 
   // Calculate required size based on the ACTIVE collection (not max of all)
   const { width: contentWidth, height: contentHeight } = activeCollection
@@ -81,7 +91,7 @@ export function buildPreferencesUI(window: Adw.PreferencesWindow, settings: Gio.
   console.log('[Sutto Prefs] Creating Spaces page...');
   try {
     const spacesPage = createSpacesPage(monitors, activeCollectionId, (newActiveId) => {
-      settings.set_string('active-space-collection-id', newActiveId);
+      settings.set_string('active-space-collection-id', newActiveId.toString());
     });
     console.log('[Sutto Prefs] Spaces page created, adding to window...');
     window.add(spacesPage);

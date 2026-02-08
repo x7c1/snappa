@@ -15,7 +15,7 @@
 import type { ExtensionMetadata } from 'resource:///org/gnome/shell/extensions/extension.js';
 import { EdgeDetector } from '../domain/geometry/index.js';
 import type { LayoutSelectedEvent } from '../domain/layout/index.js';
-import { extractLayoutIds } from '../domain/layout/index.js';
+import { CollectionId, extractLayoutIds } from '../domain/layout/index.js';
 import { HttpLicenseApiClient } from '../infra/api/index.js';
 import { HISTORY_FILE_NAME, MONITORS_FILE_NAME } from '../infra/constants.js';
 import {
@@ -133,7 +133,7 @@ export class Controller {
       layoutHistoryRepository: this.layoutHistoryRepository,
       onLayoutSelected: (event) => this.applyLayoutToCurrentWindow(event),
       getOpenPreferencesShortcuts: () => preferencesRepository.getOpenPreferencesShortcut(),
-      getActiveSpaceCollectionId: () => preferencesRepository.getActiveSpaceCollectionId(),
+      getActiveSpaceCollectionId: () => this.parseCollectionId(preferencesRepository),
       ensurePresetForCurrentMonitors: () =>
         resolvePresetGeneratorOperations().ensurePresetForCurrentMonitors(),
       getActiveSpaceCollection: (activeId) =>
@@ -261,6 +261,18 @@ export class Controller {
       this.mainPanel.hide();
     } else {
       log('[Controller] Panel not visible, ignoring shortcut');
+    }
+  }
+
+  private parseCollectionId(
+    preferencesRepository: GSettingsPreferencesRepository
+  ): CollectionId | null {
+    const str = preferencesRepository.getActiveSpaceCollectionId();
+    if (!str) return null;
+    try {
+      return new CollectionId(str);
+    } catch {
+      return null;
     }
   }
 }

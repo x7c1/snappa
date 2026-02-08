@@ -7,8 +7,7 @@
 
 import type Meta from 'gi://Meta';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import type { LayoutSelectedEvent } from '../../domain/layout/index.js';
-import { LayoutId } from '../../domain/layout/index.js';
+import type { LayoutId, LayoutSelectedEvent } from '../../domain/layout/index.js';
 import { evaluate, parse } from '../../domain/layout-expression/index.js';
 import type { GnomeShellMonitorProvider } from '../../infra/monitor/gnome-shell-monitor-provider.js';
 import type { LayoutHistoryRepository } from '../../operations/history/index.js';
@@ -16,7 +15,7 @@ import type { LayoutHistoryRepository } from '../../operations/history/index.js'
 declare function log(message: string): void;
 
 export interface LayoutApplicationCallbacks {
-  onLayoutApplied?: (layoutId: string, monitorKey: string) => void;
+  onLayoutApplied?: (layoutId: LayoutId, monitorKey: string) => void;
 }
 
 export class LayoutApplicator {
@@ -46,10 +45,9 @@ export class LayoutApplicator {
 
     const wmClass = window.get_wm_class();
     if (wmClass) {
-      const layoutId = new LayoutId(layout.id);
       this.layoutHistoryRepository.setSelectedLayout(
         { windowId: window.get_id(), wmClass, title: window.get_title() },
-        layoutId
+        layout.id
       );
       if (this.callbacks.onLayoutApplied) {
         this.callbacks.onLayoutApplied(layout.id, monitorKey);

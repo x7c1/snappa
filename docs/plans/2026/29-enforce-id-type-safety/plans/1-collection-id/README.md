@@ -1,6 +1,6 @@
 # Plan 29: Enforce CollectionId Type Safety
 
-Status: Draft
+Status: Completed
 
 ## Overview
 
@@ -70,6 +70,7 @@ All layers: domain types, operations, infrastructure, composition/controller, UI
   - `loadCollectionsFromFile()`: Convert raw JSON `id: string` to `CollectionId` when constructing `SpaceCollection`
   - `saveCollectionsToFile()`: Convert `CollectionId` to string via `toString()` before JSON serialization
   - `addCustomCollection()`: Create `CollectionId` from generated UUID string
+- Update `findCollectionById()` and `deleteCustomCollection()` comparisons: replace `c.id === collectionId.toString()` with `c.id.equals(collectionId)` (since `SpaceCollection.id` is now `CollectionId`)
 
 #### `src/infra/file/file-monitor-environment-repository.ts`
 
@@ -78,13 +79,16 @@ All layers: domain types, operations, infrastructure, composition/controller, UI
 
 ### Composition Layer
 
-#### `src/composition/controller.ts`
+#### `src/composition/monitor-change-handler.ts`
 
 - `syncActiveCollectionToHistory()`: Read `CollectionId | null` from operations instead of constructing from raw string
   - Remove manual `new CollectionId(collectionIdStr)` construction
 - `handleMonitorsSaveResult()`: Change parameter from `string | null` to `CollectionId | null`
   - Pass `CollectionId` to `setActiveSpaceCollectionId()` via `toString()`
   - Pass `CollectionId` directly to `setActiveCollectionId()`
+
+#### `src/composition/controller.ts`
+
 - `enable()`: Convert GSettings string to `CollectionId` at the boundary
   - Use `CollectionId` constructor with try-catch for migration safety (old `preset-N-monitor` values in GSettings)
 

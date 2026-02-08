@@ -1,3 +1,4 @@
+import type { CollectionId } from '../../domain/layout/index.js';
 import {
   DEFAULT_MONITOR_HEIGHT,
   DEFAULT_MONITOR_WIDTH,
@@ -16,7 +17,7 @@ declare function log(message: string): void;
  */
 export class MonitorEnvironmentOperations {
   private storage: MonitorEnvironmentStorage = { environments: [], current: '' };
-  private currentActiveCollectionId: string = '';
+  private currentActiveCollectionId: CollectionId | null = null;
   private initialized: boolean = false;
 
   constructor(
@@ -44,7 +45,7 @@ export class MonitorEnvironmentOperations {
    * Detect monitors and save environment.
    * Returns the collection ID to activate if environment changed, null otherwise.
    */
-  detectAndSaveMonitors(): string | null {
+  detectAndSaveMonitors(): CollectionId | null {
     this.initialize();
     this.monitorProvider.detectMonitors();
 
@@ -55,7 +56,7 @@ export class MonitorEnvironmentOperations {
     const previousEnvId = this.storage.current;
     const environmentChanged = previousEnvId !== '' && previousEnvId !== envId;
 
-    let collectionToActivate: string | null = null;
+    let collectionToActivate: CollectionId | null = null;
     let environment = this.storage.environments.find((e) => e.id === envId);
 
     if (environment) {
@@ -71,17 +72,15 @@ export class MonitorEnvironmentOperations {
         environment.lastActiveCollectionId = this.currentActiveCollectionId;
       }
     } else {
-      const defaultCollectionId = this.getDefaultCollectionId(monitors.size);
       environment = {
         id: envId,
         monitors: monitorsArray,
-        lastActiveCollectionId: defaultCollectionId,
+        lastActiveCollectionId: null,
         lastActiveAt: now,
       };
       this.storage.environments.push(environment);
-      collectionToActivate = defaultCollectionId;
       log(
-        `[MonitorEnvironmentOperations] New environment detected: ${envId} (${monitorsArray.length} monitors), activating: ${defaultCollectionId}`
+        `[MonitorEnvironmentOperations] New environment detected: ${envId} (${monitorsArray.length} monitors)`
       );
     }
 
@@ -95,7 +94,7 @@ export class MonitorEnvironmentOperations {
   /**
    * Set the current active collection ID.
    */
-  setActiveCollectionId(collectionId: string): void {
+  setActiveCollectionId(collectionId: CollectionId): void {
     this.currentActiveCollectionId = collectionId;
 
     const currentEnv = this.storage.environments.find((e) => e.id === this.storage.current);
@@ -109,7 +108,7 @@ export class MonitorEnvironmentOperations {
   /**
    * Get the last active collection ID for the current environment.
    */
-  getLastActiveCollectionId(): string | null {
+  getLastActiveCollectionId(): CollectionId | null {
     const currentEnv = this.storage.environments.find((e) => e.id === this.storage.current);
     return currentEnv?.lastActiveCollectionId ?? null;
   }
@@ -191,10 +190,6 @@ export class MonitorEnvironmentOperations {
     }
 
     return { monitors, inactiveMonitorKeys };
-  }
-
-  private getDefaultCollectionId(monitorCount: number): string {
-    return `preset-${monitorCount}-monitor`;
   }
 
   private findEnvironmentForCollection(displayCount: number): MonitorEnvironment | null {

@@ -1,6 +1,6 @@
 # Plan 29: Enforce ID Type Safety
 
-Status: Draft
+Status: Completed
 
 ## Overview
 
@@ -25,9 +25,9 @@ Each domain ID type is addressed in a separate sub-plan. The pattern is consiste
 ## Sub-Plans
 
 - [1-collection-id](plans/1-collection-id/README.md) — Enforce `CollectionId` type safety (8 points)
-- [2-space-id](plans/2-space-id/README.md) — Enforce `SpaceId` type safety
-- [3-layout-id](plans/3-layout-id/README.md) — Enforce `LayoutId` type safety
+- [2-space-id](plans/2-space-id/README.md) — Enforce `SpaceId` type safety (3 points)
+- [3-layout-id](plans/3-layout-id/README.md) — Enforce `LayoutId` type safety (5 points)
 
 ## Estimate
 
-- Total: TBD (sum of sub-plans)
+- Total: 16 points (sum of sub-plans)

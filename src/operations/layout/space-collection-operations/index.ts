@@ -1,4 +1,4 @@
-import { CollectionId, type SpaceCollection, SpaceId } from '../../../domain/layout/index.js';
+import type { CollectionId, SpaceCollection, SpaceId } from '../../../domain/layout/index.js';
 import type { SpaceCollectionRepository } from '../space-collection-repository.js';
 import { importLayoutConfigurationFromJson } from './import-collection.js';
 
@@ -29,27 +29,23 @@ export class SpaceCollectionOperations {
     return this.repository.addCustomCollection(collection);
   }
 
-  deleteCustomCollection(collectionId: string): boolean {
-    const id = new CollectionId(collectionId);
-    return this.repository.deleteCustomCollection(id);
+  deleteCustomCollection(collectionId: CollectionId): boolean {
+    return this.repository.deleteCustomCollection(collectionId);
   }
 
-  findCollectionById(collectionId: string): SpaceCollection | undefined {
-    const id = new CollectionId(collectionId);
-    return this.repository.findCollectionById(id);
+  findCollectionById(collectionId: CollectionId): SpaceCollection | undefined {
+    return this.repository.findCollectionById(collectionId);
   }
 
-  updateSpaceEnabled(collectionId: string, spaceId: string, enabled: boolean): boolean {
-    const cId = new CollectionId(collectionId);
-    const sId = new SpaceId(spaceId);
-    return this.repository.updateSpaceEnabled(cId, sId, enabled);
+  updateSpaceEnabled(collectionId: CollectionId, spaceId: SpaceId, enabled: boolean): boolean {
+    return this.repository.updateSpaceEnabled(collectionId, spaceId, enabled);
   }
 
   /**
    * Get the active SpaceCollection based on the stored ID.
-   * Falls back to the first preset collection if the ID is empty or invalid.
+   * Falls back to the first preset collection if the ID is null or not found.
    */
-  getActiveSpaceCollection(activeId: string): SpaceCollection | undefined {
+  getActiveSpaceCollection(activeId: CollectionId | null): SpaceCollection | undefined {
     if (activeId) {
       const collection = this.findCollectionById(activeId);
       if (collection) {
@@ -74,9 +70,9 @@ export class SpaceCollectionOperations {
    * Get the ID that should be used as active.
    * Returns the provided ID if valid, otherwise returns the first preset's ID.
    */
-  resolveActiveSpaceCollectionId(activeId: string): string {
+  resolveActiveSpaceCollectionId(activeId: CollectionId | null): CollectionId | null {
     const collection = this.getActiveSpaceCollection(activeId);
-    return collection?.id ?? '';
+    return collection?.id ?? null;
   }
 
   importFromJson(jsonString: string): SpaceCollection | null {

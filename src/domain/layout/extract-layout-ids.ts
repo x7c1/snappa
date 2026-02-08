@@ -12,7 +12,7 @@ export function extractLayoutIds(collections: SpaceCollection[]): Set<string> {
         for (const monitorKey in space.displays) {
           const layoutGroup = space.displays[monitorKey];
           for (const layout of layoutGroup.layouts) {
-            ids.add(layout.id);
+            ids.add(layout.id.toString());
           }
         }
       }

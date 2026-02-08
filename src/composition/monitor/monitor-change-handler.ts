@@ -6,7 +6,7 @@
  * and preferences to keep the active collection in sync with the monitor setup.
  */
 
-import { CollectionId } from '../../domain/layout/index.js';
+import { CollectionId, type CollectionId as CollectionIdType } from '../../domain/layout/index.js';
 import type { GnomeShellMonitorProvider } from '../../infra/monitor/gnome-shell-monitor-provider.js';
 import type { LayoutHistoryRepository } from '../../operations/history/index.js';
 import type { MonitorEnvironmentOperations } from '../../operations/monitor/index.js';
@@ -27,9 +27,9 @@ export class MonitorChangeHandler {
   ) {}
 
   initialize(): void {
-    const currentCollectionId = this.callbacks.getActiveSpaceCollectionId();
-    if (currentCollectionId) {
-      this.monitorEnvironmentOperations.setActiveCollectionId(currentCollectionId);
+    const collectionId = this.parseCollectionIdFromSettings();
+    if (collectionId) {
+      this.monitorEnvironmentOperations.setActiveCollectionId(collectionId);
     }
 
     this.detectAndActivate();
@@ -42,21 +42,20 @@ export class MonitorChangeHandler {
     });
   }
 
-  private handleMonitorsSaveResult(collectionToActivate: string | null): void {
+  private handleMonitorsSaveResult(collectionToActivate: CollectionIdType | null): void {
     if (collectionToActivate) {
       log(
-        `[MonitorChangeHandler] Environment changed, activating collection: ${collectionToActivate}`
+        `[MonitorChangeHandler] Environment changed, activating collection: ${collectionToActivate.toString()}`
       );
-      this.callbacks.setActiveSpaceCollectionId(collectionToActivate);
+      this.callbacks.setActiveSpaceCollectionId(collectionToActivate.toString());
       this.monitorEnvironmentOperations.setActiveCollectionId(collectionToActivate);
       this.syncActiveCollectionToHistory();
     }
   }
 
   syncActiveCollectionToHistory(): void {
-    const collectionIdStr = this.callbacks.getActiveSpaceCollectionId();
-    if (collectionIdStr) {
-      const collectionId = new CollectionId(collectionIdStr);
+    const collectionId = this.parseCollectionIdFromSettings();
+    if (collectionId) {
       this.layoutHistoryRepository.setActiveCollection(collectionId);
     }
   }
@@ -67,5 +66,15 @@ export class MonitorChangeHandler {
 
   disconnectMonitorChanges(): void {
     this.monitorProvider.disconnectMonitorChanges();
+  }
+
+  private parseCollectionIdFromSettings(): CollectionIdType | null {
+    const str = this.callbacks.getActiveSpaceCollectionId();
+    if (!str) return null;
+    try {
+      return new CollectionId(str);
+    } catch {
+      return null;
+    }
   }
 }

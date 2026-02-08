@@ -1,3 +1,5 @@
+import type { CollectionId } from '../layout/collection-id.js';
+
 export interface Monitor {
   index: number; // 0-based monitor index ("0", "1", "2"...)
   geometry: { x: number; y: number; width: number; height: number };
@@ -22,7 +24,7 @@ export interface BoundingBox {
 export interface MonitorEnvironment {
   id: string; // Hash computed from all monitors' geometry data
   monitors: Monitor[];
-  lastActiveCollectionId: string;
+  lastActiveCollectionId: CollectionId | null;
   lastActiveAt: number; // Timestamp when environment was last active
 }
 
