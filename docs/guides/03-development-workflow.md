@@ -8,6 +8,20 @@ npm run dev
 
 This command builds, copies files, and reloads the extension via D-Bus.
 
+## Scripts
+
+| Command | Description |
+|---|---|
+| `npm run build` | Development build |
+| `npm run build:release` | Release build (for distribution) |
+| `npm run dev` | Build, copy, and reload extension |
+| `npm run reload` | Reload extension via D-Bus |
+| `npm run lint` | Run Biome linter |
+| `npm run format` | Run Biome formatter |
+| `npm run check` | Run both linter and formatter |
+| `npm run test` | Run tests in watch mode |
+| `npm run test:run` | Run tests once |
+
 ## Viewing Logs
 
 Monitor extension output in real-time:
