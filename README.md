@@ -6,10 +6,9 @@ A GNOME Shell extension for window snapping.
 
 ## Features
 
-- **Edge-triggered snapping**: Drag windows to screen edges to show the layout panel
-- **Keyboard shortcut support**: Optional keyboard shortcut for quick access (disabled by default)
+- **Edge-triggered snapping**: Drag windows to screen edges to show the [Main Panel](docs/concepts/main-panel/README.md)
+- **Keyboard shortcut support**: Optional keyboard shortcut for quick access
 - **Visual layout preview**: See layout positions before applying them
-- **Layout history**: Recently used layouts are highlighted for faster access
 - **Customizable preferences**: Configure keyboard shortcuts through a native GNOME preferences UI
 
 ## Getting Started
