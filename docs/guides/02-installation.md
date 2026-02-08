@@ -1,5 +1,16 @@
 # Installing GNOME Shell Extensions
 
+## Prerequisites
+
+- GNOME Shell 46
+- Node.js and npm
+
+## Install Dependencies
+
+```bash
+npm install
+```
+
 ## Extension Directory Location
 
 GNOME Shell extensions are installed in:
