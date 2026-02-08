@@ -56,8 +56,14 @@ export class MonitorChangeHandler {
   syncActiveCollectionToHistory(): void {
     const collectionIdStr = this.callbacks.getActiveSpaceCollectionId();
     if (collectionIdStr) {
-      const collectionId = new CollectionId(collectionIdStr);
-      this.layoutHistoryRepository.setActiveCollection(collectionId);
+      try {
+        const collectionId = new CollectionId(collectionIdStr);
+        this.layoutHistoryRepository.setActiveCollection(collectionId);
+      } catch {
+        // Skip non-UUID collection IDs (e.g. "preset-2-monitor")
+        // TODO: root fix in plan 29-enforce-id-type-safety
+        log(`[MonitorChangeHandler] Skipping invalid collection ID: ${collectionIdStr}`);
+      }
     }
   }
 
