@@ -35,8 +35,14 @@ export class SpaceCollectionOperations {
   }
 
   findCollectionById(collectionId: string): SpaceCollection | undefined {
-    const id = new CollectionId(collectionId);
-    return this.repository.findCollectionById(id);
+    try {
+      const id = new CollectionId(collectionId);
+      return this.repository.findCollectionById(id);
+    } catch {
+      // Skip non-UUID collection IDs (e.g. "preset-2-monitor")
+      // TODO: root fix in plan 29-enforce-id-type-safety
+      return undefined;
+    }
   }
 
   updateSpaceEnabled(collectionId: string, spaceId: string, enabled: boolean): boolean {
