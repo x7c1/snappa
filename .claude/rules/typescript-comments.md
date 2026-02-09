@@ -3,6 +3,15 @@ paths:
   - "src/**/*.ts"
 ---
 
+## General
+
+Avoid comments that merely restate what the code does. Comment WHY, not WHAT.
+- Explain rationale, constraints, gotchas, or non-obvious behavior
+- Don't add comments that duplicate the code in natural language
+- Self-documenting code needs no comment
+
+## Interface Fields
+
 Use `/** */` (JSDoc) comments for interface and type fields, not trailing `//` comments.
 Insert a blank line between fields when a field has a JSDoc comment.
 
