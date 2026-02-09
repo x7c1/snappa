@@ -7,6 +7,8 @@ import Gio from 'gi://Gio';
 import type { ExtensionMetadata } from 'resource:///org/gnome/shell/extensions/extension.js';
 import { CollectionId } from '../../domain/layout/index.js';
 
+const log = (message: string): void => console.log(message);
+
 export class GSettingsPreferencesRepository {
   private settings: Gio.Settings;
 
@@ -70,6 +72,7 @@ export class GSettingsPreferencesRepository {
     try {
       return new CollectionId(str);
     } catch {
+      log(`[GSettingsPreferencesRepository] Invalid collection ID in settings: "${str}"`);
       return null;
     }
   }
