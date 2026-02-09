@@ -6,7 +6,7 @@ import {
   resolvePresetGeneratorOperations,
   resolveSpaceCollectionOperations,
 } from '../composition/factory/index.js';
-import type { Space, SpaceCollection, SpacesRow } from '../domain/layout/index.js';
+import type { CollectionId, Space, SpaceCollection, SpacesRow } from '../domain/layout/index.js';
 import type { Monitor, MonitorEnvironmentStorage } from '../domain/monitor/index.js';
 import { calculateSpaceDimensions, createGtkMiniatureSpace } from './gtk-miniature-space.js';
 import {
@@ -173,8 +173,8 @@ export function calculateRequiredHeight(rows: SpacesRow[], monitors: Map<string,
 }
 
 interface SpacesPageState {
-  activeCollectionId: string;
-  selectedCollectionId: string;
+  activeCollectionId: CollectionId | null;
+  selectedCollectionId: CollectionId | null;
   previewContainer: Gtk.Box;
   previewScrolled: Gtk.ScrolledWindow | null; // Reference for updating preview width
   currentMaxPreviewWidth: number; // Track current max width to expand if needed
@@ -184,7 +184,7 @@ interface SpacesPageState {
   checkButtons: Map<string, Gtk.CheckButton>;
   selectionIndicators: Map<string, Gtk.Image>;
   firstRadioButton: Gtk.CheckButton | null;
-  onActiveChanged: (collectionId: string) => void;
+  onActiveChanged: (collectionId: CollectionId) => void;
   listInnerBox: Gtk.Box | null; // Reference to the inner box for adding new collections
   customSectionBox: Gtk.Box | null; // Container for custom collection rows
 }
@@ -194,8 +194,8 @@ interface SpacesPageState {
  */
 export function createSpacesPage(
   monitors: Map<string, Monitor>,
-  activeCollectionId: string,
-  onActiveChanged: (collectionId: string) => void
+  activeCollectionId: CollectionId | null,
+  onActiveChanged: (collectionId: CollectionId) => void
 ): Adw.PreferencesPage {
   // Ensure presets exist for current monitor count
   resolvePresetGeneratorOperations().ensurePresetForCurrentMonitors();
@@ -240,8 +240,9 @@ export function createSpacesPage(
   // Determine initial active collection before creating UI
   const allCollections = resolveSpaceCollectionOperations().loadAllCollections();
   const initialCollection =
-    allCollections.find((c) => c.id === activeCollectionId) || allCollections[0];
-  const resolvedActiveId = initialCollection?.id ?? '';
+    (activeCollectionId && allCollections.find((c) => c.id.equals(activeCollectionId))) ||
+    allCollections[0];
+  const resolvedActiveId = initialCollection?.id ?? null;
 
   // Calculate preview dimensions based on the ACTIVE collection (not max of all)
   // Dimensions will expand when selecting larger collections via expandSizeIfNeeded
@@ -296,7 +297,10 @@ export function createSpacesPage(
   if (initialCollection) {
     updatePreview(state, initialCollection);
     // Notify settings of resolved active ID if it changed
-    if (resolvedActiveId !== activeCollectionId) {
+    const idChanged =
+      resolvedActiveId !== null &&
+      (activeCollectionId === null || !resolvedActiveId.equals(activeCollectionId));
+    if (idChanged) {
       onActiveChanged(resolvedActiveId);
     }
   }
@@ -431,16 +435,17 @@ function createCollectionRow(
   });
 
   // Always show radio button for collection selection
+  const collectionIdStr = collection.id.toString();
   const radio = new Gtk.CheckButton();
   if (state.firstRadioButton) {
     radio.set_group(state.firstRadioButton);
   } else {
     state.firstRadioButton = radio;
   }
-  if (collection.id === state.activeCollectionId) {
+  if (state.activeCollectionId && collection.id.equals(state.activeCollectionId)) {
     radio.set_active(true);
   }
-  state.checkButtons.set(collection.id, radio);
+  state.checkButtons.set(collectionIdStr, radio);
 
   radio.connect('toggled', () => {
     // Only act when this radio becomes active (ignore deactivation events)
@@ -468,7 +473,7 @@ function createCollectionRow(
   clickGesture.connect('released', () => {
     // When there's a radio button, activate it (which triggers the selection logic)
     // Otherwise, just select this collection directly
-    const existingRadio = state.checkButtons.get(collection.id);
+    const existingRadio = state.checkButtons.get(collectionIdStr);
     if (existingRadio) {
       existingRadio.set_active(true);
     } else {
@@ -504,11 +509,13 @@ function createCollectionRow(
 
   // Selection indicator (">") shown for the active collection
   // Use opacity instead of visibility to reserve space and prevent layout shifts
+  const isActive =
+    state.activeCollectionId !== null && collection.id.equals(state.activeCollectionId);
   const indicator = new Gtk.Image({
     icon_name: 'go-next-symbolic',
-    opacity: collection.id === state.activeCollectionId ? 1 : 0,
+    opacity: isActive ? 1 : 0,
   });
-  state.selectionIndicators.set(collection.id, indicator);
+  state.selectionIndicators.set(collectionIdStr, indicator);
   rowBox.append(indicator);
 
   // Right-click context menu for custom collections
@@ -528,12 +535,12 @@ function createCollectionRow(
       const deleted = resolveSpaceCollectionOperations().deleteCustomCollection(collection.id);
       if (deleted) {
         // If this was the active collection, select first preset
-        if (state.activeCollectionId === collection.id) {
+        if (state.activeCollectionId?.equals(collection.id)) {
           const presets = resolveSpaceCollectionOperations().loadPresetCollections();
           if (presets.length > 0) {
             state.activeCollectionId = presets[0].id;
             state.onActiveChanged(presets[0].id);
-            const firstRadio = state.checkButtons.get(presets[0].id);
+            const firstRadio = state.checkButtons.get(presets[0].id.toString());
             if (firstRadio) {
               firstRadio.set_active(true);
             }
@@ -566,8 +573,12 @@ function createCollectionRow(
  * Update selection indicators to show which collection is active
  */
 function updateSelectionIndicators(state: SpacesPageState): void {
-  for (const [collectionId, indicator] of state.selectionIndicators) {
-    indicator.set_opacity(collectionId === state.activeCollectionId ? 1 : 0);
+  for (const [collectionIdStr, indicator] of state.selectionIndicators) {
+    indicator.set_opacity(
+      state.activeCollectionId !== null && collectionIdStr === state.activeCollectionId.toString()
+        ? 1
+        : 0
+    );
   }
 }
 
@@ -647,7 +658,7 @@ function updatePreview(state: SpacesPageState, collection: SpaceCollection): voi
   for (const row of collection.rows) {
     if (row.spaces.length === 0) continue;
 
-    const rowWidget = createSpacesRowWidget(state, collection.id, row);
+    const rowWidget = createSpacesRowWidget(state, collection, row);
     state.previewContainer.append(rowWidget);
   }
 }
@@ -657,7 +668,7 @@ function updatePreview(state: SpacesPageState, collection: SpaceCollection): voi
  */
 function createSpacesRowWidget(
   state: SpacesPageState,
-  collectionId: string,
+  collection: SpaceCollection,
   row: SpacesRow
 ): Gtk.Widget {
   const rowBox = new Gtk.Box({
@@ -669,7 +680,7 @@ function createSpacesRowWidget(
   });
 
   for (const space of row.spaces) {
-    const spaceWidget = createClickableSpace(state, collectionId, space);
+    const spaceWidget = createClickableSpace(state, collection, space);
     rowBox.append(spaceWidget);
   }
 
@@ -681,7 +692,7 @@ function createSpacesRowWidget(
  */
 function createClickableSpace(
   state: SpacesPageState,
-  collectionId: string,
+  collection: SpaceCollection,
   space: Space
 ): Gtk.Widget {
   let enabled = space.enabled !== false;
@@ -729,7 +740,7 @@ function createClickableSpace(
 
   button.connect('clicked', () => {
     enabled = !enabled;
-    resolveSpaceCollectionOperations().updateSpaceEnabled(collectionId, space.id, enabled);
+    resolveSpaceCollectionOperations().updateSpaceEnabled(collection.id, space.id, enabled);
     miniatureWidget.set_opacity(getBaseOpacity());
   });
 

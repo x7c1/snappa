@@ -2,8 +2,9 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import { LayoutEvent, type WindowIdentifier } from '../../domain/history/index.js';
 import { type CollectionId, LayoutId } from '../../domain/layout/index.js';
+import type { ValueSet } from '../../libs/value-set/index.js';
 import type { LayoutHistoryRepository } from '../../operations/history/index.js';
-import { toRawLayoutEvent } from './layout-event-serializer.js';
+import { toRawLayoutEvent } from './raw-layout-event.js';
 
 declare function log(message: string): void;
 
@@ -34,9 +35,9 @@ export class FileLayoutHistoryRepository implements LayoutHistoryRepository {
   private events: LayoutEvent[] = [];
   private filePath: string;
   private activeCollectionId: CollectionId | null = null;
-  private validLayoutIds: Set<string>;
+  private validLayoutIds: ValueSet<LayoutId>;
 
-  constructor(filePath: string, validLayoutIds: Set<string>) {
+  constructor(filePath: string, validLayoutIds: ValueSet<LayoutId>) {
     this.filePath = filePath;
     this.validLayoutIds = validLayoutIds;
   }
@@ -55,7 +56,7 @@ export class FileLayoutHistoryRepository implements LayoutHistoryRepository {
     }
 
     const originalCount = events.length;
-    events = events.filter((e) => this.validLayoutIds.has(e.layoutId.toString()));
+    events = events.filter((e) => this.validLayoutIds.has(e.layoutId));
 
     const didFilter = events.length < originalCount;
     if (didFilter) {
@@ -106,7 +107,7 @@ export class FileLayoutHistoryRepository implements LayoutHistoryRepository {
     this.updateMemoryWithEvent(event);
 
     log(
-      `[LayoutHistory] Recorded: collection=${event.collectionId.toString()}, wmClassHash=${event.wmClassHash}, titleHash=${event.titleHash} -> ${layoutId.toString()}`
+      `[LayoutHistory] Recorded: collection=${event.collectionId}, wmClassHash=${event.wmClassHash}, titleHash=${event.titleHash} -> ${layoutId}`
     );
   }
 

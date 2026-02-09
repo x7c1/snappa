@@ -2,6 +2,11 @@ import Gio from 'gi://Gio';
 
 import type { MonitorEnvironmentStorage } from '../../domain/monitor/index.js';
 import type { MonitorEnvironmentRepository } from '../../operations/monitor/index.js';
+import {
+  deserializeMonitorEnvironmentStorage,
+  type RawMonitorEnvironmentStorage,
+  serializeMonitorEnvironmentStorage,
+} from './raw-monitor-environment-storage.js';
 
 const log = (message: string): void => console.log(message);
 
@@ -27,7 +32,8 @@ export class FileMonitorEnvironmentRepository implements MonitorEnvironmentRepos
       }
 
       const json = new TextDecoder('utf-8').decode(contents);
-      return JSON.parse(json) as MonitorEnvironmentStorage;
+      const raw = JSON.parse(json) as RawMonitorEnvironmentStorage;
+      return deserializeMonitorEnvironmentStorage(raw);
     } catch (e) {
       log(`[FileMonitorEnvironmentRepository] Error loading storage: ${e}`);
       return null;
@@ -43,7 +49,8 @@ export class FileMonitorEnvironmentRepository implements MonitorEnvironmentRepos
         parent.make_directory_with_parents(null);
       }
 
-      const json = JSON.stringify(storage, null, 2);
+      const raw = serializeMonitorEnvironmentStorage(storage);
+      const json = JSON.stringify(raw, null, 2);
       file.replace_contents(json, null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
 
       log('[FileMonitorEnvironmentRepository] Storage saved successfully');

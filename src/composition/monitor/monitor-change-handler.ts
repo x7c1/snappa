@@ -6,7 +6,7 @@
  * and preferences to keep the active collection in sync with the monitor setup.
  */
 
-import { CollectionId } from '../../domain/layout/index.js';
+import type { CollectionId } from '../../domain/layout/index.js';
 import type { GnomeShellMonitorProvider } from '../../infra/monitor/gnome-shell-monitor-provider.js';
 import type { LayoutHistoryRepository } from '../../operations/history/index.js';
 import type { MonitorEnvironmentOperations } from '../../operations/monitor/index.js';
@@ -14,8 +14,8 @@ import type { MonitorEnvironmentOperations } from '../../operations/monitor/inde
 declare function log(message: string): void;
 
 export interface MonitorChangeCallbacks {
-  getActiveSpaceCollectionId: () => string;
-  setActiveSpaceCollectionId: (id: string) => void;
+  getActiveSpaceCollectionId: () => CollectionId | null;
+  setActiveSpaceCollectionId: (id: CollectionId) => void;
 }
 
 export class MonitorChangeHandler {
@@ -27,9 +27,9 @@ export class MonitorChangeHandler {
   ) {}
 
   initialize(): void {
-    const currentCollectionId = this.callbacks.getActiveSpaceCollectionId();
-    if (currentCollectionId) {
-      this.monitorEnvironmentOperations.setActiveCollectionId(currentCollectionId);
+    const collectionId = this.callbacks.getActiveSpaceCollectionId();
+    if (collectionId) {
+      this.monitorEnvironmentOperations.setActiveCollectionId(collectionId);
     }
 
     this.detectAndActivate();
@@ -42,7 +42,7 @@ export class MonitorChangeHandler {
     });
   }
 
-  private handleMonitorsSaveResult(collectionToActivate: string | null): void {
+  private handleMonitorsSaveResult(collectionToActivate: CollectionId | null): void {
     if (collectionToActivate) {
       log(
         `[MonitorChangeHandler] Environment changed, activating collection: ${collectionToActivate}`
@@ -54,9 +54,8 @@ export class MonitorChangeHandler {
   }
 
   syncActiveCollectionToHistory(): void {
-    const collectionIdStr = this.callbacks.getActiveSpaceCollectionId();
-    if (collectionIdStr) {
-      const collectionId = new CollectionId(collectionIdStr);
+    const collectionId = this.callbacks.getActiveSpaceCollectionId();
+    if (collectionId) {
       this.layoutHistoryRepository.setActiveCollection(collectionId);
     }
   }

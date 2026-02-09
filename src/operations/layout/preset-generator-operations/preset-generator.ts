@@ -1,4 +1,7 @@
+import { CollectionId } from '../../../domain/layout/collection-id.js';
 import { generateLayoutHash } from '../../../domain/layout/layout-hash.js';
+import { LayoutId } from '../../../domain/layout/layout-id.js';
+import { SpaceId } from '../../../domain/layout/space-id.js';
 import type {
   Layout,
   LayoutGroup,
@@ -19,7 +22,7 @@ export function generatePreset(
   uuidGenerator: UUIDGenerator
 ): SpaceCollection {
   return {
-    id: uuidGenerator.generate(),
+    id: new CollectionId(uuidGenerator.generate()),
     name: getPresetName(monitorCount, monitorType),
     rows: generateRows(monitorCount, layoutGroupNames, allLayoutGroups, uuidGenerator),
   };
@@ -72,7 +75,7 @@ function createSpace(
   }
 
   return {
-    id: uuidGenerator.generate(),
+    id: new SpaceId(uuidGenerator.generate()),
     enabled: true,
     displays,
   };
@@ -90,7 +93,7 @@ function createLayoutGroup(
 
 function createLayout(setting: LayoutSetting, uuidGenerator: UUIDGenerator): Layout {
   return {
-    id: uuidGenerator.generate(),
+    id: new LayoutId(uuidGenerator.generate()),
     hash: generateLayoutHash(setting.x, setting.y, setting.width, setting.height),
     label: setting.label,
     position: { x: setting.x, y: setting.y },

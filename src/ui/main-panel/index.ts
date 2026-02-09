@@ -12,7 +12,9 @@ import type { ExtensionMetadata } from 'resource:///org/gnome/shell/extensions/e
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import type { Position, Size } from '../../domain/geometry/index.js';
 import type {
+  CollectionId,
   Layout,
+  LayoutId,
   LayoutSelectedEvent,
   SpaceCollection,
   SpacesRow,
@@ -39,11 +41,11 @@ export interface MainPanelOptions {
   metadata: ExtensionMetadata;
   monitorEnvironment: MonitorEnvironmentOperations;
   layoutHistoryRepository: LayoutHistoryRepository;
-  getActiveSpaceCollectionId: () => string;
+  getActiveSpaceCollectionId: () => CollectionId | null;
   onLayoutSelected: (event: LayoutSelectedEvent) => void;
   getOpenPreferencesShortcuts: () => string[];
   ensurePresetForCurrentMonitors: () => void;
-  getActiveSpaceCollection: (activeId: string) => SpaceCollection | undefined;
+  getActiveSpaceCollection: (activeId: CollectionId | null) => SpaceCollection | undefined;
   onPanelShown: () => void;
   onPanelHidden: () => void;
 }
@@ -56,11 +58,13 @@ export class MainPanel {
   private readonly metadata: ExtensionMetadata;
   private readonly monitorEnvironment: MonitorEnvironmentOperations;
   private readonly layoutHistoryRepository: LayoutHistoryRepository;
-  private readonly getActiveSpaceCollectionId: () => string;
+  private readonly getActiveSpaceCollectionId: () => CollectionId | null;
   private readonly onLayoutSelected: (event: LayoutSelectedEvent) => void;
   private readonly getOpenPreferencesShortcuts: () => string[];
   private readonly ensurePresetForCurrentMonitors: () => void;
-  private readonly getActiveSpaceCollection: (activeId: string) => SpaceCollection | undefined;
+  private readonly getActiveSpaceCollection: (
+    activeId: CollectionId | null
+  ) => SpaceCollection | undefined;
   private readonly onPanelShownCallback: () => void;
   private readonly onPanelHiddenCallback: () => void;
 
@@ -261,7 +265,7 @@ export class MainPanel {
    * Called after layout selection to immediately reflect the change in the panel
    * Only updates buttons for the specified monitor
    */
-  updateSelectedLayoutHighlight(newSelectedLayoutId: string, monitorKey: string): void {
+  updateSelectedLayoutHighlight(newSelectedLayoutId: LayoutId, monitorKey: string): void {
     if (!this.container) {
       log('[MainPanel] Cannot update highlights: panel not visible');
       return;

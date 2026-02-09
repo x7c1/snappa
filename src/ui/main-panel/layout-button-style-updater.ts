@@ -5,7 +5,7 @@
  */
 
 import type St from 'gi://St';
-import type { Layout } from '../../domain/layout/index.js';
+import type { Layout, LayoutId } from '../../domain/layout/index.js';
 import { BUTTON_BG_COLOR, BUTTON_BG_COLOR_SELECTED } from '../constants.js';
 import type { LayoutButtonWithMetadata } from '../types/button.js';
 
@@ -18,7 +18,7 @@ export class LayoutButtonStyleUpdater {
    * Highlights only the selected layout on the specified monitor, clears all other highlights
    */
   updateSelectedLayoutHighlight(
-    newSelectedLayoutId: string,
+    newSelectedLayoutId: LayoutId,
     monitorKey: string,
     layoutButtons: Map<St.Button, Layout>
   ): void {
@@ -33,7 +33,7 @@ export class LayoutButtonStyleUpdater {
       const buttonMonitorKey = buttonWithMeta._monitorKey;
 
       // Only highlight if this is the selected layout on the selected monitor
-      const isSelected = buttonMonitorKey === monitorKey && layout.id === newSelectedLayoutId;
+      const isSelected = buttonMonitorKey === monitorKey && layout.id.equals(newSelectedLayoutId);
       const bgColor = isSelected ? BUTTON_BG_COLOR_SELECTED : BUTTON_BG_COLOR;
 
       // Update button's stored selection state

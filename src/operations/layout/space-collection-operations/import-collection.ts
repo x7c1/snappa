@@ -2,8 +2,10 @@ import {
   generateLayoutHash,
   type Layout,
   type LayoutGroup,
+  LayoutId,
   type Space,
   type SpaceCollection,
+  SpaceId,
   type SpacesRow,
 } from '../../../domain/layout/index.js';
 import type {
@@ -121,7 +123,7 @@ function settingToSpace(
   }
 
   return {
-    id: uuidGenerator.generate(),
+    id: new SpaceId(uuidGenerator.generate()),
     enabled: true,
     displays,
   };
@@ -129,7 +131,7 @@ function settingToSpace(
 
 function settingToLayout(setting: LayoutSetting): Layout {
   return {
-    id: uuidGenerator.generate(),
+    id: new LayoutId(uuidGenerator.generate()),
     hash: generateLayoutHash(setting.x, setting.y, setting.width, setting.height),
     label: setting.label,
     position: { x: setting.x, y: setting.y },

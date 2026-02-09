@@ -88,8 +88,8 @@ export class Controller {
       monitorEnvironmentOperations,
       this.layoutHistoryRepository,
       {
-        getActiveSpaceCollectionId: () => preferencesRepository.getActiveSpaceCollectionId(),
-        setActiveSpaceCollectionId: (id) => preferencesRepository.setActiveSpaceCollectionId(id),
+        getActiveSpaceCollectionId: () => preferencesRepository.getActiveCollectionId(),
+        setActiveSpaceCollectionId: (id) => preferencesRepository.setActiveCollectionId(id),
       }
     );
 
@@ -133,7 +133,7 @@ export class Controller {
       layoutHistoryRepository: this.layoutHistoryRepository,
       onLayoutSelected: (event) => this.applyLayoutToCurrentWindow(event),
       getOpenPreferencesShortcuts: () => preferencesRepository.getOpenPreferencesShortcut(),
-      getActiveSpaceCollectionId: () => preferencesRepository.getActiveSpaceCollectionId(),
+      getActiveSpaceCollectionId: () => preferencesRepository.getActiveCollectionId(),
       ensurePresetForCurrentMonitors: () =>
         resolvePresetGeneratorOperations().ensurePresetForCurrentMonitors(),
       getActiveSpaceCollection: (activeId) =>
@@ -184,7 +184,7 @@ export class Controller {
     this.monitorChangeHandler.syncActiveCollectionToHistory();
   }
 
-  private getAllValidLayoutIds(): Set<string> {
+  private getAllValidLayoutIds() {
     const collections = resolveSpaceCollectionOperations().loadAllCollections();
     return extractLayoutIds(collections);
   }

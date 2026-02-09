@@ -4,6 +4,10 @@
  * Core type definitions for the layout system.
  */
 
+import type { CollectionId } from './collection-id.js';
+import type { LayoutId } from './layout-id.js';
+import type { SpaceId } from './space-id.js';
+
 export interface LayoutPosition {
   x: string; // expression: '1/3', '50%', '100px', '50% - 10px', etc.
   y: string; // expression: '0', '50%', '10px', etc.
@@ -15,7 +19,7 @@ export interface LayoutSize {
 }
 
 export interface Layout {
-  id: string; // Unique identifier (UUID)
+  id: LayoutId;
   hash: string; // Coordinate-based hash for duplicate detection
   label: string;
   position: LayoutPosition;
@@ -33,7 +37,7 @@ export interface LayoutGroup {
 }
 
 export interface Space {
-  id: string;
+  id: SpaceId;
   enabled: boolean;
   displays: {
     [monitorKey: string]: LayoutGroup;
@@ -45,7 +49,7 @@ export interface SpacesRow {
 }
 
 export interface SpaceCollection {
-  id: string;
+  id: CollectionId;
   name: string;
   rows: SpacesRow[];
 }

@@ -1,6 +1,6 @@
 # Sub-Plan 3: Enforce LayoutId Type Safety
 
-Status: Draft
+Status: Completed
 
 ## Overview
 
@@ -60,6 +60,7 @@ Domain types, composition (layout-applicator, controller), UI (main-panel, minia
 
 - Update `validLayoutIds` field from `Set<string>` to `Set<LayoutId>`
 - Update filtering logic to use `LayoutId.equals()` for membership checks
+- Note: `Set<LayoutId>` uses reference equality for `has()`, so membership checks must use iteration with `.equals()` (e.g. `Array.from(set).some(id => id.equals(target))`) instead of `Set.has()`
 
 ### UI Layer
 

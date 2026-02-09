@@ -1,8 +1,18 @@
 import Gio from 'gi://Gio';
 
-import type { CollectionId, Space, SpaceCollection, SpaceId } from '../../domain/layout/index.js';
+import {
+  CollectionId,
+  type Space,
+  type SpaceCollection,
+  type SpaceId,
+} from '../../domain/layout/index.js';
 import type { UUIDGenerator } from '../../libs/uuid/index.js';
 import type { SpaceCollectionRepository } from '../../operations/layout/space-collection-repository.js';
+import {
+  deserializeSpaceCollection,
+  isValidRawSpaceCollectionArray,
+  serializeSpaceCollection,
+} from './raw-space-collection.js';
 
 const log = (message: string): void => console.log(message);
 
@@ -42,7 +52,7 @@ export class FileSpaceCollectionRepository implements SpaceCollectionRepository 
   addCustomCollection(collection: Omit<SpaceCollection, 'id'>): SpaceCollection {
     const newCollection: SpaceCollection = {
       ...collection,
-      id: this.uuidGenerator.generate(),
+      id: new CollectionId(this.uuidGenerator.generate()),
     };
 
     const existing = this.loadCustomCollections();
@@ -55,10 +65,10 @@ export class FileSpaceCollectionRepository implements SpaceCollectionRepository 
 
   deleteCustomCollection(collectionId: CollectionId): boolean {
     const collections = this.loadCustomCollections();
-    const index = collections.findIndex((c) => c.id === collectionId.toString());
+    const index = collections.findIndex((c) => c.id.equals(collectionId));
 
     if (index === -1) {
-      log(`[SpaceCollectionRepository] Collection not found: ${collectionId.toString()}`);
+      log(`[SpaceCollectionRepository] Collection not found: ${collectionId}`);
       return false;
     }
 
@@ -71,38 +81,33 @@ export class FileSpaceCollectionRepository implements SpaceCollectionRepository 
 
   findCollectionById(collectionId: CollectionId): SpaceCollection | undefined {
     const all = this.loadAllCollections();
-    return all.find((c) => c.id === collectionId.toString());
+    return all.find((c) => c.id.equals(collectionId));
   }
 
   updateSpaceEnabled(collectionId: CollectionId, spaceId: SpaceId, enabled: boolean): boolean {
-    const collectionIdStr = collectionId.toString();
-    const spaceIdStr = spaceId.toString();
-
     const presets = this.loadPresetCollections();
-    const presetSpace = this.findSpace(presets, collectionIdStr, spaceIdStr);
+    const presetSpace = this.findSpace(presets, collectionId, spaceId);
     if (presetSpace) {
       presetSpace.enabled = enabled;
       this.savePresetCollections(presets);
       log(
-        `[SpaceCollectionRepository] Updated space ${spaceIdStr} enabled=${enabled} in preset collection`
+        `[SpaceCollectionRepository] Updated space ${spaceId} enabled=${enabled} in preset collection`
       );
       return true;
     }
 
     const customs = this.loadCustomCollections();
-    const customSpace = this.findSpace(customs, collectionIdStr, spaceIdStr);
+    const customSpace = this.findSpace(customs, collectionId, spaceId);
     if (customSpace) {
       customSpace.enabled = enabled;
       this.saveCustomCollections(customs);
       log(
-        `[SpaceCollectionRepository] Updated space ${spaceIdStr} enabled=${enabled} in custom collection`
+        `[SpaceCollectionRepository] Updated space ${spaceId} enabled=${enabled} in custom collection`
       );
       return true;
     }
 
-    log(
-      `[SpaceCollectionRepository] Space ${spaceIdStr} not found in collection ${collectionIdStr}`
-    );
+    log(`[SpaceCollectionRepository] Space ${spaceId} not found in collection ${collectionId}`);
     return false;
   }
 
@@ -123,12 +128,12 @@ export class FileSpaceCollectionRepository implements SpaceCollectionRepository 
       const contentsString = new TextDecoder('utf-8').decode(contents);
       const data: unknown = JSON.parse(contentsString);
 
-      if (!this.isValidSpaceCollectionArray(data)) {
+      if (!isValidRawSpaceCollectionArray(data)) {
         log(`[SpaceCollectionRepository] Invalid data format in: ${filePath}`);
         return [];
       }
 
-      return data;
+      return data.map((raw) => deserializeSpaceCollection(raw));
     } catch (e) {
       log(`[SpaceCollectionRepository] Error loading file ${filePath}: ${e}`);
       return [];
@@ -144,7 +149,8 @@ export class FileSpaceCollectionRepository implements SpaceCollectionRepository 
         parent.make_directory_with_parents(null);
       }
 
-      const json = JSON.stringify(collections, null, 2);
+      const rawCollections = collections.map((c) => serializeSpaceCollection(c));
+      const json = JSON.stringify(rawCollections, null, 2);
       file.replace_contents(json, null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
 
       log(`[SpaceCollectionRepository] Saved collections to: ${filePath}`);
@@ -153,36 +159,13 @@ export class FileSpaceCollectionRepository implements SpaceCollectionRepository 
     }
   }
 
-  private isValidSpaceCollectionArray(data: unknown): data is SpaceCollection[] {
-    if (!Array.isArray(data)) {
-      return false;
-    }
-
-    for (const item of data) {
-      if (typeof item !== 'object' || item === null) {
-        return false;
-      }
-      if (!('id' in item) || typeof item.id !== 'string') {
-        return false;
-      }
-      if (!('name' in item) || typeof item.name !== 'string') {
-        return false;
-      }
-      if (!('rows' in item) || !Array.isArray(item.rows)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
   private findSpace(
     collections: SpaceCollection[],
-    collectionId: string,
-    spaceId: string
+    collectionId: CollectionId,
+    spaceId: SpaceId
   ): Space | null {
-    const collection = collections.find((c) => c.id === collectionId);
+    const collection = collections.find((c) => c.id.equals(collectionId));
     if (!collection) return null;
-    return collection.rows.flatMap((row) => row.spaces).find((s) => s.id === spaceId) ?? null;
+    return collection.rows.flatMap((row) => row.spaces).find((s) => s.id.equals(spaceId)) ?? null;
   }
 }

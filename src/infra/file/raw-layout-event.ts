@@ -1,7 +1,7 @@
 /**
- * Layout Event Serializer
+ * Raw Layout Event
  *
- * Handles serialization of LayoutEvent domain objects to raw JSON format for file storage.
+ * JSON format types and serialization for LayoutEvent.
  */
 
 import type { LayoutEvent } from '../../domain/history/index.js';
