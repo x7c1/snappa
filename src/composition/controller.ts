@@ -88,8 +88,9 @@ export class Controller {
       monitorEnvironmentOperations,
       this.layoutHistoryRepository,
       {
-        getActiveSpaceCollectionId: () => preferencesRepository.getActiveSpaceCollectionId(),
-        setActiveSpaceCollectionId: (id) => preferencesRepository.setActiveSpaceCollectionId(id),
+        getActiveSpaceCollectionId: () => this.parseCollectionId(preferencesRepository),
+        setActiveSpaceCollectionId: (id) =>
+          preferencesRepository.setActiveSpaceCollectionId(id.toString()),
       }
     );
 
