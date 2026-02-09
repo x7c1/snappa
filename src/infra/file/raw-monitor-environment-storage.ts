@@ -1,8 +1,7 @@
 /**
- * Monitor Environment Serializer
+ * Raw Monitor Environment Storage
  *
- * Handles serialization/deserialization of MonitorEnvironmentStorage
- * between domain objects and raw JSON format for file storage.
+ * JSON format types and serialization/deserialization for MonitorEnvironmentStorage.
  */
 
 import { CollectionId } from '../../domain/layout/index.js';
