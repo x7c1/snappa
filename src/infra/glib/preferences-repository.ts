@@ -5,6 +5,7 @@
 
 import Gio from 'gi://Gio';
 import type { ExtensionMetadata } from 'resource:///org/gnome/shell/extensions/extension.js';
+import { CollectionId } from '../../domain/layout/index.js';
 
 export class GSettingsPreferencesRepository {
   private settings: Gio.Settings;
@@ -63,19 +64,17 @@ export class GSettingsPreferencesRepository {
     return this.settings;
   }
 
-  /**
-   * Get the active SpaceCollection ID
-   * @returns The ID of the active SpaceCollection, or empty string if not set
-   */
-  getActiveSpaceCollectionId(): string {
-    return this.settings.get_string('active-space-collection-id');
+  getActiveCollectionId(): CollectionId | null {
+    const str = this.settings.get_string('active-space-collection-id');
+    if (!str) return null;
+    try {
+      return new CollectionId(str);
+    } catch {
+      return null;
+    }
   }
 
-  /**
-   * Set the active SpaceCollection ID
-   * @param id The ID of the SpaceCollection to set as active
-   */
-  setActiveSpaceCollectionId(id: string): void {
-    this.settings.set_string('active-space-collection-id', id);
+  setActiveCollectionId(id: CollectionId): void {
+    this.settings.set_string('active-space-collection-id', id.toString());
   }
 }
