@@ -9,7 +9,7 @@
 
 Never duplicate content across files.
 
-For documentation directory roles and rules, see `docs/guides/10-documentation-structure.md`.
+For documentation directory roles and rules, see @docs/guides/10-documentation-structure.md.
 
 ### Markdown Files (100+ lines)
 - Always include an Overview section at the beginning
@@ -26,8 +26,4 @@ npm run build && npm run check && npm run test:run
 ```
 
 Fix any issues before considering the task complete.
-
-## Code Rules
-
-Language-specific coding rules are in `.claude/rules/`.
 
