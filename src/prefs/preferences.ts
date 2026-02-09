@@ -60,7 +60,7 @@ export function buildPreferencesUI(window: Adw.PreferencesWindow, settings: Gio.
     try {
       activeCollectionId = new CollectionId(activeCollectionIdStr);
     } catch {
-      // Invalid value (e.g. legacy preset-N-monitor), treat as null
+      console.log(`[Sutto Prefs] Invalid collection ID in settings: "${activeCollectionIdStr}"`);
     }
   }
 
