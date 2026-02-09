@@ -6,7 +6,10 @@
 
 import {
   CollectionId,
+  type Layout,
+  type LayoutGroup,
   LayoutId,
+  type Space,
   type SpaceCollection,
   SpaceId,
 } from '../../domain/layout/index.js';
@@ -22,25 +25,7 @@ export function deserializeSpaceCollection(raw: RawSpaceCollection): SpaceCollec
     id: new CollectionId(raw.id),
     name: raw.name,
     rows: raw.rows.map((row) => ({
-      spaces: row.spaces.map((space) => ({
-        id: new SpaceId(space.id),
-        enabled: space.enabled,
-        displays: Object.fromEntries(
-          Object.entries(space.displays).map(([key, group]) => [
-            key,
-            {
-              name: group.name,
-              layouts: group.layouts.map((layout) => ({
-                id: new LayoutId(layout.id),
-                hash: layout.hash,
-                label: layout.label,
-                position: layout.position,
-                size: layout.size,
-              })),
-            },
-          ])
-        ),
-      })),
+      spaces: row.spaces.map(deserializeSpace),
     })),
   };
 }
@@ -50,25 +35,7 @@ export function serializeSpaceCollection(collection: SpaceCollection): RawSpaceC
     id: collection.id.toString(),
     name: collection.name,
     rows: collection.rows.map((row) => ({
-      spaces: row.spaces.map((space) => ({
-        id: space.id.toString(),
-        enabled: space.enabled,
-        displays: Object.fromEntries(
-          Object.entries(space.displays).map(([key, group]) => [
-            key,
-            {
-              name: group.name,
-              layouts: group.layouts.map((layout) => ({
-                id: layout.id.toString(),
-                hash: layout.hash,
-                label: layout.label,
-                position: layout.position,
-                size: layout.size,
-              })),
-            },
-          ])
-        ),
-      })),
+      spaces: row.spaces.map(serializeSpace),
     })),
   };
 }
@@ -119,4 +86,58 @@ interface RawLayout {
   label: string;
   position: { x: string; y: string };
   size: { width: string; height: string };
+}
+
+function deserializeSpace(raw: RawSpace): Space {
+  return {
+    id: new SpaceId(raw.id),
+    enabled: raw.enabled,
+    displays: Object.fromEntries(
+      Object.entries(raw.displays).map(([key, group]) => [key, deserializeLayoutGroup(group)])
+    ),
+  };
+}
+
+function serializeSpace(space: Space): RawSpace {
+  return {
+    id: space.id.toString(),
+    enabled: space.enabled,
+    displays: Object.fromEntries(
+      Object.entries(space.displays).map(([key, group]) => [key, serializeLayoutGroup(group)])
+    ),
+  };
+}
+
+function deserializeLayoutGroup(raw: RawLayoutGroup): LayoutGroup {
+  return {
+    name: raw.name,
+    layouts: raw.layouts.map(deserializeLayout),
+  };
+}
+
+function serializeLayoutGroup(group: LayoutGroup): RawLayoutGroup {
+  return {
+    name: group.name,
+    layouts: group.layouts.map(serializeLayout),
+  };
+}
+
+function deserializeLayout(raw: RawLayout): Layout {
+  return {
+    id: new LayoutId(raw.id),
+    hash: raw.hash,
+    label: raw.label,
+    position: raw.position,
+    size: raw.size,
+  };
+}
+
+function serializeLayout(layout: Layout): RawLayout {
+  return {
+    id: layout.id.toString(),
+    hash: layout.hash,
+    label: layout.label,
+    position: layout.position,
+    size: layout.size,
+  };
 }
