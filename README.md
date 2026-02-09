@@ -1,4 +1,4 @@
-# Snappa - GNOME Shell Extension
+# Sutto - GNOME Shell Extension
 
 > **UNDER DEVELOPMENT** - This extension is currently in active development and not yet stable.
 

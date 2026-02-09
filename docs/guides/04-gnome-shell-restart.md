@@ -5,14 +5,14 @@
 With sutto's **self-reload feature**, you rarely need to restart GNOME Shell:
 
 - **First time installing** an extension: Yes (one-time only)
-- **Updating existing extension during development**: No (use the "Reload" button)
+- **Updating existing extension during development**: No (use `npm run dev`)
 - **Installing GNOME Shell updates**: Yes
 
 ## Self-Reload Feature (Recommended)
 
-**For extension development, use the built-in "Reload" button instead of restarting GNOME Shell.**
+**For extension development, use `npm run dev` instead of restarting GNOME Shell.**
 
-See `03-development-workflow.md` for details.
+See [Development Workflow](03-development-workflow.md) for details.
 
 ## Check Your Session Type First
 
@@ -24,20 +24,27 @@ echo $XDG_SESSION_TYPE
 
 ### X11 Session
 
-#### Method 1: Using killall (Recommended)
+#### Using the restart script (Recommended)
+
 ```bash
+./scripts/restart-gnome-shell-x11.sh
+```
+
+This script automates the Alt+F2 `r` method using `xdotool`, with a D-Bus fallback.
+
+#### Other methods
+
+These are the underlying commands if you need them manually:
+
+```bash
+# Using killall
 killall -3 gnome-shell
-```
 
-#### Method 2: Using busctl
-```bash
+# Using busctl
 busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")'
-```
 
-#### Method 3: Alt+F2 Dialog (Interactive)
-1. Press `Alt + F2`
-2. Type `r`
-3. Press Enter
+# Or press Alt+F2, type 'r', then press Enter
+```
 
 ### Wayland Session
 
@@ -51,16 +58,16 @@ You must:
 
 | Session Type | Restart Command | Need Logout? |
 |--------------|----------------|--------------|
-| X11 | `killall -3 gnome-shell` | No |
+| X11 | `./scripts/restart-gnome-shell-x11.sh` | No |
 | Wayland | N/A | Yes |
 
 ## For Extension Development
 
-**Good news:** After the initial installation, sutto's built-in "Reload" button allows you to reload the extension instantly without restarting GNOME Shell!
+**Good news:** After the initial installation, `npm run dev` allows you to reload the extension instantly without restarting GNOME Shell!
 
 The methods described above are only needed for:
 - Initial installation
 - System updates
 - Troubleshooting severe errors
 
-For normal development, see `03-development-workflow.md` for the recommended self-reload workflow.
+For normal development, see [Development Workflow](03-development-workflow.md) for the recommended self-reload workflow.
