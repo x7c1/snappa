@@ -25,5 +25,8 @@
     "forceConsistentCasingInFileNames": true
   },
   "include": ["./**/*"],
-  "exclude": ["**/*.test.ts"]
+  "exclude": ["**/*.test.ts"],
+  "references": [
+    { "path": "../libs" }
+  ]
 }

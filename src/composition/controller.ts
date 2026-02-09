@@ -184,7 +184,7 @@ export class Controller {
     this.monitorChangeHandler.syncActiveCollectionToHistory();
   }
 
-  private getAllValidLayoutIds(): Set<string> {
+  private getAllValidLayoutIds() {
     const collections = resolveSpaceCollectionOperations().loadAllCollections();
     return extractLayoutIds(collections);
   }
