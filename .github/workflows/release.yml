@@ -21,7 +21,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Check if version changed
         id: version-check
@@ -53,6 +53,28 @@ jobs:
             "${{ steps.version-check.outputs.uuid }}" \
             "${{ steps.version-check.outputs.version }}"
 
+      - name: Generate Changelog
+        if: steps.version-check.outputs.changed == 'true'
+        id: changelog
+        run: |
+          repo_url=$(gh repo view --json url --jq '.url')
+          last_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          changelog=$(.github/scripts/generate-changelog.sh "$last_tag" "$repo_url")
+          compare=""
+          if [ -n "$last_tag" ]; then
+            compare=$(printf '## Changelog\n\n- [%s...v%s](%s/compare/%s...v%s)' \
+              "$last_tag" "${{ steps.version-check.outputs.version }}" \
+              "$repo_url" "$last_tag" "${{ steps.version-check.outputs.version }}")
+          fi
+          {
+            echo 'body<<CHANGELOG_EOF'
+            printf '%s\n' "$changelog"
+            printf '%s\n' "$compare"
+            echo 'CHANGELOG_EOF'
+          } >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create Release
         if: steps.version-check.outputs.changed == 'true'
         uses: softprops/action-gh-release@v2
@@ -60,7 +82,7 @@ jobs:
           tag_name: v${{ steps.version-check.outputs.version }}
           name: Release ${{ steps.version-check.outputs.version }}
           files: ${{ steps.package.outputs.filename }}
-          generate_release_notes: true
+          body: ${{ steps.changelog.outputs.body }}
 
       - name: Update release PR links
         if: steps.version-check.outputs.changed == 'true'
