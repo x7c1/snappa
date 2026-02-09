@@ -1,7 +1,9 @@
 import type { CollectionId } from '../layout/collection-id.js';
 
 export interface Monitor {
-  index: number; // 0-based monitor index ("0", "1", "2"...)
+  /** 0-based monitor index (0, 1, 2...) */
+  index: number;
+
   geometry: { x: number; y: number; width: number; height: number };
   workArea: { x: number; y: number; width: number; height: number };
   isPrimary: boolean;
@@ -22,10 +24,16 @@ export interface BoundingBox {
  * Monitor environment - stores monitors configuration for a specific physical setup
  */
 export interface MonitorEnvironment {
-  id: string; // Hash computed from all monitors' geometry data
+  /** Hash computed from all monitors' geometry data */
+  id: string;
+
   monitors: Monitor[];
+
+  /** null when no collection has been used yet */
   lastActiveCollectionId: CollectionId | null;
-  lastActiveAt: number; // Timestamp when environment was last active
+
+  /** Timestamp when environment was last active */
+  lastActiveAt: number;
 }
 
 /**
@@ -33,5 +41,7 @@ export interface MonitorEnvironment {
  */
 export interface MonitorEnvironmentStorage {
   environments: MonitorEnvironment[];
-  current: string; // ID of the current environment
+
+  /** ID of the current environment */
+  current: string;
 }
