@@ -45,7 +45,7 @@ export class MonitorChangeHandler {
   private handleMonitorsSaveResult(collectionToActivate: CollectionId | null): void {
     if (collectionToActivate) {
       log(
-        `[MonitorChangeHandler] Environment changed, activating collection: ${collectionToActivate.toString()}`
+        `[MonitorChangeHandler] Environment changed, activating collection: ${collectionToActivate}`
       );
       this.callbacks.setActiveSpaceCollectionId(collectionToActivate);
       this.monitorEnvironmentOperations.setActiveCollectionId(collectionToActivate);

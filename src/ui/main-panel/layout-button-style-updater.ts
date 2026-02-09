@@ -23,7 +23,7 @@ export class LayoutButtonStyleUpdater {
     layoutButtons: Map<St.Button, Layout>
   ): void {
     log(
-      `[LayoutButtonStyleUpdater] Updating button highlights for layout: ${newSelectedLayoutId.toString()} on monitor: ${monitorKey}`
+      `[LayoutButtonStyleUpdater] Updating button highlights for layout: ${newSelectedLayoutId} on monitor: ${monitorKey}`
     );
     let updatedCount = 0;
 

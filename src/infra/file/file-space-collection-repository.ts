@@ -68,7 +68,7 @@ export class FileSpaceCollectionRepository implements SpaceCollectionRepository 
     const index = collections.findIndex((c) => c.id.equals(collectionId));
 
     if (index === -1) {
-      log(`[SpaceCollectionRepository] Collection not found: ${collectionId.toString()}`);
+      log(`[SpaceCollectionRepository] Collection not found: ${collectionId}`);
       return false;
     }
 
@@ -91,7 +91,7 @@ export class FileSpaceCollectionRepository implements SpaceCollectionRepository 
       presetSpace.enabled = enabled;
       this.savePresetCollections(presets);
       log(
-        `[SpaceCollectionRepository] Updated space ${spaceId.toString()} enabled=${enabled} in preset collection`
+        `[SpaceCollectionRepository] Updated space ${spaceId} enabled=${enabled} in preset collection`
       );
       return true;
     }
@@ -102,14 +102,12 @@ export class FileSpaceCollectionRepository implements SpaceCollectionRepository 
       customSpace.enabled = enabled;
       this.saveCustomCollections(customs);
       log(
-        `[SpaceCollectionRepository] Updated space ${spaceId.toString()} enabled=${enabled} in custom collection`
+        `[SpaceCollectionRepository] Updated space ${spaceId} enabled=${enabled} in custom collection`
       );
       return true;
     }
 
-    log(
-      `[SpaceCollectionRepository] Space ${spaceId.toString()} not found in collection ${collectionId.toString()}`
-    );
+    log(`[SpaceCollectionRepository] Space ${spaceId} not found in collection ${collectionId}`);
     return false;
   }
 

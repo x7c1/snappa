@@ -106,7 +106,7 @@ export class FileLayoutHistoryRepository implements LayoutHistoryRepository {
     this.updateMemoryWithEvent(event);
 
     log(
-      `[LayoutHistory] Recorded: collection=${event.collectionId.toString()}, wmClassHash=${event.wmClassHash}, titleHash=${event.titleHash} -> ${layoutId.toString()}`
+      `[LayoutHistory] Recorded: collection=${event.collectionId}, wmClassHash=${event.wmClassHash}, titleHash=${event.titleHash} -> ${layoutId}`
     );
   }
 
