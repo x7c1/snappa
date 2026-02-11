@@ -10,7 +10,7 @@ A GNOME Shell extension for window snapping. See the [project website](https://x
 - **Keyboard shortcut support**: Optional keyboard shortcut for quick access
 - **Visual layout preview**: See layout positions before applying them
 - **Multi-monitor support**: Works across multiple displays
-- **Customizable preferences**: Configure keyboard shortcuts through a native GNOME preferences UI
+- **Customizable layouts**: Define your own layouts in JSON for full control over window positions and sizes
 
 ## Documentation
 
