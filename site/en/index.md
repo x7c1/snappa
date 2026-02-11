@@ -17,9 +17,6 @@ hero:
       link: https://github.com/x7c1/sutto
 
 features:
-  - icon: 🖱️
-    title: Edge-Triggered Snapping
-    details: Drag any window to a screen edge and the layout panel appears at your cursor. Select a layout to snap the window into position.
   - icon: ⌨️
     title: Keyboard Shortcut Support
     details: Set an optional keyboard shortcut to open the layout panel for the focused window — no mouse required.
@@ -33,3 +30,27 @@ features:
     title: Customizable Layouts
     details: Define your own layouts in JSON for full control over window positions and sizes. Configure keyboard shortcuts in the preferences UI.
 ---
+
+## Demo
+
+<div style="max-width: 80%; margin: 0 auto;">
+
+### Vertical Layout (Dual Monitor Stacked)
+
+<video controls muted loop width="100%">
+  <source src="/layout-vertical.webm" type="video/webm">
+</video>
+
+### Horizontal Layout (Dual Monitor Side by Side)
+
+<video controls muted loop width="100%">
+  <source src="/layout-horizontal.webm" type="video/webm">
+</video>
+
+### Selecting a Custom Collection
+
+<video controls muted loop width="100%">
+  <source src="/change-layout.webm" type="video/webm">
+</video>
+
+</div>
