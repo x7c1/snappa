@@ -14,7 +14,7 @@ A GNOME Shell extension for window snapping. See the [project website](https://x
 
 ## Demo
 
-<video src="https://x7c1.github.io/sutto/layout-vertical.webm" controls muted loop width="600"></video>
+<video src="https://github.com/user-attachments/assets/378a3810-332b-4064-bed3-ba4443b21ffc" controls muted loop width="600"></video>
 
 ## Documentation
 
